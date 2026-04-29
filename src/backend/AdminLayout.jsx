@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getCurrentAdminUser } from "../data/permissionStorage";
 import { getAlerts } from "../data/notificationStorage";
+import { clearAdminSession, isAdminAuthenticated } from "../data/authStorage";
 
 const NAV = [
   { path: "/admin/dashboard",    icon: "📊", label: "Dashboard" },
@@ -42,12 +43,11 @@ function AdminLayout() {
   const unreadAlerts = getAlerts().slice(0, 20).length;
 
   useEffect(() => {
-    if (!sessionStorage.getItem("gt_admin")) navigate("/admin");
-  }, []);
+    if (!isAdminAuthenticated()) navigate("/admin");
+  }, [navigate]);
 
   const logout = () => {
-    sessionStorage.removeItem("gt_admin");
-    sessionStorage.removeItem("gt_user");
+    clearAdminSession();
     navigate("/admin");
   };
 

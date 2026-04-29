@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../api/backendClient";
+import { persistAdminSession } from "../data/authStorage";
 
 const BG_IMAGE   = "/TrekImages/PuneTrek.png";
 const LOGO_IMAGE = "/gadvedelogo.png";
@@ -143,10 +144,7 @@ function SignInView({ onBack }) {
         method: "POST",
         body: { username: form.username.trim(), password: form.password.trim() },
       });
-      // data = { token, username, name, role }
-      sessionStorage.setItem("gt_admin", "true");
-      sessionStorage.setItem("gt_admin_token", data.token);
-      sessionStorage.setItem("gt_user", JSON.stringify({ name: data.name, role: data.role, username: data.username }));
+      persistAdminSession(data);
       navigate("/admin/dashboard");
     } catch (err) {
       setError(err.message || "Invalid username or password.");

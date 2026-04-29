@@ -7,7 +7,11 @@ import customersRoutes  from "./routes/customers.routes.js";
 import paymentsRoutes   from "./routes/payments.routes.js";
 import enquiriesRoutes  from "./routes/enquiries.routes.js";
 import leadsRoutes      from "./routes/leads.routes.js";
-import authRoutes       from "./routes/auth.routes.js";
+import authRoutes           from "./routes/auth.routes.js";
+import notifyRoutes         from "./routes/notifications.routes.js";
+import employeesRoutes      from "./routes/employees.routes.js";
+import vendorsRoutes        from "./routes/vendors.routes.js";
+import trekPaymentsRoutes   from "./routes/trekPayments.routes.js";
 import supabasePublic   from "./config/supabasePublicClient.js";
 import supabaseAdmin    from "./config/supabaseAdminClient.js";
 
@@ -42,6 +46,10 @@ app.use("/api/customers",  customersRoutes);
 app.use("/api/payments",   paymentsRoutes);
 app.use("/api/enquiries",  enquiriesRoutes);
 app.use("/api/leads",      leadsRoutes);
+app.use("/api/notify",        notifyRoutes);
+app.use("/api/employees",     employeesRoutes);
+app.use("/api/vendors",       vendorsRoutes);
+app.use("/api/trek-payments", trekPaymentsRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, status: "ok" });

@@ -1,3 +1,5 @@
+import { getAdminToken } from "../data/authStorage";
+
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ||
   "https://resourceful-balance-production-ed41.up.railway.app"
@@ -23,7 +25,7 @@ export async function apiRequest(path, { method = "GET", body, admin = false } =
   }
 
   if (admin) {
-    const token = sessionStorage.getItem("gt_admin_token");
+    const token = getAdminToken();
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }

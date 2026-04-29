@@ -7,6 +7,7 @@ import { richTrekDetails } from "../../data/richTrekDetails";
 import { getTrekDates } from "../../data/trekDatesStorage";
 import BookingCTA from "../../components/BookingCTA";
 import { buildShareWhatsAppUrl } from "../../config/bookingConfig";
+import { productService } from "../../services/product.service";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -85,6 +86,7 @@ const createWhatsappHref = (trek) =>
 function TrekDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [remoteTrek, setRemoteTrek] = useState(null);
   const previewDraft =
     typeof window !== "undefined" ? sessionStorage.getItem("gt_trek_preview") : null;
   const previewItem = parseJsonValue(previewDraft, null);
@@ -99,7 +101,7 @@ function TrekDetails() {
 
   const adminTrek = adminMatch ? buildLocalTrek(adminMatch) : null;
   const previewTrek = previewItem && previewSlug === id ? buildLocalTrek(previewItem) : null;
-  const trek = previewTrek || adminTrek || (id ? findTrekBySlug(id) : null);
+  const trek = previewTrek || remoteTrek || adminTrek || (id ? findTrekBySlug(id) : null);
   const staticRichTrek = trek?.name ? richTrekDetails[trek.name] || null : null;
   const isRich = !!(staticRichTrek || adminTrek || previewTrek);
   const adminItineraryKeys =
@@ -109,7 +111,11 @@ function TrekDetails() {
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const upcomingDates = trek
-    ? getTrekDates(slugifyTrekName(trek.name)).filter((d) => d.date >= todayStr)
+    ? (
+        parseJsonValue(trek.trekDateBatches, []).length > 0
+          ? parseJsonValue(trek.trekDateBatches, [])
+          : getTrekDates(slugifyTrekName(trek.name))
+      ).filter((d) => d.date >= todayStr)
     : [];
 
   const [activeTab, setActiveTab] = useState("overview");
@@ -124,6 +130,28 @@ function TrekDetails() {
 
   /* ── Referral code from URL ?ref= param ──────────────────── */
   const location = useLocation();
+
+  useEffect(() => {
+    setRemoteTrek(null);
+    if (!id || previewSlug === id) return;
+
+    const syncLocal = () => {
+      const latestLocal = getAdminItems("gt_treks").find((item) => slugifyTrekName(item.name || "") === id);
+      if (latestLocal) {
+        setRemoteTrek(buildLocalTrek(latestLocal));
+      }
+    };
+
+    productService
+      .getBySlug(id)
+      .then((item) => {
+        if (item) setRemoteTrek(buildLocalTrek(item));
+      })
+      .catch(() => {});
+
+    window.addEventListener("storage", syncLocal);
+    return () => window.removeEventListener("storage", syncLocal);
+  }, [id, previewSlug]);
   const referralCode = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return params.get("ref") || "";

@@ -278,9 +278,14 @@ function Heritage() {
   const [, setSyncKey] = useState(0);
 
   useEffect(() => {
+    const syncLocal = () => setSyncKey((k) => k + 1);
+
     syncProductsFromApi("heritage", "gt_heritage")
       .then((items) => { if (items) setSyncKey((k) => k + 1); })
       .catch(() => {});
+
+    window.addEventListener("storage", syncLocal);
+    return () => window.removeEventListener("storage", syncLocal);
   }, []);
 
   const heritageData = {

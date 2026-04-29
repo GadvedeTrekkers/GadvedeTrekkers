@@ -15,25 +15,25 @@ const parseGallery = (value, fallback) => {
   }
 };
 
-/* Show only active treks (respects Live/Off status from admin panel) */
-const _storedTreks = getAdminItems("gt_treks");
-const allTreks = _storedTreks.length > 0
-  ? _storedTreks
-      .filter((t) => t.active !== false)
-      .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
-      .map((t) => {
-        const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
-        const gallery = parseGallery(t.imageGallery, fallbackGallery);
-        return {
-          ...normaliseItem(t),
-          slug: t.slug || slugifyTrekName(t.name),
-          image: gallery[0] || t.image,
-          gallery,
-          seasonalTag: t.seasonalTag || "New Listing",
-          _sortOrder: Number(t.sortOrder ?? 999),
-        };
-      })
-  : uniqueTreks;
+function buildTreks(rawItems = getAdminItems("gt_treks")) {
+  if (rawItems.length === 0) return uniqueTreks;
+
+  return rawItems
+    .filter((t) => t.active !== false)
+    .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
+    .map((t) => {
+      const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
+      const gallery = parseGallery(t.imageGallery, fallbackGallery);
+      return {
+        ...normaliseItem(t),
+        slug: t.slug || slugifyTrekName(t.name),
+        image: gallery[0] || t.image,
+        gallery,
+        seasonalTag: t.seasonalTag || "New Listing",
+        _sortOrder: Number(t.sortOrder ?? 999),
+      };
+    });
+}
 
 const DIFFICULTY_FILTERS = ["All", "Easy", "Medium", "Hard"];
 
@@ -72,31 +72,21 @@ function Trek() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [activeSort, setActiveSort] = useState("recommended");
   const [searchQuery, setSearchQuery] = useState("");
-  const [treks, setTreks] = useState(allTreks);
+  const [treks, setTreks] = useState(() => buildTreks());
 
-  // Sync from backend on mount so admin changes reflect on all devices
   useEffect(() => {
+    const syncLocal = () => setTreks(buildTreks());
+
     syncProductsFromApi("trek", "gt_treks")
       .then((items) => {
         if (!items) return;
-        const mapped = items
-          .filter((t) => t.active !== false)
-          .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
-          .map((t) => {
-            const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
-            const gallery = parseGallery(t.imageGallery, fallbackGallery);
-            return {
-              ...normaliseItem(t),
-              slug: t.slug || slugifyTrekName(t.name),
-              image: gallery[0] || t.image,
-              gallery,
-              seasonalTag: t.seasonalTag || "New Listing",
-              _sortOrder: Number(t.sortOrder ?? 999),
-            };
-          });
+        const mapped = buildTreks(items);
         if (mapped.length > 0) setTreks(mapped);
       })
       .catch(() => {});
+
+    window.addEventListener("storage", syncLocal);
+    return () => window.removeEventListener("storage", syncLocal);
   }, []);
   const initialVisibleTreks = 10;
 

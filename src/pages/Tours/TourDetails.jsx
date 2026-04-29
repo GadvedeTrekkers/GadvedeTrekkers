@@ -6,6 +6,7 @@ import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
 import { toursList } from "../../data/toursData";
 import { ADDITIONAL_TOUR_SEEDS } from "../../data/additionalTourDetails";
+import { productService } from "../../services/product.service";
 import {
   MANALI_TOUR_SEED,
   MANALI_GALLERY,
@@ -94,6 +95,7 @@ function buildSeedTour(id) {
 function TourDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [remoteTour, setRemoteTour] = useState(null);
   const previewRaw = typeof window !== "undefined" ? sessionStorage.getItem("gt_tour_preview") : null;
   const previewItem = parseJsonValue(previewRaw, null);
   const previewSlug = previewItem?.slug || slugifyTourName(previewItem?.name || "");
@@ -101,7 +103,7 @@ function TourDetails() {
   const seedTour = buildSeedTour(id);
 
   const tour = useMemo(() => {
-    const source = previewSlug === id ? previewItem : adminItem ? normaliseItem(adminItem) : seedTour;
+    const source = previewSlug === id ? previewItem : remoteTour || (adminItem ? normaliseItem(adminItem) : seedTour);
     if (!source) return null;
     const gallery = parseJsonValue(source.imageGallery, [source.image || MANALI_TOUR_SEED.image]).filter(Boolean);
     return {
@@ -109,12 +111,38 @@ function TourDetails() {
       image: gallery[0] || source.image,
       imageGallery: gallery.length ? gallery : MANALI_GALLERY,
     };
-  }, [adminItem, id, previewItem, previewSlug, seedTour]);
+  }, [adminItem, id, previewItem, previewSlug, remoteTour, seedTour]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const upcomingDates = getTourDates(id).filter((d) => d.date >= todayStr);
+  const upcomingDates = (
+    parseJsonValue(tour?.tourDateBatches, []).length > 0
+      ? parseJsonValue(tour?.tourDateBatches, [])
+      : getTourDates(id)
+  ).filter((d) => d.date >= todayStr);
 
   const [activeImage, setActiveImage] = useState(0);
+
+  useEffect(() => {
+    setRemoteTour(null);
+    if (!id || previewSlug === id) return;
+
+    const syncLocal = () => {
+      const latestLocal = getAdminItems("gt_tours").find((item) => (item.slug || slugifyTourName(item.name || "")) === id);
+      if (latestLocal) {
+        setRemoteTour(normaliseItem(latestLocal));
+      }
+    };
+
+    productService
+      .getBySlug(id)
+      .then((item) => {
+        if (item) setRemoteTour(normaliseItem(item));
+      })
+      .catch(() => {});
+
+    window.addEventListener("storage", syncLocal);
+    return () => window.removeEventListener("storage", syncLocal);
+  }, [id, previewSlug]);
 
   const downloadItinerary = () => {
     if (!tour) return;

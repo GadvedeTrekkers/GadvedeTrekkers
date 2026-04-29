@@ -57,9 +57,14 @@ function Tours() {
 
   // Sync from backend on mount so admin changes reflect on all devices
   useEffect(() => {
+    const syncLocal = () => setSyncKey((k) => k + 1);
+
     syncProductsFromApi("tour", "gt_tours")
       .then((items) => { if (items) setSyncKey((k) => k + 1); })
       .catch(() => {});
+
+    window.addEventListener("storage", syncLocal);
+    return () => window.removeEventListener("storage", syncLocal);
   }, []);
 
   // Admin-first: if gt_tours has any data, use ONLY active admin tours.
