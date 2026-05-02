@@ -17,6 +17,20 @@
 import { getAdminItems, saveAdminItems, normaliseItem } from "../data/adminStorage";
 import { productsApi } from "../api/products.api";
 
+const SYNC_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+function getSyncedAt(storageKey) {
+  return Number(localStorage.getItem(`${storageKey}_syncedAt`) || 0);
+}
+
+function setSyncedAt(storageKey) {
+  localStorage.setItem(`${storageKey}_syncedAt`, Date.now().toString());
+}
+
+function isCacheStale(storageKey) {
+  return Date.now() - getSyncedAt(storageKey) > SYNC_TTL_MS;
+}
+
 function slugify(value = "") {
   return String(value)
     .toLowerCase()
@@ -33,10 +47,14 @@ export const productService = {
    * Writes API result back to localStorage so the app works offline.
    * Returns null if the API is unreachable (caller should use getLocal).
    */
-  async sync(productType, storageKey) {
+  async sync(productType, storageKey, { force = false } = {}) {
+    if (!force && !isCacheStale(storageKey)) {
+      return getAdminItems(storageKey) || null;
+    }
     const items = await productsApi.getAll(productType);
     if (!Array.isArray(items) || items.length === 0) return null;
     saveAdminItems(storageKey, items);
+    setSyncedAt(storageKey);
     return items;
   },
 
@@ -44,6 +62,9 @@ export const productService = {
   getLocal(storageKey) {
     return getAdminItems(storageKey);
   },
+
+  /** True when cache is older than TTL — useful for conditional refresh UI. */
+  isCacheStale,
 
   /** Fetch a single product by slug (detail pages). */
   async getBySlug(slug) {

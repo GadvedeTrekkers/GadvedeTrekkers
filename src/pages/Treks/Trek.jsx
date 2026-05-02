@@ -5,6 +5,7 @@ import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
 import { syncProductsFromApi } from "../../api/getAll";
+import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 
 const parseGallery = (value, fallback) => {
   try {
@@ -16,7 +17,7 @@ const parseGallery = (value, fallback) => {
 };
 
 function buildTreks(rawItems = getAdminItems("gt_treks")) {
-  if (rawItems.length === 0) return uniqueTreks;
+  if (rawItems.length === 0) return [];
 
   return rawItems
     .filter((t) => t.active !== false)
@@ -73,6 +74,7 @@ function Trek() {
   const [activeSort, setActiveSort] = useState("recommended");
   const [searchQuery, setSearchQuery] = useState("");
   const [treks, setTreks] = useState(() => buildTreks());
+  const [isLoading, setIsLoading] = useState(() => buildTreks().length === 0);
 
   useEffect(() => {
     const syncLocal = () => setTreks(buildTreks());
@@ -83,10 +85,15 @@ function Trek() {
         const mapped = buildTreks(items);
         if (mapped.length > 0) setTreks(mapped);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
 
     window.addEventListener("storage", syncLocal);
-    return () => window.removeEventListener("storage", syncLocal);
+    window.addEventListener("gt:storage-updated", syncLocal);
+    return () => {
+      window.removeEventListener("storage", syncLocal);
+      window.removeEventListener("gt:storage-updated", syncLocal);
+    };
   }, []);
   const initialVisibleTreks = 10;
 
@@ -523,8 +530,15 @@ function Trek() {
           })}
         </div>
 
+        {/* ── LOADING SKELETON ─────────────────────── */}
+        {isLoading && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20, marginBottom: 24 }}>
+            <ProductCardSkeleton count={6} />
+          </div>
+        )}
+
         {/* ── NO RESULTS ───────────────────────────── */}
-        {filteredTreks.length === 0 && (
+        {!isLoading && filteredTreks.length === 0 && (
           <div style={{
             textAlign: "center",
             padding: "48px 24px",

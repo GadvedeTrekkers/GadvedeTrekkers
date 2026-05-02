@@ -2,47 +2,50 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ivDestinations as _ivDestinations } from "../../data/industrialVisitsData";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
+import EnquiryModal from "../../components/EnquiryModal";
+import { syncProductsFromApi } from "../../api/getAll";
 
 const _parseLines = (v) => String(v || "").split("\n").map((s) => s.trim()).filter(Boolean);
-const _storedIV = getAdminItems("gt_iv");
-const destinations = _storedIV.length > 0
-  ? _storedIV
-      .filter((d) => d.active !== false)
-      .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
-      .map((d) => {
-        let gallery;
-        try { gallery = JSON.parse(d.imageGallery || "[]").filter(Boolean); } catch { gallery = []; }
-        const images = gallery.map((src, i) => ({ src, caption: `Image ${i + 1}` }));
 
-        const pricingSlabs = _parseLines(d.pricingSlabs).map((line) => {
-          const [students, price, note] = line.split("|");
-          return { students: students?.trim() || "", pricePerHead: price?.trim() ? Number(price.trim()) : null, note: note?.trim() || "" };
-        });
+function buildDestinations() {
+  const stored = getAdminItems("gt_iv");
+  if (stored.length === 0) return [];
+  return stored
+    .filter((d) => d.active !== false)
+    .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
+    .map((d) => {
+      let gallery;
+      try { gallery = JSON.parse(d.imageGallery || "[]").filter(Boolean); } catch { gallery = []; }
+      const images = gallery.map((src, i) => ({ src, caption: `Image ${i + 1}` }));
 
-        const itinerary = [];
-        _parseLines(d.itinerary).forEach((line) => {
-          const [dayKey, time, ...rest] = line.split("|");
-          const desc = rest.join("|");
-          const existing = itinerary.find((x) => x.day === dayKey?.trim());
-          const item = time?.trim() ? `${time.trim()} — ${desc}` : desc;
-          if (existing) existing.items.push(item);
-          else itinerary.push({ day: dayKey?.trim() || "Day", title: dayKey?.trim() || "", items: [item] });
-        });
+      const pricingSlabs = _parseLines(d.pricingSlabs).map((line) => {
+        const [students, price, note] = line.split("|");
+        return { students: students?.trim() || "", pricePerHead: price?.trim() ? Number(price.trim()) : null, note: note?.trim() || "" };
+      });
 
-        return {
-          ...d,
-          id: d.id || String(d.title || "").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-          images: images.length ? images : [],
-          highlights: Array.isArray(d.highlights) ? d.highlights : _parseLines(d.highlights),
-          industries: Array.isArray(d.industries) ? d.industries : _parseLines(d.industries),
-          includes: Array.isArray(d.includes) ? d.includes : _parseLines(d.includes),
-          excludes: Array.isArray(d.excludes) ? d.excludes : _parseLines(d.excludes),
-          pricingSlabs,
-          itinerary,
-        };
-      })
-  : _ivDestinations;
-import EnquiryModal from "../../components/EnquiryModal";
+      const itinerary = [];
+      _parseLines(d.itinerary).forEach((line) => {
+        const [dayKey, time, ...rest] = line.split("|");
+        const desc = rest.join("|");
+        const existing = itinerary.find((x) => x.day === dayKey?.trim());
+        const item = time?.trim() ? `${time.trim()} — ${desc}` : desc;
+        if (existing) existing.items.push(item);
+        else itinerary.push({ day: dayKey?.trim() || "Day", title: dayKey?.trim() || "", items: [item] });
+      });
+
+      return {
+        ...d,
+        id: d.id || String(d.title || "").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        images: images.length ? images : [],
+        highlights: Array.isArray(d.highlights) ? d.highlights : _parseLines(d.highlights),
+        industries: Array.isArray(d.industries) ? d.industries : _parseLines(d.industries),
+        includes: Array.isArray(d.includes) ? d.includes : _parseLines(d.includes),
+        excludes: Array.isArray(d.excludes) ? d.excludes : _parseLines(d.excludes),
+        pricingSlabs,
+        itinerary,
+      };
+    });
+}
 
 
 const whyChoose = [
@@ -64,6 +67,7 @@ const blogIdeas = [
 export default function IndustrialVisits() {
   const [activeDestination, setActiveDestination] = useState(null);
   const [expandedItinerary, setExpandedItinerary] = useState(new Set());
+  const [destinations, setDestinations] = useState(() => buildDestinations());
 
   const toggleItinerary = (id) =>
     setExpandedItinerary((prev) => {
@@ -75,6 +79,18 @@ export default function IndustrialVisits() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
     document.title = "Industrial Visits for Colleges & Schools in India | Delhi, Manali, Jaipur, Kerala, Goa | Gadvede Trekkers";
+
+    syncProductsFromApi("industrial", "gt_iv")
+      .then((items) => { if (items) setDestinations(buildDestinations()); })
+      .catch(() => {});
+
+    const onStorage = () => setDestinations(buildDestinations());
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("gt:storage-updated", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("gt:storage-updated", onStorage);
+    };
   }, []);
 
   const scrollTo = (id) => {

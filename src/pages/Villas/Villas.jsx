@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAdminItems } from "../../data/adminStorage";
+import { syncProductsFromApi } from "../../api/getAll";
 
 export const villasList = [
   {
@@ -607,9 +608,23 @@ export default function Villas() {
   const [minScore, setMinScore] = useState(0);
   const [selectedVilla, setSelectedVilla] = useState(null);
 
+  const [, setVillaSyncKey] = useState(0);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
     document.title = "Best Villas in Pune | Villa Booking | Gadvede Trekkers";
+
+    syncProductsFromApi("villa", "gt_villas")
+      .then((items) => { if (items) setVillaSyncKey((k) => k + 1); })
+      .catch(() => {});
+
+    const onStorage = () => setVillaSyncKey((k) => k + 1);
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("gt:storage-updated", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("gt:storage-updated", onStorage);
+    };
   }, []);
 
   const _storedVillas = getAdminItems("gt_villas");

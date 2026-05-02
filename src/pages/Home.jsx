@@ -6,6 +6,7 @@ import { rentalsList } from "../data/rentalsData";
 import { isHeritageEnabled } from "../data/featureFlags";
 import { ivDestinations as _ivDestinations } from "../data/industrialVisitsData";
 import EnquiryModal from "../components/EnquiryModal";
+import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import { getAdminItems, normaliseItem, saveAdminItems } from "../data/adminStorage";
 import BookingCTA from "../components/BookingCTA";
 import { syncProductsFromApi } from "../api/getAll";
@@ -31,23 +32,24 @@ function parseGalleryHome(value, fallback) {
     return fallback;
   }
 }
-const _storedTreks = getAdminItems("gt_treks");
-const activeTreks = _storedTreks.length > 0
-  ? _storedTreks
-      .filter((t) => t.active !== false)
-      .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
-      .map((t) => {
-        const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
-        const gallery = parseGalleryHome(t.imageGallery, fallbackGallery);
-        return {
-          ...normaliseItem(t),
-          slug: t.slug || slugifyTrekName(t.name),
-          image: gallery[0] || t.image,
-          gallery,
-          seasonalTag: t.seasonalTag || "",
-        };
-      })
-  : uniqueTreks;
+function buildActiveTreks() {
+  const stored = getAdminItems("gt_treks");
+  if (stored.length === 0) return [];
+  return stored
+    .filter((t) => t.active !== false)
+    .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
+    .map((t) => {
+      const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
+      const gallery = parseGalleryHome(t.imageGallery, fallbackGallery);
+      return {
+        ...normaliseItem(t),
+        slug: t.slug || slugifyTrekName(t.name),
+        image: gallery[0] || t.image,
+        gallery,
+        seasonalTag: t.seasonalTag || "",
+      };
+    });
+}
 
 // ─── Itinerary PDF download for home cards ────────────────────────────────────
 function downloadTrekPdf(trek) {
@@ -569,15 +571,32 @@ function Home() {
   const [enquiryDest, setEnquiryDest] = useState(null);
   const gridRef = useRef(null);
   const [, setSyncKey] = useState(0);
+  const [activeTreks, setActiveTreks] = useState(() => buildActiveTreks());
+  const [treksLoading, setTreksLoading] = useState(() => buildActiveTreks().length === 0);
 
-  // Sync camping + rentals from backend so Live/Off status is cross-device
+  // Sync all categories from backend so Live/Off status is cross-device
   useEffect(() => {
+    syncProductsFromApi("trek", "gt_treks")
+      .then((items) => { if (items) setActiveTreks(buildActiveTreks()); })
+      .catch(() => {})
+      .finally(() => setTreksLoading(false));
     syncProductsFromApi("camping", "gt_camping")
       .then((items) => { if (items) setSyncKey((k) => k + 1); })
       .catch(() => {});
     syncProductsFromApi("rental", "gt_rentals")
       .then((items) => { if (items) setSyncKey((k) => k + 1); })
       .catch(() => {});
+
+    const onStorage = () => {
+      setActiveTreks(buildActiveTreks());
+      setSyncKey((k) => k + 1);
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("gt:storage-updated", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("gt:storage-updated", onStorage);
+    };
   }, []);
 
   const loadedTreks  = activeTreks.slice(0, loadedCount);
@@ -1031,13 +1050,19 @@ function Home() {
               <button onClick={goPrev} style={arrowStyle("left")} aria-label="Previous treks">‹</button>
             )}
 
-            <div ref={gridRef} className={`row g-3 ht-grid-wrap ${slideAnim}`}>
-              {visibleTreks.map((trek) => (
-                <div className="col-12 col-sm-6 col-md-3" key={trek.name}>
-                  <HomeTrekCard trek={trek} />
-                </div>
-              ))}
-            </div>
+            {treksLoading ? (
+              <div className="row g-3">
+                <ProductCardSkeleton count={4} />
+              </div>
+            ) : (
+              <div ref={gridRef} className={`row g-3 ht-grid-wrap ${slideAnim}`}>
+                {visibleTreks.map((trek) => (
+                  <div className="col-12 col-sm-6 col-md-3" key={trek.name}>
+                    <HomeTrekCard trek={trek} />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {canNext && (
               <button onClick={goNext} style={arrowStyle("right")} aria-label="Next treks">›</button>
