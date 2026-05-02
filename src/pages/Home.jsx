@@ -34,8 +34,8 @@ function parseGalleryHome(value, fallback) {
 }
 function buildActiveTreks() {
   const stored = getAdminItems("gt_treks");
-  if (stored.length === 0) return [];
-  return stored
+  const source = stored.length > 0 ? stored : uniqueTreks;
+  return source
     .filter((t) => t.active !== false)
     .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
     .map((t) => {
