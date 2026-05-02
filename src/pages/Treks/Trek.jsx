@@ -17,9 +17,9 @@ const parseGallery = (value, fallback) => {
 };
 
 function buildTreks(rawItems = getAdminItems("gt_treks")) {
-  if (rawItems.length === 0) return [];
+  const source = rawItems.length > 0 ? rawItems : uniqueTreks;
 
-  return rawItems
+  return source
     .filter((t) => t.active !== false)
     .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
     .map((t) => {
