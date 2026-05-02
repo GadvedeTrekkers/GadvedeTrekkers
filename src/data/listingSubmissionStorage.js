@@ -172,3 +172,9 @@ export async function hydrateListingSubmissions(submissionType) {
   saveListingSubmissions(submissionType, mapped);
   return mapped;
 }
+
+export async function fetchPublicListings(submissionType) {
+  const remote = await apiRequest(`/api/listings/public/${encodeURIComponent(submissionType)}`);
+  if (!Array.isArray(remote)) return [];
+  return remote.map((row) => mapRemoteSubmissionToLocal(submissionType, row));
+}

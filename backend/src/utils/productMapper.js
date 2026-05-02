@@ -4,8 +4,8 @@ const PRODUCT_KEY_TO_TYPE = {
   gt_camping: "camping",
   gt_rentals: "rental",
   gt_heritage: "heritage",
-  gt_industrial: "industrial",
-  gt_industrial_visits: "industrial",
+  gt_iv: "industrial",
+  gt_villas: "villa",
 };
 
 const PRODUCT_TYPE_TO_KEY = Object.fromEntries(
