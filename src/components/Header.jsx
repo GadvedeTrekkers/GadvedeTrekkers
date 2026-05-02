@@ -73,7 +73,7 @@ function Header() {
       </div>
 
     <nav
-         className="navbar navbar-expand-lg navbar-dark shadow-sm py-3"
+         className="navbar navbar-expand-lg navbar-dark shadow-sm py-1 py-lg-3"
          style={{ backgroundColor: "#198754" }}>
       <div className="container">
 
@@ -86,9 +86,9 @@ function Header() {
           <img
             src={logo}
             alt="Gadvede Trekkers Logo"
-            style={{ height: "clamp(52px, 11vw, 80px)", marginRight: "12px", objectFit: "contain" }}
+            style={{ height: "clamp(36px, 8vw, 80px)", marginRight: "8px", objectFit: "contain" }}
           />
-          <span style={{ fontSize: "clamp(1rem, 3.4vw, 1.25rem)", lineHeight: 1.1 }}>
+          <span style={{ fontSize: "clamp(0.85rem, 3vw, 1.25rem)", lineHeight: 1.1 }}>
             Gadvede Trekkers
           </span>
         </Link>
@@ -96,8 +96,8 @@ function Header() {
         {/* Mobile phone number – shown between logo and hamburger */}
         <a
           href="tel:9856112727"
-          className="d-lg-none text-white text-decoration-none ms-auto me-3"
-          style={{ fontSize: "0.78rem", whiteSpace: "nowrap" }}
+          className="d-lg-none text-white text-decoration-none ms-auto me-2"
+          style={{ fontSize: "0.72rem", whiteSpace: "nowrap" }}
         >
           📞 9856112727
         </a>
