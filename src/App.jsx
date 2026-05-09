@@ -6,6 +6,7 @@ import AppRoutes from "./routes/AppRoutes";
 import WebsiteNotificationBridge from "./components/WebsiteNotificationBridge";
 import { ToastProvider } from "./components/Toast";
 import { ConfirmProvider } from "./components/ConfirmModal";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { syncAllProductCatalogs } from "./services/productCatalogSync.service";
 import { startRealtimeSync, stopRealtimeSync } from "./services/realtimeSync.service";
 
@@ -57,13 +58,15 @@ function AppInner() {
     <div className={hideChrome ? "" : "d-flex flex-column min-vh-100"}>
       <WebsiteNotificationBridge />
       {!hideChrome && <Header />}
-      {hideChrome ? (
-        <AppRoutes />
-      ) : (
-        <main className="flex-fill">
+      <ErrorBoundary>
+        {hideChrome ? (
           <AppRoutes />
-        </main>
-      )}
+        ) : (
+          <main className="flex-fill">
+            <AppRoutes />
+          </main>
+        )}
+      </ErrorBoundary>
       {!hideChrome && <Footer />}
     </div>
   );

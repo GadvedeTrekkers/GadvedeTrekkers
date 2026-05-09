@@ -1,9 +1,12 @@
 import { getAdminToken } from "../data/authStorage";
 
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://resourceful-balance-production-ed41.up.railway.app"
+  import.meta.env.VITE_API_BASE_URL || ""
 ).replace(/\/$/, "");
+
+if (!API_BASE_URL) {
+  console.warn("VITE_API_BASE_URL is not set. API calls will fail.");
+}
 
 function buildUrl(path) {
   return `${API_BASE_URL}${path}`;
