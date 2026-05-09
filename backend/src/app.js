@@ -36,7 +36,58 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.get("/", (req, res) => {
-  res.json({ success: true, message: "Backend is working" });
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gadvede Trekkers — API</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a1628; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .card { background: #111f35; border: 1px solid #1e3a5f; border-radius: 20px; padding: 2.5rem; max-width: 600px; width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,0.4); }
+    .logo { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+    .logo-icon { width: 48px; height: 48px; background: linear-gradient(135deg, #0d9488, #065f46); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .logo-text h1 { font-size: 1.2rem; font-weight: 700; color: #fff; }
+    .logo-text p { font-size: 0.8rem; color: #64748b; }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 6px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; margin-bottom: 2rem; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .section-title { font-size: 0.7rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+    .endpoints { display: flex; flex-direction: column; gap: 8px; margin-bottom: 2rem; }
+    .endpoint { display: flex; align-items: center; gap: 10px; background: #0d1b2e; border: 1px solid #1e3a5f; border-radius: 10px; padding: 10px 14px; }
+    .method { font-size: 0.7rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; min-width: 40px; text-align: center; }
+    .get { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    .post { background: rgba(16,185,129,0.2); color: #34d399; }
+    .path { font-size: 0.85rem; color: #94a3b8; font-family: monospace; }
+    .desc { font-size: 0.75rem; color: #475569; margin-left: auto; }
+    .footer { font-size: 0.75rem; color: #334155; text-align: center; border-top: 1px solid #1e3a5f; padding-top: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">🏔️</div>
+      <div class="logo-text">
+        <h1>Gadvede Trekkers</h1>
+        <p>Backend API Server</p>
+      </div>
+    </div>
+    <div class="status-badge"><div class="dot"></div> All systems operational</div>
+    <div class="section-title">Available Endpoints</div>
+    <div class="endpoints">
+      <div class="endpoint"><span class="method get">GET</span><span class="path">/api/health</span><span class="desc">Health check</span></div>
+      <div class="endpoint"><span class="method get">GET</span><span class="path">/api/products</span><span class="desc">Product listings</span></div>
+      <div class="endpoint"><span class="method post">POST</span><span class="path">/api/auth/admin/login</span><span class="desc">Admin login</span></div>
+      <div class="endpoint"><span class="method get">GET</span><span class="path">/api/bookings</span><span class="desc">Bookings (auth)</span></div>
+      <div class="endpoint"><span class="method get">GET</span><span class="path">/api/customers</span><span class="desc">Customers (auth)</span></div>
+      <div class="endpoint"><span class="method get">GET</span><span class="path">/api/enquiries</span><span class="desc">Enquiries (auth)</span></div>
+      <div class="endpoint"><span class="method get">GET</span><span class="path">/api/payments</span><span class="desc">Payments (auth)</span></div>
+    </div>
+    <div class="footer">Gadvede Trekkers &copy; ${new Date().getFullYear()} &mdash; API v1.0</div>
+  </div>
+</body>
+</html>`);
 });
 
 app.use("/api/auth",       authRoutes);
