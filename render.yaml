@@ -1,16 +1,24 @@
+# ─────────────────────────────────────────────────────────────────
+#  Gadvede Trekkers — Render Blueprint
+#  Two services: backend (Node/Express) + frontend (React/Vite static)
+#
+#  Deploy via: Render Dashboard → New → Blueprint
+#  Repo: https://github.com/vedantvc17/GadvedeTrekkers
+# ─────────────────────────────────────────────────────────────────
+
 services:
-  # ── Backend (Express API) ──────────────────────────────────────────────────
+  # ── 1. Backend — Express API ───────────────────────────────────
   - type: web
     name: gadvede-backend
     runtime: node
     rootDir: backend
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node src/server.js
     envVars:
       - key: NODE_VERSION
         value: 20
       - key: PORT
-        value: 4000
+        value: 10000
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
@@ -30,12 +38,13 @@ services:
       - key: GMAIL_APP_PASSWORD
         sync: false
 
-  # ── Frontend (React + Vite static site) ───────────────────────────────────
+  # ── 2. Frontend — React/Vite static site ──────────────────────
   - type: web
     name: gadvede-frontend
     runtime: static
+    rootDir: .
     buildCommand: npm install && npm run build
-    staticPublishPath: dist
+    staticPublishPath: ./dist
     envVars:
       - key: NODE_VERSION
         value: 20
