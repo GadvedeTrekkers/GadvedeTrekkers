@@ -23,6 +23,7 @@ const app = express();
 const PRODUCTION_ORIGINS = [
   "https://gadvede.com",
   "https://www.gadvede.com",
+  "https://gadvedetrekkersfrontend.onrender.com",
 ];
 
 const _envOrigins = process.env.CORS_ORIGIN
