@@ -54,12 +54,16 @@ function AppInner() {
   }, [isAdmin]);
 
   return (
-    <div className="d-flex flex-column min-vh-100">
+    <div className={hideChrome ? "" : "d-flex flex-column min-vh-100"}>
       <WebsiteNotificationBridge />
       {!hideChrome && <Header />}
-      <main className="flex-fill">
+      {hideChrome ? (
         <AppRoutes />
-      </main>
+      ) : (
+        <main className="flex-fill">
+          <AppRoutes />
+        </main>
+      )}
       {!hideChrome && <Footer />}
     </div>
   );
