@@ -7,18 +7,22 @@
 # ─────────────────────────────────────────────────────────────────
 
 services:
-  # ── 1. Backend — Express API ───────────────────────────────────
+  # ── 1. Backend — Express API + Admin Panel ─────────────────────
   - type: web
     name: gadvede-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: cd .. && npm install && npm run build:admin && cd backend && npm install
     startCommand: node src/server.js
     envVars:
       - key: NODE_VERSION
         value: 20
       - key: PORT
         value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_URL
+        sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
@@ -38,7 +42,7 @@ services:
       - key: GMAIL_APP_PASSWORD
         sync: false
 
-  # ── 2. Frontend — React/Vite static site ──────────────────────
+  # ── 2. Frontend — React/Vite static site (Public Website) ─────
   - type: web
     name: gadvede-frontend
     runtime: static

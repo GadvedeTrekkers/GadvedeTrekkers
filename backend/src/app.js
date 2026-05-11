@@ -230,4 +230,24 @@ app.get("/api/health/db/tables", async (req, res) => {
   return res.json({ success: true, data: payload });
 });
 
+// ═══════════════════════════════════════════════════════════════
+// Serve Admin Panel (Static Files)
+// ═══════════════════════════════════════════════════════════════
+
+const adminDistPath = path.join(__dirname, "../admin-dist");
+
+// Serve static files from admin-dist
+app.use(express.static(adminDistPath));
+
+// Serve admin panel for all non-API routes
+app.get("*", (req, res) => {
+  // Don't serve admin panel for API routes
+  if (req.path.startsWith("/api")) {
+    return res.status(404).json({ error: "API endpoint not found" });
+  }
+  
+  // Serve admin panel index.html
+  res.sendFile(path.join(adminDistPath, "index.html"));
+});
+
 export default app;

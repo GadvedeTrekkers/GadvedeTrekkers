@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "build:admin": "cd .. && npm run build:admin && cd backend",
     "test": "vitest run",
     "test:watch": "vitest"
   },
