@@ -9,6 +9,7 @@ import { ConfirmProvider } from "./components/ConfirmModal";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { syncAllProductCatalogs } from "./services/productCatalogSync.service";
 import { startRealtimeSync, stopRealtimeSync } from "./services/realtimeSync.service";
+import { startKeepAlive, stopKeepAlive } from "./services/keepAlive.service";
 
 function AppInner() {
   const { pathname } = useLocation();

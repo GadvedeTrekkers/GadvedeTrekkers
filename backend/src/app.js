@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import productsRoutes   from "./routes/products.routes.js";
 import listingsRoutes   from "./routes/listings.routes.js";
 import bookingsRoutes   from "./routes/bookings.routes.js";
@@ -14,6 +16,9 @@ import vendorsRoutes        from "./routes/vendors.routes.js";
 import trekPaymentsRoutes   from "./routes/trekPayments.routes.js";
 import supabasePublic   from "./config/supabasePublicClient.js";
 import supabaseAdmin    from "./config/supabaseAdminClient.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
