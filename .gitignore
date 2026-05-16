@@ -11,7 +11,6 @@ node_modules
 dist
 dist-ssr
 admin-dist
-backend/admin-dist
 *.local
 playwright-report
 test-results
