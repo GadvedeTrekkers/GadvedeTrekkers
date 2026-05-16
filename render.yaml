@@ -1,19 +1,26 @@
 # ─────────────────────────────────────────────────────────────────
 #  Gadvede Trekkers — Render Blueprint
-#  Two services: backend (Node/Express) + frontend (React/Vite static)
+#
+#  Service 1: Backend (Express API) + Admin Panel (served as static)
+#    URL: https://gadvedetrekkers.onrender.com
+#    - Serves all /api/* routes
+#    - Serves admin panel at /admin/* (built into backend/admin-dist/)
+#
+#  Service 2: Frontend (React/Vite static site)
+#    URL: https://gadvedetrekkersfrontend.onrender.com
 #
 #  Deploy via: Render Dashboard → New → Blueprint
-#  Repo: https://github.com/vedantvc17/GadvedeTrekkers
 # ─────────────────────────────────────────────────────────────────
 
 services:
-  # ── 1. Backend — Express API + Admin Panel ─────────────────────
+  # ── 1. Backend + Admin Panel ───────────────────────────────────
   - type: web
     name: gadvede-backend
     runtime: node
     rootDir: backend
-    buildCommand: cd .. && npm install && npm run build:admin && cd backend && npm install
+    buildCommand: cd .. && npm ci && npm run build:admin && cd backend && npm ci
     startCommand: node src/server.js
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: 20
@@ -21,46 +28,64 @@ services:
         value: 10000
       - key: NODE_ENV
         value: production
-      - key: BACKEND_URL
-        sync: false
+
+      # ── Supabase ── set these in Render dashboard
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+
+      # ── Admin Auth ── set these in Render dashboard
       - key: ADMIN_API_KEY
         sync: false
       - key: ADMIN_USERS
         sync: false
       - key: JWT_SECRET
         sync: false
+
+      # ── CORS ── comma-separated list of allowed frontend origins
       - key: CORS_ORIGIN
         sync: false
+
+      # ── Keep-Alive ── set to this service's own URL
+      - key: BACKEND_URL
+        sync: false
+
+      # ── Gmail ── for email notifications
       - key: GMAIL_USER
         sync: false
       - key: GMAIL_APP_PASSWORD
         sync: false
 
-  # ── 2. Frontend — React/Vite static site (Public Website) ─────
+  # ── 2. Frontend — React/Vite static site ──────────────────────
   - type: web
     name: gadvede-frontend
     runtime: static
     rootDir: .
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: NODE_VERSION
         value: 20
+
+      # ── Backend API URL ── point to the backend service above
       - key: VITE_API_BASE_URL
         sync: false
-      - key: VITE_ADMIN_API_KEY
-        sync: false
+
+      # ── Supabase (public anon key only — safe to expose) ──
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
+
+      # ── Admin API Key ── must match backend ADMIN_API_KEY
+      - key: VITE_ADMIN_API_KEY
+        sync: false
+
     routes:
+      # SPA fallback — React Router handles all routes
       - type: rewrite
         source: /*
         destination: /index.html
