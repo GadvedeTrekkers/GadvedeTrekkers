@@ -173,6 +173,19 @@ function TrekDetails() {
 
   const downloadItinerary = () => {
     if (!trek) return;
+    
+    // If trek has itineraryPdfUrl, download that PDF directly
+    if (trek.itineraryPdfUrl) {
+      const link = document.createElement('a');
+      link.href = trek.itineraryPdfUrl;
+      link.download = `${trek.name.replace(/[^a-z0-9]/gi, '-')}-itinerary.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+    
+    // Otherwise, generate HTML itinerary for printing
     const css = `body{font-family:Arial,sans-serif;max-width:820px;margin:0 auto;padding:32px;color:#1a1a1a}
       h1{color:#0a6a47;font-size:2rem;margin-bottom:4px}
       h2{color:#0a6a47;margin-top:28px;font-size:0.95rem;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid #d5f6e4;padding-bottom:6px}
@@ -315,7 +328,7 @@ function TrekDetails() {
                 </div>
                 <div className="td-hero-actions">
                   <BookingCTA trek={trek} selectedDate={selectedBookingDate} className="btn td-book-btn" label={`Book on WhatsApp — ₹${trek.price}`} />
-                  <button className="btn td-itinerary-btn" onClick={downloadItinerary} style={{ background: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.3)" }}>⬇️ Download PDF</button>
+                  <button className="btn td-itinerary-btn" onClick={downloadItinerary} style={{ background: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.3)" }}>Itinerary</button>
                   <button className="btn td-itinerary-btn" onClick={() => setActiveTab("gallery")}>View Photos</button>
                 </div>
               </div>
@@ -522,7 +535,7 @@ function TrekDetails() {
           </div>
           <div className="td-hero-actions">
             <BookingCTA trek={trek} selectedDate={selectedBookingDate} className="btn td-book-btn" label={`Book on WhatsApp — ₹${trek.price}`} />
-            <button className="btn td-itinerary-btn" onClick={downloadItinerary} style={{ background: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.3)" }}>⬇️ Download PDF</button>
+            <button className="btn td-itinerary-btn" onClick={downloadItinerary} style={{ background: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.3)" }}>Itinerary</button>
             <button className="btn td-itinerary-btn" onClick={() => setActiveTab("itinerary")}>View Itinerary</button>
             <a
               href={buildShareWhatsAppUrl(trek, referralUrl, selectedBookingDate)}
@@ -692,7 +705,7 @@ function TrekDetails() {
               <h2 className="td-section-title" style={{ marginBottom: 0 }}>Trek Itinerary</h2>
               {(itinerary?.days?.length > 0) && (
                 <button onClick={downloadItinerary} className="btn td-itinerary-btn" style={{ background: "linear-gradient(135deg,#065f46,#047857)", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.82rem" }}>
-                  ⬇️ Download Itinerary
+                  Itinerary
                 </button>
               )}
             </div>

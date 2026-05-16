@@ -466,9 +466,45 @@ function ManagePage({
   const [editId, setEditId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
+  const [reimporting, setReimporting] = useState(false);
   const formRef = useRef(null);
   const [aiModal, setAiModal] = useState({ open: false, label: "", prompt: "" });
   const [copied, setCopied] = useState(false);
+
+  const handleReimport = async () => {
+    if (!window.confirm(`Re-import all ${seedData.length} items from seed data? This will add any missing items to Supabase.`)) {
+      return;
+    }
+
+    setReimporting(true);
+    try {
+      const token = localStorage.getItem('gt_admin_token');
+      const response = await fetch('http://localhost:10000/api/admin-tools/reimport-seed-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          storageKey,
+          seedData
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`✅ Re-import complete!\n\nImported: ${result.data.imported}\nUpdated: ${result.data.updated}\nFailed: ${result.data.failed}\n\nRefreshing page...`);
+        window.location.reload();
+      } else {
+        alert(`❌ Re-import failed: ${result.error}`);
+      }
+    } catch (error) {
+      alert(`❌ Re-import error: ${error.message}`);
+    } finally {
+      setReimporting(false);
+    }
+  };
 
   const openAiPrompt = (f) => {
     const prompt = f.aiPrompt(form);
@@ -546,7 +582,19 @@ function ManagePage({
     <div className="adm-page">
       <div className="adm-page-header">
         <h3 className="adm-page-title">{icon} {title}</h3>
-        <button className="btn btn-success btn-sm px-3" onClick={openCreate}>+ Add New</button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {seedData.length > 0 && (
+            <button 
+              className="btn btn-outline-primary btn-sm px-3" 
+              onClick={handleReimport}
+              disabled={reimporting}
+              title={`Re-import all ${seedData.length} items from seed data`}
+            >
+              {reimporting ? '⏳ Re-importing...' : '🔄 Re-import Seed Data'}
+            </button>
+          )}
+          <button className="btn btn-success btn-sm px-3" onClick={openCreate}>+ Add New</button>
+        </div>
       </div>
 
       {showForm && (

@@ -15,8 +15,52 @@ function readString(key) {
   return localStorage.getItem(key) || sessionStorage.getItem(key) || "";
 }
 
+/**
+ * Decode JWT token without verification to check expiration
+ */
+function decodeJWT(token) {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if the stored token is expired
+ */
+export function isTokenExpired() {
+  const token = getAdminToken();
+  if (!token) return true;
+  
+  const decoded = decodeJWT(token);
+  if (!decoded || !decoded.exp) return true;
+  
+  // exp is in seconds, Date.now() is in milliseconds
+  const isExpired = decoded.exp * 1000 < Date.now();
+  
+  if (isExpired) {
+    console.warn("authStorage: Token has expired");
+  }
+  
+  return isExpired;
+}
+
 export function isAdminAuthenticated() {
-  return readString(ADMIN_FLAG_KEY) === "true" && Boolean(getAdminToken());
+  const hasFlag = readString(ADMIN_FLAG_KEY) === "true";
+  const hasToken = Boolean(getAdminToken());
+  const tokenValid = !isTokenExpired();
+  
+  if (hasFlag && hasToken && !tokenValid) {
+    console.warn("authStorage: Token expired, clearing session");
+    clearAdminSession();
+    return false;
+  }
+  
+  return hasFlag && hasToken && tokenValid;
 }
 
 export function getAdminToken() {

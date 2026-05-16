@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -12,12 +12,36 @@ import { startRealtimeSync, stopRealtimeSync } from "./services/realtimeSync.ser
 import { startKeepAlive, stopKeepAlive } from "./services/keepAlive.service";
 
 function AppInner() {
-  const { pathname } = useLocation();
-  const isAdmin    = pathname.startsWith("/admin");
-  const isTicket   = pathname === "/ticket";
-  const isEmployee = pathname.startsWith("/employee");
+  const location = useLocation();
+  const [displayLocation, setDisplayLocation] = useState(location);
+  const [transitionStage, setTransitionStage] = useState("fadeIn");
+  const isAdmin    = location.pathname.startsWith("/admin");
+  const isTicket   = location.pathname === "/ticket";
+  const isEmployee = location.pathname.startsWith("/employee");
 
   const hideChrome = isAdmin || isTicket || isEmployee;
+
+  // Perfect smooth page transition
+  useEffect(() => {
+    if (location.pathname !== displayLocation.pathname) {
+      // Start fade out
+      setTransitionStage("fadeOut");
+      
+      // Wait for complete fade out, then switch content
+      const fadeOutTimer = setTimeout(() => {
+        setDisplayLocation(location);
+        setTransitionStage("switching"); // New intermediate state
+        window.scrollTo({ top: 0, behavior: "instant" });
+        
+        // Start fade in after a brief moment
+        setTimeout(() => {
+          setTransitionStage("fadeIn");
+        }, 40);
+      }, 400);
+
+      return () => clearTimeout(fadeOutTimer);
+    }
+  }, [location, displayLocation]);
 
   useEffect(() => {
     let syncInFlight = false;
@@ -56,14 +80,27 @@ function AppInner() {
   }, [isAdmin]);
 
   return (
-    <div className={hideChrome ? "" : "d-flex flex-column min-vh-100"}>
+    <div className={hideChrome ? "" : "d-flex flex-column min-vh-100"} key={displayLocation.pathname}>
       <WebsiteNotificationBridge />
       {!hideChrome && <Header />}
       <ErrorBoundary>
         {hideChrome ? (
-          <AppRoutes />
+          <div
+            style={{
+              opacity: transitionStage === "fadeIn" ? 1 : 0,
+              transition: transitionStage === "fadeIn" ? "opacity 0.4s ease-out" : "none",
+            }}
+          >
+            <AppRoutes />
+          </div>
         ) : (
-          <main className="flex-fill">
+          <main 
+            className="flex-fill"
+            style={{
+              opacity: transitionStage === "fadeIn" ? 1 : 0,
+              transition: transitionStage === "fadeIn" ? "opacity 0.4s ease-out" : "none",
+            }}
+          >
             <AppRoutes />
           </main>
         )}

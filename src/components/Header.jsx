@@ -5,6 +5,7 @@ import logo from "../assets/gadvedelogo.png";
 function Header() {
   const [openMenu, setOpenMenu] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const headerRef = useRef(null);
   const rentalCategories = ["Tents"];
   const featuredTours = [
@@ -32,6 +33,20 @@ function Header() {
     };
   }, []);
 
+  // Scroll effect
+  useEffect(() => {
+    function handleScroll() {
+      if (window.scrollY > 50) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const toggleMobileNav = () => {
     setMobileNavOpen((current) => {
       const next = !current;
@@ -52,43 +67,94 @@ function Header() {
   };
 
   return (
-    <header ref={headerRef}>
+    <header ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 1030, transition: "all 0.3s ease" }}>
       {/* ── Top contact bar – desktop only ── */}
       <div
-        className="d-none d-lg-block"
-        style={{ backgroundColor: "#146c43", borderBottom: "1px solid rgba(255,255,255,0.15)" }}
+        className={`d-none d-lg-block ${isScrolled ? "d-none" : ""}`}
+        style={{ 
+          backgroundColor: "#146c43", 
+          borderBottom: "1px solid rgba(255,255,255,0.15)",
+          transition: "all 0.3s ease",
+          overflow: "hidden",
+          position: "relative",
+          width: "100%",
+          height: "32px"
+        }}
       >
-        <div className="container d-flex justify-content-end align-items-center py-1 gap-3">
-          <span className="text-white" style={{ fontSize: "0.8rem" }}>
-            📞{" "}
-            <a href="tel:9856112727" className="text-white text-decoration-none fw-semibold">
-              9856112727
-            </a>
-            {" / "}
-            <a href="tel:9856122727" className="text-white text-decoration-none fw-semibold">
-              9856122727
-            </a>
-          </span>
+        {/* Scrolling text animation - single text continuous loop */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            overflow: "hidden",
+            width: "100%"
+          }}
+        >
+          <div
+            style={{
+              display: "inline-block",
+              whiteSpace: "nowrap",
+              animation: "scrollTextLoop 30s linear infinite",
+              fontSize: "0.85rem",
+              color: "#fff",
+              fontWeight: 600,
+              lineHeight: "32px",
+              willChange: "transform"
+            }}
+          >
+            📞 For More Details & Registration - Call: 9856112727 / 9856122727
+          </div>
         </div>
       </div>
 
+      <style>{`
+        @keyframes scrollTextLoop {
+          0% {
+            transform: translateX(100vw);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
+        }
+      `}</style>
+
     <nav
-         className="navbar navbar-expand-lg navbar-dark shadow-sm py-1 py-lg-2"
-         style={{ backgroundColor: "#198754" }}>
+         className="navbar navbar-expand-lg navbar-dark shadow-sm"
+         style={{ 
+           backgroundColor: "#198754", 
+           paddingTop: isScrolled ? "0.25rem" : "0.25rem", 
+           paddingBottom: isScrolled ? "0.25rem" : "0.25rem",
+           transition: "all 0.3s ease"
+         }}>
       <div className="container">
 
         {/* LOGO + NAME */}
         <Link
-          className="navbar-brand d-flex align-items-center fw-semibold fs-5 text-white"
+          className="navbar-brand d-flex align-items-center fw-semibold fs-5 text-white me-auto"
           to="/"
-          style={{ minWidth: 0 }}
+          style={{ minWidth: 0, marginLeft: "-44px", transition: "all 0.3s ease" }}
         >
           <img
             src={logo}
             alt="Gadvede Trekkers Logo"
-            style={{ height: "clamp(32px, 6vw, 48px)", marginRight: "8px", objectFit: "contain" }}
+            style={{ 
+              height: isScrolled ? "clamp(24px, 4vw, 32px)" : "clamp(48px, 8vw, 64px)", 
+              marginRight: isScrolled ? "8px" : "12px", 
+              objectFit: "contain",
+              transition: "all 0.3s ease"
+            }}
           />
-          <span style={{ fontSize: "clamp(0.82rem, 2.2vw, 1.1rem)", lineHeight: 1.1 }}>
+          <span style={{ 
+            fontSize: isScrolled ? "clamp(0.85rem, 2.2vw, 1.1rem)" : "clamp(1.3rem, 3.5vw, 1.8rem)", 
+            lineHeight: 1.2, 
+            fontWeight: 800,
+            transition: "all 0.3s ease"
+          }}>
             Gadvede Trekkers
           </span>
         </Link>
@@ -121,8 +187,9 @@ function Header() {
             mobileNavOpen ? "is-open" : ""
           }`}
           id="navbarContent"
+          style={{ fontWeight: 600 }}
         >
-          <ul className="navbar-nav align-items-center">
+          <ul className="navbar-nav align-items-center" style={{ marginLeft: "20px" }}>
             <li
               className="nav-item dropdown mx-3"
               onMouseEnter={() => setOpenMenu("events")}

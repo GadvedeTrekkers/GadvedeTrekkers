@@ -30,6 +30,7 @@ const FIELDS = [
   { key: "pickupPointMapLabel", label: "Pickup Map CTA", col: 6, placeholder: "View on Map" },
   { key: "filters", label: "Bottom Filters / Tags", type: "textarea", col: 12, placeholder: "Weekend Trips | 5 to 8 Days | Group Tours" },
   { key: "imageGallery", label: "Tour Banner Images", type: "imageGallery", col: 12 },
+  { key: "itineraryPdfUrl", label: "Itinerary PDF URL", placeholder: "/itineraries/tour-name.pdf or https://...", col: 12 },
   { key: "tourDateBatches", label: "Tour Dates & WhatsApp Group Links", type: "trekDates", col: 12 },
   {
     key: "overview", label: "Tour Overview", type: "textarea", col: 12,

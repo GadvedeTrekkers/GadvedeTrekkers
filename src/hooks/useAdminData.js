@@ -91,16 +91,28 @@ export function useAdminData(key, seedData = []) {
 
   const toggleActive = (id) => {
     const previous = data;
+    const item = previous.find((entry) => entry.id === id);
+    
+    if (!item) {
+      console.error("useAdminData.toggleActive: Item not found with id", id);
+      return;
+    }
+
     const next = previous.map((entry) =>
       entry.id === id ? { ...entry, active: !entry.active } : entry
     );
     persist(next);
 
     const updated = next.find((entry) => entry.id === id);
+    console.log("useAdminData.toggleActive: Toggling status for", item.name || item.title, "to", updated.active);
+    
     productService
       .save(key, updated)
+      .then(() => {
+        console.log("useAdminData.toggleActive: Successfully synced status change");
+      })
       .catch((err) => {
-        console.warn("useAdminData.toggleActive: backend sync failed -", err.message);
+        console.error("useAdminData.toggleActive: backend sync failed -", err.message);
         persist(previous);
         showSyncFailure("This status change", err);
       });

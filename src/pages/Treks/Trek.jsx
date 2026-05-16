@@ -503,26 +503,48 @@ function Trek() {
                     )}
                   </div>
 
-                  <div className="trek-card-actions">
-                    <BookingCTA trek={trek} className="btn trek-primary-btn" label="Book on WhatsApp" />
-                    <Link
-                      to={`/treks/${slugifyTrekName(trek.name)}`}
+                  <div className="trek-card-actions" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <BookingCTA trek={trek} className="btn trek-primary-btn" label="Book on WhatsApp" style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", border: "2px solid #000", fontWeight: "bold", color: "#fff" }} />
+                      <Link
+                        to={`/treks/${slugifyTrekName(trek.name)}`}
+                        className="btn trek-secondary-btn"
+                        style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", border: "2px solid #000", background: "#dc3545", fontWeight: "bold", color: "#fff" }}
+                      >
+                        Details
+                      </Link>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (trek.itineraryPdfUrl) {
+                          const link = document.createElement('a');
+                          link.href = trek.itineraryPdfUrl;
+                          link.download = `${trek.name.replace(/[^a-z0-9]/gi, '-')}-itinerary.pdf`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }
+                      }}
                       className="btn trek-secondary-btn"
+                      style={{ 
+                        width: "100%", 
+                        padding: "6px 12px", 
+                        fontSize: "0.85rem", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center", 
+                        gap: 4, 
+                        border: "2px solid #000", 
+                        background: trek.itineraryPdfUrl ? "#ffc107" : "#9ca3af", 
+                        fontWeight: "bold", 
+                        color: "#fff", 
+                        cursor: trek.itineraryPdfUrl ? "pointer" : "default"
+                      }}
+                      title={trek.itineraryPdfUrl ? "Download Itinerary PDF" : "Itinerary coming soon"}
                     >
-                      View Details
-                    </Link>
-                    <a
-                      href={createWhatsAppInquiryUrl({
-                        packageName: trek.name,
-                        location: trek.location,
-                        category: "Trek",
-                      })}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn trek-secondary-btn"
-                    >
-                      WhatsApp
-                    </a>
+                      Itinerary
+                    </button>
                   </div>
                 </div>
               </article>
