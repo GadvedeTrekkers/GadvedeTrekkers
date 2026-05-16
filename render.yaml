@@ -17,7 +17,7 @@ services:
   - type: web
     name: gadvede-backend
     runtime: node
-    buildCommand: npm install --include=dev && npm run build:admin && npm ci --prefix backend
+    buildCommand: NODE_ENV=development npm install && npm run build:admin && npm ci --prefix backend
     startCommand: node backend/src/server.js
     healthCheckPath: /api/health
     envVars:
