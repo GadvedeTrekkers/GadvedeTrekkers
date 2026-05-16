@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recover Treks - Admin Tool</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.danger {
+            background: #f44336;
+        }
+        button.danger:hover {
+            background: #da190b;
+        }
+        button.secondary {
+            background: #2196F3;
+        }
+        button.secondary:hover {
+            background: #0b7dda;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .progress {
+            margin-top: 10px;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Recover Treks Tool</h1>
+        <p class="subtitle">Diagnostic and recovery tool for missing treks in admin panel</p>
+
+        <div class="section">
+            <h3>Step 1: Check Current Status</h3>
+            <button onclick="checkStatus()">Check Status</button>
+            <div id="status-result"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 2: Sync LocalStorage to Supabase</h3>
+            <p>If localStorage has more treks than Supabase, use this to sync them.</p>
+            <button onclick="syncToSupabase()">Sync to Supabase</button>
+            <div id="sync-progress"></div>
+            <div id="sync-result"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 3: Reset and Re-import Seed Data</h3>
+            <p><strong>⚠️ Warning:</strong> This will clear localStorage and reload seed data.</p>
+            <button class="danger" onclick="resetAndReimport()">Reset & Re-import</button>
+            <div id="reset-result"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 4: View All Treks</h3>
+            <button class="secondary" onclick="viewAllTreks()">View All Treks</button>
+            <div id="treks-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:10000';
+
+        function showResult(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            el.className = `result ${type}`;
+            el.textContent = message;
+        }
+
+        async function checkStatus() {
+            showResult('status-result', 'Checking status...', 'info');
+            
+            try {
+                // Check localStorage
+                const localTreks = JSON.parse(localStorage.getItem('gt_treks') || '[]');
+                
+                // Check Supabase
+                const token = localStorage.getItem('gt_admin_token');
+                if (!token) {
+                    showResult('status-result', '❌ Not logged in! Please log in to admin panel first.', 'error');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/products/admin/list?storageKey=gt_treks`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const supabaseTreks = data.data || [];
+                
+                let status = `📊 Status Report:\n\n`;
+                status += `📦 LocalStorage: ${localTreks.length} treks\n`;
+                status += `🗄️  Supabase: ${supabaseTreks.length} treks\n\n`;
+                
+                if (localTreks.length > supabaseTreks.length) {
+                    status += `⚠️  LocalStorage has ${localTreks.length - supabaseTreks.length} MORE treks than Supabase!\n`;
+                    status += `   → Use Step 2 to sync them.\n\n`;
+                    status += `Missing in Supabase:\n`;
+                    const supabaseNames = new Set(supabaseTreks.map(t => t.name));
+                    localTreks.forEach(t => {
+                        if (!supabaseNames.has(t.name)) {
+                            status += `   - ${t.name}\n`;
+                        }
+                    });
+                    showResult('status-result', status, 'warning');
+                } else if (localTreks.length < supabaseTreks.length) {
+                    status += `⚠️  Supabase has ${supabaseTreks.length - localTreks.length} MORE treks than LocalStorage!\n`;
+                    status += `   → Refresh admin panel to update cache.\n`;
+                    showResult('status-result', status, 'warning');
+                } else {
+                    status += `✅ LocalStorage and Supabase are in sync!\n`;
+                    status += `\nTreks:\n`;
+                    localTreks.forEach((t, i) => {
+                        status += `${i+1}. ${t.name}\n`;
+                    });
+                    showResult('status-result', status, 'success');
+                }
+            } catch (error) {
+                showResult('status-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function syncToSupabase() {
+            const token = localStorage.getItem('gt_admin_token');
+            if (!token) {
+                showResult('sync-result', '❌ Not logged in! Please log in to admin panel first.', 'error');
+                return;
+            }
+
+            const treks = JSON.parse(localStorage.getItem('gt_treks') || '[]');
+            if (treks.length === 0) {
+                showResult('sync-result', '❌ No treks in localStorage to sync!', 'error');
+                return;
+            }
+
+            showResult('sync-result', `Starting sync of ${treks.length} treks...`, 'info');
+            
+            const progressDiv = document.getElementById('sync-progress');
+            progressDiv.innerHTML = '<div class="progress"><div class="progress-bar" id="progress-bar">0%</div></div>';
+            
+            let synced = 0;
+            let failed = 0;
+            let results = [];
+
+            for (let i = 0; i < treks.length; i++) {
+                const trek = treks[i];
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/products/admin/upsert`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            storageKey: 'gt_treks',
+                            item: trek
+                        })
+                    });
+
+                    if (response.ok) {
+                        synced++;
+                        results.push(`✅ ${trek.name}`);
+                    } else {
+                        failed++;
+                        results.push(`❌ ${trek.name} (HTTP ${response.status})`);
+                    }
+                } catch (error) {
+                    failed++;
+                    results.push(`❌ ${trek.name} (${error.message})`);
+                }
+
+                // Update progress
+                const progress = Math.round(((i + 1) / treks.length) * 100);
+                document.getElementById('progress-bar').style.width = progress + '%';
+                document.getElementById('progress-bar').textContent = progress + '%';
+            }
+
+            const summary = `\n📊 Sync Complete!\n\n✅ Synced: ${synced}\n❌ Failed: ${failed}\n\n${results.join('\n')}`;
+            showResult('sync-result', summary, failed === 0 ? 'success' : 'warning');
+            
+            if (synced > 0) {
+                showResult('sync-result', summary + '\n\n🔄 Refresh admin panel to see changes!', 'success');
+            }
+        }
+
+        function resetAndReimport() {
+            if (!confirm('⚠️ This will clear localStorage and reload seed data. Continue?')) {
+                return;
+            }
+
+            showResult('reset-result', 'Clearing localStorage...', 'info');
+            
+            localStorage.removeItem('gt_treks');
+            localStorage.removeItem('gt_treks_syncedAt');
+            
+            showResult('reset-result', 
+                '✅ LocalStorage cleared!\n\n' +
+                'Next steps:\n' +
+                '1. Go to admin panel: http://localhost:5173/admin/treks\n' +
+                '2. The page will load seed data (24 treks)\n' +
+                '3. Wait for auto-sync to Supabase\n' +
+                '4. All treks should appear\n\n' +
+                'Click the link above to continue.', 
+                'success'
+            );
+        }
+
+        function viewAllTreks() {
+            const treks = JSON.parse(localStorage.getItem('gt_treks') || '[]');
+            
+            if (treks.length === 0) {
+                showResult('treks-result', '❌ No treks in localStorage!', 'error');
+                return;
+            }
+
+            let output = `📋 All Treks (${treks.length}):\n\n`;
+            treks.forEach((trek, i) => {
+                output += `${i+1}. ${trek.name}\n`;
+                output += `   Location: ${trek.location || 'N/A'}\n`;
+                output += `   Difficulty: ${trek.difficulty || 'N/A'}\n`;
+                output += `   Price: ₹${trek.price || 'N/A'}\n`;
+                output += `   Active: ${trek.active ? '✅' : '❌'}\n\n`;
+            });
+
+            showResult('treks-result', output, 'info');
+        }
+
+        // Auto-check status on load
+        window.addEventListener('load', () => {
+            setTimeout(checkStatus, 500);
+        });
+    </script>
+</body>
+</html>
