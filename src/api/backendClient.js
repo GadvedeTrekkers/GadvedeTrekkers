@@ -1,4 +1,4 @@
-import { getAdminToken } from "../data/authStorage";
+import { getAdminToken, clearAdminSession } from "../data/authStorage";
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || ""
@@ -29,26 +29,61 @@ export async function apiRequest(path, { method = "GET", body, admin = false } =
 
   if (admin) {
     const token = getAdminToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+    if (!token) {
+      console.error("apiRequest: No authentication token found");
+      clearAdminSession();
+      // Redirect to login page
+      if (window.location.pathname.startsWith('/admin') && !window.location.pathname.includes('/login')) {
+        window.location.href = '/admin/login';
+      }
+      throw new Error("No authentication token found. Please log in again.");
     }
+    headers["Authorization"] = `Bearer ${token}`;
+    console.log("apiRequest: Making authenticated request to", path);
   }
 
-  const response = await fetch(buildUrl(path), {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  try {
+    const url = buildUrl(path);
+    console.log("apiRequest: Fetching", method, url);
+    
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
 
-  if (response.status === 204) {
-    return null;
+    console.log(`apiRequest: Response status ${response.status} for ${path}`);
+
+    // Handle 401 Unauthorized - token expired or invalid
+    if (response.status === 401 && admin) {
+      console.error("apiRequest: 401 Unauthorized - clearing session and redirecting to login");
+      clearAdminSession();
+      // Redirect to login page
+      if (window.location.pathname.startsWith('/admin') && !window.location.pathname.includes('/login')) {
+        window.location.href = '/admin/login';
+      }
+      throw new Error("Your session has expired. Please log in again.");
+    }
+
+    if (response.status === 204) {
+      return null;
+    }
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const errorMsg = payload?.error || payload?.message || `Request failed: ${response.status}`;
+      console.error("apiRequest: Request failed -", errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    return payload?.data ?? payload;
+  } catch (error) {
+    // Network errors (backend not running, CORS issues, etc.)
+    if (error.name === 'TypeError' || error.message.toLowerCase().includes('fetch')) {
+      console.error("apiRequest: Network error - backend might be down", error);
+      throw new Error("Cannot connect to backend. Please ensure the backend server is running at " + API_BASE_URL);
+    }
+    throw error;
   }
-
-  const payload = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(payload?.error || payload?.message || `Request failed: ${response.status}`);
-  }
-
-  return payload?.data ?? payload;
 }

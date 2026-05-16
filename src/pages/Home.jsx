@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { uniqueTreks, slugifyTrekName } from "../data/treks";
 import { campingList } from "../data/campingData";
+import { getPrimaryCampingImage } from "../data/campingDetailsData";
 import { rentalsList } from "../data/rentalsData";
 import { isHeritageEnabled } from "../data/featureFlags";
 import { ivDestinations as _ivDestinations } from "../data/industrialVisitsData";
@@ -258,22 +259,25 @@ function HomeTrekCard({ trek }) {
           <span>{trek.nextDate}</span>
         </div>
 
-        <div className="trek-card-actions">
-          <BookingCTA trek={trek} className="btn trek-primary-btn" label="Book on WhatsApp" />
-          <Link
-            to={`/treks/${slugifyTrekName(trek.name)}`}
-            className="btn trek-secondary-btn"
-          >
-            View Details
-          </Link>
+        <div className="trek-card-actions" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <BookingCTA trek={trek} className="btn trek-primary-btn" label="Book on WhatsApp" style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", border: "2px solid #000", fontWeight: "bold", color: "#fff" }} />
+            <Link
+              to={`/treks/${slugifyTrekName(trek.name)}`}
+              className="btn trek-secondary-btn"
+              style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", border: "2px solid #000", background: "#dc3545", fontWeight: "bold", color: "#fff" }}
+            >
+              Details
+            </Link>
+          </div>
           <button
             type="button"
             className="btn trek-secondary-btn"
-            style={{ padding: "0 12px", minWidth: 0, fontSize: "0.8rem", display: "flex", alignItems: "center", gap: 4 }}
+            style={{ width: "100%", padding: "6px 12px", fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, border: "2px solid #000", background: "#ffc107", fontWeight: "bold", color: "#fff" }}
             title="Download Itinerary PDF"
             onClick={(e) => { e.preventDefault(); downloadTrekPdf(trek); }}
           >
-            ⬇️ PDF
+            Itinerary
           </button>
         </div>
       </div>
@@ -340,11 +344,17 @@ function TourCategoryCard({ cat }) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          position: "relative", borderRadius: 16, overflow: "hidden",
-          cursor: "pointer", aspectRatio: "4/3",
-          boxShadow: hovered ? "0 16px 42px rgba(0,0,0,0.28)" : "0 4px 16px rgba(0,0,0,0.12)",
-          transform: hovered ? "translateY(-6px) scale(1.01)" : "translateY(0) scale(1)",
-          transition: "all 0.32s cubic-bezier(0.34,1.56,0.64,1)",
+          position: "relative", 
+          borderRadius: 16, 
+          overflow: "hidden",
+          cursor: "pointer", 
+          aspectRatio: "4/3",
+          border: "2px solid #000",
+          boxShadow: hovered 
+            ? "0 50px 100px rgba(0, 0, 0, 0.35), 0 25px 50px rgba(17, 24, 39, 0.30), 0 12px 24px rgba(15, 111, 74, 0.25), 0 6px 12px rgba(0, 0, 0, 0.20)"
+            : "0 6px 16px rgba(17, 24, 39, 0.12), 0 3px 8px rgba(0, 0, 0, 0.08)",
+          transform: hovered ? "translateY(-20px) scale(1.04)" : "translateY(0) scale(1)",
+          transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.25s ease",
         }}
       >
         <img
@@ -485,16 +495,17 @@ function IVDestCard({ dest, idx, onEnquire }) {
 function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) {
   const [index, setIndex] = useState(visibleCount);
   const [transition, setTransition] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
 
   const safeItems = Array.isArray(items) ? items : [];
 
   useEffect(() => {
-    if (safeItems.length <= visibleCount) return undefined;
+    if (safeItems.length <= visibleCount || isPaused) return undefined;
     const timer = setInterval(() => {
       setIndex((prev) => prev + 1);
     }, interval);
     return () => clearInterval(timer);
-  }, [interval, safeItems.length, visibleCount]);
+  }, [interval, safeItems.length, visibleCount, isPaused]);
 
   useEffect(() => {
     setIndex(visibleCount);
@@ -541,7 +552,11 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
   return (
     <div className="trek-slider-container">
       <button className="trek-slider-btn left" onClick={prev} aria-label="Previous">❮</button>
-      <div className="trek-slider-wrapper">
+      <div 
+        className="trek-slider-wrapper"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
         <div
           className="trek-slider-track"
           style={{
@@ -570,7 +585,7 @@ function Home() {
   const [slideAnim, setSlideAnim]     = useState("");
   const [enquiryDest, setEnquiryDest] = useState(null);
   const gridRef = useRef(null);
-  const [, setSyncKey] = useState(0);
+  const [syncKey, setSyncKey] = useState(0);
   const [activeTreks, setActiveTreks] = useState(() => buildActiveTreks());
   const [treksLoading, setTreksLoading] = useState(() => buildActiveTreks().length === 0);
 
@@ -691,34 +706,41 @@ function Home() {
   ];
 
   // Camping — admin-first: only show active admin items; fall back to campingList if admin is empty
-  const _adminCampsRaw = getAdminItems("gt_camping");
-  const _activeCamps = _adminCampsRaw.length > 0
-    ? _adminCampsRaw.filter((c) => c.active !== false).map(normaliseItem)
-    : campingList;
-  const campsiteCards = _activeCamps.slice(0, 8).map((camp) => ({
-    id: camp.slug || CAMPING_ROUTE_BY_NAME[camp.name] || null,
-    name: camp.shortName || camp.name,
-    price: `Starting ₹${camp.price}`,
-    img: camp.image,
-    location: camp.location,
-  })).filter((c) => c.img);
+  // Use syncKey to force re-render when data changes
+  const campsiteCards = useMemo(() => {
+    const _adminCampsRaw = getAdminItems("gt_camping");
+    const _activeCamps = _adminCampsRaw.length > 0
+      ? _adminCampsRaw.filter((c) => c.active !== false).map(normaliseItem)
+      : campingList;
+    
+    return _activeCamps.slice(0, 8).map((camp) => ({
+      id: camp.slug || CAMPING_ROUTE_BY_NAME[camp.name] || null,
+      name: camp.shortName || camp.name,
+      price: `Starting ₹${camp.price}`,
+      img: getPrimaryCampingImage(camp),
+      location: camp.location,
+    }));
+  }, [syncKey]);
 
   // Rentals — admin-first: only show active admin items; fall back to rentalsList if admin is empty
-  const _adminRentalsRaw = getAdminItems("gt_rentals");
-  const _activeRentals = _adminRentalsRaw.length > 0
-    ? _adminRentalsRaw.filter((item) => item.active !== false).map(normaliseItem)
-    : rentalsList;
-  const tentRentalCards = _activeRentals
-    .filter((item) => (item.category || "").toLowerCase() === "tents" && item.image)
-    .slice(0, 8)
-    .map((item, idx) => ({
-      id: item.id || `tent-rental-${idx}`,
-      name: item.name,
-      price: `Starting ₹${Number(item.price || item.pricePerDay || 0).toLocaleString("en-IN")}/day`,
-      img: item.image,
-      location: item.location,
-      item,
-    }));
+  // Use syncKey to force re-render when data changes
+  const tentRentalCards = useMemo(() => {
+    const _adminRentalsRaw = getAdminItems("gt_rentals");
+    const _activeRentals = _adminRentalsRaw.length > 0
+      ? _adminRentalsRaw.filter((item) => item.active !== false).map(normaliseItem)
+      : rentalsList;
+    return _activeRentals
+      .filter((item) => (item.category || "").toLowerCase() === "tents" && item.image)
+      .slice(0, 8)
+      .map((item, idx) => ({
+        id: item.id || `tent-rental-${idx}`,
+        name: item.name,
+        price: `Starting ₹${Number(item.price || item.pricePerDay || 0).toLocaleString("en-IN")}/day`,
+        img: item.image,
+        location: item.location,
+        item,
+      }));
+  }, [syncKey]);
 
   const _storedIV = getAdminItems("gt_iv");
   const ivDestinations = _storedIV.length > 0
@@ -1138,7 +1160,22 @@ function Home() {
             items={campsiteCards}
             visibleCount={3}
             renderCard={(camp) => (
-              <div className="card border-0 shadow-sm h-100 text-center">
+              <div 
+                className="card h-100 text-center" 
+                style={{
+                  border: "2px solid #000",
+                  borderRadius: "22px",
+                  overflow: "hidden",
+                  boxShadow: "0 6px 16px rgba(17, 24, 39, 0.12), 0 3px 8px rgba(0, 0, 0, 0.08)",
+                  transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-20px) scale(1.04)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0) scale(1)";
+                }}
+              >
                 <img src={camp.img} className="card-img-top standard-img" alt={camp.name} />
                 <div className="card-body">
                   <h5>{camp.name}</h5>
@@ -1202,7 +1239,24 @@ function Home() {
             items={tentRentalCards}
             visibleCount={3}
             renderCard={(item) => (
-              <div className="card border-0 shadow-sm h-100 text-center">
+              <div 
+                className="card h-100 text-center" 
+                style={{
+                  border: "2px solid #000",
+                  borderRadius: "22px",
+                  overflow: "hidden",
+                  boxShadow: "0 6px 16px rgba(17, 24, 39, 0.12), 0 3px 8px rgba(0, 0, 0, 0.08)",
+                  transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-20px) scale(1.04)";
+                  e.currentTarget.style.boxShadow = "0 50px 100px rgba(0, 0, 0, 0.35), 0 25px 50px rgba(17, 24, 39, 0.30), 0 12px 24px rgba(15, 111, 74, 0.25), 0 6px 12px rgba(0, 0, 0, 0.20)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0) scale(1)";
+                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(17, 24, 39, 0.12), 0 3px 8px rgba(0, 0, 0, 0.08)";
+                }}
+              >
                 <img src={item.img} className="card-img-top standard-img" alt={item.name} />
                 <div className="card-body d-flex flex-column">
                   <h5>{item.name}</h5>

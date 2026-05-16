@@ -323,7 +323,7 @@ function TourDetails() {
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 18 }}>
               <BookingCTA trek={tour} className="btn" style={{ background: "#13a567", color: "#fff", borderRadius: 12, padding: "14px 24px", fontWeight: 800 }} label={`Book on WhatsApp — ₹${tour.price}`} />
               <button onClick={downloadItinerary} className="btn" style={{ background: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 12, padding: "14px 24px", fontWeight: 700, cursor: "pointer" }}>
-                ⬇️ Download PDF
+                Itinerary
               </button>
               <a
                 href={createWhatsAppInquiryUrl({ packageName: tour.name, location: tour.destinationLine || tour.location || "Maharashtra", category: "Tour" })}
@@ -500,7 +500,7 @@ function TourDetails() {
                 <h2 style={{ ...sectionTitleStyle, marginBottom: 0 }}>Detailed Itinerary</h2>
                 {itineraryDays.length > 0 && (
                   <button onClick={downloadItinerary} style={{ background: "linear-gradient(135deg,#065f46,#047857)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                    ⬇️ Download Itinerary
+                    Itinerary
                   </button>
                 )}
               </div>

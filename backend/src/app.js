@@ -14,6 +14,7 @@ import notifyRoutes         from "./routes/notifications.routes.js";
 import employeesRoutes      from "./routes/employees.routes.js";
 import vendorsRoutes        from "./routes/vendors.routes.js";
 import trekPaymentsRoutes   from "./routes/trekPayments.routes.js";
+import adminToolsRoutes     from "./routes/admin-tools.routes.js";
 import supabasePublic   from "./config/supabasePublicClient.js";
 import supabaseAdmin    from "./config/supabaseAdminClient.js";
 
@@ -108,6 +109,7 @@ app.use("/api/notify",        notifyRoutes);
 app.use("/api/employees",     employeesRoutes);
 app.use("/api/vendors",       vendorsRoutes);
 app.use("/api/trek-payments", trekPaymentsRoutes);
+app.use("/api/admin-tools",   adminToolsRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, status: "ok" });

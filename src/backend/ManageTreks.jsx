@@ -235,6 +235,7 @@ const FIELDS = [
   { key: "rating",        label: "Rating (1-5)",           type: "number",  placeholder: "4.9", col: 4 },
   { key: "reviews",       label: "Review Count",           type: "number",  placeholder: "190", col: 4 },
   { key: "imageGallery",  label: "Trek Banner Images",     type: "imageGallery", col: 12 },
+  { key: "itineraryPdfUrl", label: "Itinerary PDF URL", placeholder: "/itineraries/trek-name.pdf or https://...", col: 12 },
   { key: "trekDateBatches", label: "Trek Dates & WhatsApp Group Links", type: "trekDates", col: 12 },
 
   /* ── Trek Details ── */

@@ -127,39 +127,56 @@ export async function getAdminProducts(req, res) {
 }
 
 export async function upsertAdminProduct(req, res) {
-  const { storageKey, item } = req.body;
-  const productRow = productRowFromItem(storageKey, item);
+  try {
+    const { storageKey, item } = req.body;
+    console.log("upsertAdminProduct: Received request", { storageKey, itemId: item?.id, itemName: item?.name || item?.title });
+    
+    const productRow = productRowFromItem(storageKey, item);
 
-  if (!productRow) {
-    return res.status(400).json({ success: false, error: "Invalid product payload" });
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from("products")
-    .upsert(productRow, { onConflict: "slug" })
-    .select("*")
-    .single();
-
-  if (error) {
-    return res.status(500).json({ success: false, error: error.message });
-  }
-
-  if (productRow.product_type === "trek") {
-    const batchRows = buildBatchRows(data.id, item);
-    const departureRows = buildDepartureRows(data.id, item);
-
-    await supabaseAdmin.from("product_batches").delete().eq("product_id", data.id);
-    await supabaseAdmin.from("product_departure_plans").delete().eq("product_id", data.id);
-
-    if (batchRows.length) {
-      await supabaseAdmin.from("product_batches").insert(batchRows);
+    if (!productRow) {
+      console.error("upsertAdminProduct: Invalid product payload");
+      return res.status(400).json({ success: false, error: "Invalid product payload" });
     }
-    if (departureRows.length) {
-      await supabaseAdmin.from("product_departure_plans").insert(departureRows);
-    }
-  }
 
-  return res.json({ success: true, data: await enrichProduct(data) });
+    console.log("upsertAdminProduct: Upserting to Supabase", { slug: productRow.slug });
+    
+    const { data, error } = await supabaseAdmin
+      .from("products")
+      .upsert(productRow, { onConflict: "slug" })
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("upsertAdminProduct: Supabase error", error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+    
+    console.log("upsertAdminProduct: Upsert successful", { id: data.id });
+
+    if (productRow.product_type === "trek") {
+      console.log("upsertAdminProduct: Processing trek-specific data");
+      const batchRows = buildBatchRows(data.id, item);
+      const departureRows = buildDepartureRows(data.id, item);
+
+      await supabaseAdmin.from("product_batches").delete().eq("product_id", data.id);
+      await supabaseAdmin.from("product_departure_plans").delete().eq("product_id", data.id);
+
+      if (batchRows.length) {
+        await supabaseAdmin.from("product_batches").insert(batchRows);
+      }
+      if (departureRows.length) {
+        await supabaseAdmin.from("product_departure_plans").insert(departureRows);
+      }
+    }
+
+    console.log("upsertAdminProduct: Enriching product data");
+    const enrichedData = await enrichProduct(data);
+    console.log("upsertAdminProduct: Success");
+    return res.json({ success: true, data: enrichedData });
+  } catch (err) {
+    console.error("upsertAdminProduct: Unexpected error", err);
+    return res.status(500).json({ success: false, error: err.message || "Internal server error" });
+  }
 }
 
 export async function deleteAdminProduct(req, res) {

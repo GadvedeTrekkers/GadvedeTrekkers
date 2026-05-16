@@ -16,6 +16,7 @@ const TREK_FIELDS = [
   { key: "rating",        label: "Rating (1-5)",        type: "number", placeholder: "4.9", col: 4 },
   { key: "reviews",       label: "Review Count",        type: "number", placeholder: "190", col: 4 },
   { key: "image",         label: "Image URL",           col: 12, placeholder: "https://..." },
+  { key: "itineraryPdfUrl", label: "Itinerary PDF URL", placeholder: "/itineraries/trek-name.pdf or https://...", col: 12 },
   { key: "about",         label: "About / Overview",    type: "textarea", col: 12 },
   { key: "highlights",    label: "Trek Highlights (one per line)", type: "textarea", col: 12 },
 ];
@@ -23,7 +24,7 @@ const TREK_FIELDS = [
 const TREK_DEFAULT = {
   name: "", region: "mumbai", location: "", difficulty: "Medium",
   duration: "", altitude: "", price: "", originalPrice: "", nextDate: "",
-  rating: "", reviews: "", image: "", about: "", highlights: "", active: true,
+  rating: "", reviews: "", image: "", itineraryPdfUrl: "", about: "", highlights: "", active: true,
 };
 
 const TOUR_FIELDS = [
@@ -35,11 +36,12 @@ const TOUR_FIELDS = [
   { key: "originalPrice", label: "Original Price (₹)",  type: "number", placeholder: "12999", col: 4 },
   { key: "nextDate",      label: "Next Date",           placeholder: "10 Oct 2025", col: 4 },
   { key: "image",         label: "Image URL",           col: 12, placeholder: "https://..." },
+  { key: "itineraryPdfUrl", label: "Itinerary PDF URL", placeholder: "/itineraries/tour-name.pdf or https://...", col: 12 },
 ];
 
 const TOUR_DEFAULT = {
   name: "", region: "himachal", duration: "",
-  price: "", originalPrice: "", nextDate: "", image: "", active: true,
+  price: "", originalPrice: "", nextDate: "", image: "", itineraryPdfUrl: "", active: true,
 };
 
 const CAMPING_FIELDS = [
@@ -53,11 +55,12 @@ const CAMPING_FIELDS = [
   { key: "badge",         label: "Badge",               placeholder: "Most Popular", col: 4 },
   { key: "description",   label: "Description",         type: "textarea", col: 12, placeholder: "Brief description of the camping experience…" },
   { key: "image",         label: "Image URL",           col: 12, placeholder: "https://..." },
+  { key: "itineraryPdfUrl", label: "Itinerary PDF URL", placeholder: "/itineraries/camping-name.pdf or https://...", col: 12 },
 ];
 
 const CAMPING_DEFAULT = {
   name: "", shortName: "", type: "Lake", location: "", duration: "",
-  price: "", originalPrice: "", badge: "", description: "", image: "", active: true,
+  price: "", originalPrice: "", badge: "", description: "", image: "", itineraryPdfUrl: "", active: true,
 };
 
 const HERITAGE_FIELDS = [
@@ -70,11 +73,12 @@ const HERITAGE_FIELDS = [
   { key: "nextDate",      label: "Next Date",           placeholder: "20 Oct 2025", col: 4 },
   { key: "rating",        label: "Rating (1-5)",        type: "number", placeholder: "4.8", col: 4 },
   { key: "image",         label: "Image URL",           col: 12, placeholder: "https://..." },
+  { key: "itineraryPdfUrl", label: "Itinerary PDF URL", placeholder: "/itineraries/heritage-name.pdf or https://...", col: 12 },
 ];
 
 const HERITAGE_DEFAULT = {
   name: "", type: "city", location: "", duration: "",
-  price: "", originalPrice: "", nextDate: "", rating: "", image: "", active: true,
+  price: "", originalPrice: "", nextDate: "", rating: "", image: "", itineraryPdfUrl: "", active: true,
 };
 
 const RENTAL_FIELDS = [
@@ -85,11 +89,12 @@ const RENTAL_FIELDS = [
   { key: "originalPrice", label: "Original Price (₹)",  type: "number", placeholder: "499", col: 3 },
   { key: "rating",        label: "Rating (1-5)",        type: "number", placeholder: "4.7", col: 4 },
   { key: "image",         label: "Image URL",           col: 12, placeholder: "https://..." },
+  { key: "itineraryPdfUrl", label: "Itinerary PDF URL", placeholder: "/itineraries/rental-name.pdf or https://...", col: 12 },
 ];
 
 const RENTAL_DEFAULT = {
   name: "", category: "Tents", location: "",
-  price: "", originalPrice: "", rating: "", image: "", active: true,
+  price: "", originalPrice: "", rating: "", image: "", itineraryPdfUrl: "", active: true,
 };
 
 /* ─── Generic field-based Add form ─── */

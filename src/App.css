@@ -1,1 +1,45 @@
-/* App.css — intentionally empty. Global styles are in index.css */
+/* App.css — Page transition styles */
+
+/* Smooth page transitions */
+.page-transition-enter {
+  opacity: 0;
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transition: opacity 0.4s ease-out;
+}
+
+.page-transition-exit {
+  opacity: 1;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transition: opacity 0.4s ease-out;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Link hover transitions */
+a {
+  transition: color 0.3s ease, opacity 0.3s ease;
+}
+
+/* Button transitions */
+button, .btn {
+  transition: all 0.3s ease;
+}
+
+/* Card hover effects */
+.card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
