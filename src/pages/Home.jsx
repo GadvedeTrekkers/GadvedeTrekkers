@@ -508,31 +508,39 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
     return () => mq.removeEventListener("change", handler);
   }, []);
 
+  // On mobile show 1 card, on tablet show 2, on desktop use the passed visibleCount
+  const effectiveVisible = isMobile
+    ? 1
+    : window.matchMedia("(max-width: 1024px)").matches
+      ? Math.min(2, visibleCount)
+      : visibleCount;
+
   const safeItems = Array.isArray(items) ? items : [];
+
+  // Reset index when effectiveVisible changes (e.g. screen resize)
+  useEffect(() => {
+    setIndex(effectiveVisible);
+    setTransition(true);
+  }, [effectiveVisible, safeItems.length]);
 
   useEffect(() => {
     // No auto-rotation on mobile — user uses arrows
-    if (safeItems.length <= visibleCount || isPaused || isMobile) return undefined;
+    if (safeItems.length <= effectiveVisible || isPaused || isMobile) return undefined;
     const timer = setInterval(() => {
       setIndex((prev) => prev + 1);
     }, interval);
     return () => clearInterval(timer);
-  }, [interval, safeItems.length, visibleCount, isPaused, isMobile]);
-
-  useEffect(() => {
-    setIndex(visibleCount);
-    setTransition(true);
-  }, [safeItems.length, visibleCount]);
+  }, [interval, safeItems.length, effectiveVisible, isPaused, isMobile]);
 
   if (safeItems.length === 0) {
     return null;
   }
 
-  if (safeItems.length <= visibleCount) {
+  if (safeItems.length <= effectiveVisible) {
     return (
       <div className="row g-4">
         {safeItems.map((item, itemIndex) => (
-          <div className={`col-12 col-md-${12 / visibleCount}`} key={item.id || item.name || itemIndex}>
+          <div className={`col-12 col-md-${12 / effectiveVisible}`} key={item.id || item.name || itemIndex}>
             {renderCard(item, itemIndex)}
           </div>
         ))}
@@ -541,22 +549,22 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
   }
 
   const extended = [
-    ...safeItems.slice(-visibleCount),
+    ...safeItems.slice(-effectiveVisible),
     ...safeItems,
-    ...safeItems.slice(0, visibleCount),
+    ...safeItems.slice(0, effectiveVisible),
   ];
 
   const next = () => setIndex((prev) => prev + 1);
   const prev = () => setIndex((prev) => prev - 1);
 
   const handleTransitionEnd = () => {
-    if (index >= safeItems.length + visibleCount) {
+    if (index >= safeItems.length + effectiveVisible) {
       setTransition(false);
-      setIndex(visibleCount);
+      setIndex(effectiveVisible);
       requestAnimationFrame(() => requestAnimationFrame(() => setTransition(true)));
-    } else if (index < visibleCount) {
+    } else if (index < effectiveVisible) {
       setTransition(false);
-      setIndex(safeItems.length + visibleCount - 1);
+      setIndex(safeItems.length + effectiveVisible - 1);
       requestAnimationFrame(() => requestAnimationFrame(() => setTransition(true)));
     }
   };
@@ -572,13 +580,17 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
         <div
           className="trek-slider-track"
           style={{
-            transform: `translateX(-${index * (100 / visibleCount)}%)`,
+            transform: `translateX(-${index * (100 / effectiveVisible)}%)`,
             transition: transition ? "transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)" : "none",
           }}
           onTransitionEnd={handleTransitionEnd}
         >
           {extended.map((item, itemIndex) => (
-            <div className="trek-slide" key={`${item.id || item.name || "item"}-${itemIndex}`}>
+            <div
+              className="trek-slide"
+              key={`${item.id || item.name || "item"}-${itemIndex}`}
+              style={{ flex: `0 0 ${100 / effectiveVisible}%` }}
+            >
               {renderCard(item, itemIndex)}
             </div>
           ))}
