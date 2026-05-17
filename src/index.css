@@ -461,7 +461,6 @@ html, body {
   flex: 0 0 33.3333%; /* overridden by inline style on mobile */
   padding: 0 15px;
   min-width: 0;
-}
   transition: transform 0.3s ease;
 }
 
