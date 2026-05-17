@@ -4,7 +4,7 @@
  * by periodically pinging the health endpoint.
  */
 
-const PING_INTERVAL = 14 * 60 * 1000; // 14 minutes (Render free tier sleeps after 15 min)
+const PING_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:10000";
 
 let pingIntervalId = null;
