@@ -1,0 +1,33 @@
+User-agent: *
+Allow: /
+
+# Keep admin and employee portals out of search indexes
+Disallow: /admin/
+Disallow: /admin
+Disallow: /employee/
+Disallow: /employee-login
+Disallow: /qa/
+
+# Allow all public-facing pages
+Allow: /treks/
+Allow: /tours/
+Allow: /camping/
+Allow: /heritage/
+Allow: /rentals/
+Allow: /corporate/
+Allow: /industrial-visits
+Allow: /feedback
+Allow: /ticket
+Allow: /partner
+Allow: /vendor-register
+Allow: /list-event
+Allow: /list-property
+Allow: /list-campsite
+Allow: /villas
+Allow: /cancellation-policy
+
+# Sitemap
+Sitemap: https://www.gadvede.com/sitemap.xml
+
+# Crawl rate (requests per second — be gentle)
+Crawl-delay: 2

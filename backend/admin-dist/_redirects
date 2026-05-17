@@ -1,0 +1,5 @@
+# Gadvede Trekkers — Netlify SPA Redirect Rules
+# All routes fall back to index.html so React Router handles them client-side.
+# Admin and employee routes are handled by React Router (auth enforced in components).
+
+/*    /index.html   200
