@@ -30,6 +30,8 @@ const PRODUCTION_ORIGINS = [
   "https://gadvede.com",
   "https://www.gadvede.com",
   "https://gadvedetrekkersfrontend.onrender.com",
+  "https://gadvede-frontend.onrender.com",
+  "https://gadvede-backend.onrender.com",  // admin panel served from here
 ];
 
 const _envOrigins = process.env.CORS_ORIGIN
@@ -38,7 +40,16 @@ const _envOrigins = process.env.CORS_ORIGIN
 
 const allowedOrigins = Array.from(new Set([...PRODUCTION_ORIGINS, ..._envOrigins]));
 
-app.use(cors({ origin: allowedOrigins }));
+// Allow all origins for same-domain requests (admin panel calling its own backend)
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (same-origin, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
