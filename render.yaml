@@ -50,7 +50,7 @@ services:
 
       # ── Keep-Alive ── set to this service's own URL
       - key: BACKEND_URL
-        sync: false
+        value: https://gadvede-backend.onrender.com
 
       # ── Gmail ── for email notifications
       - key: GMAIL_USER
@@ -71,7 +71,7 @@ services:
 
       # ── Backend API URL ── point to the backend service above
       - key: VITE_API_BASE_URL
-        sync: false
+        value: https://gadvede-backend.onrender.com
 
       # ── Supabase (public anon key only — safe to expose) ──
       - key: VITE_SUPABASE_URL

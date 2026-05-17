@@ -31,6 +31,7 @@ const PRODUCTION_ORIGINS = [
   "https://www.gadvede.com",
   "https://gadvedetrekkersfrontend.onrender.com",
   "https://gadvede-frontend.onrender.com",
+  "https://gadvede-backend.onrender.com",
 ];
 
 const _envOrigins = process.env.CORS_ORIGIN
