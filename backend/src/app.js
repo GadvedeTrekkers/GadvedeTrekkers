@@ -240,6 +240,8 @@ app.get("/api/health/db/tables", async (req, res) => {
 
 const adminDistPath = path.join(__dirname, "../admin-dist");
 
+console.log("Admin dist path:", adminDistPath);
+
 // Serve static files from admin-dist
 app.use(express.static(adminDistPath));
 
@@ -249,9 +251,14 @@ app.get("*", (req, res) => {
   if (req.path.startsWith("/api")) {
     return res.status(404).json({ error: "API endpoint not found" });
   }
-  
-  // Serve admin panel index.html
-  res.sendFile(path.join(adminDistPath, "index.html"));
+
+  const indexPath = path.join(adminDistPath, "index.html");
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error("Failed to serve admin panel:", err.message, "| Path:", indexPath);
+      res.status(404).send(`Admin panel not found. Expected at: ${indexPath}`);
+    }
+  });
 });
 
 export default app;
