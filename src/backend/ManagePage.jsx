@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminData } from "../hooks/useAdminData";
 import { logActivity } from "../data/activityLogStorage";
+import { apiRequest } from "../api/backendClient";
 
 const CITY_STOPS = {
   Mumbai: ["Dadar", "Thane", "Borivali", "Ghatkopar", "Andheri", "Bandra", "CST / CSMT", "Kurla", "Mulund", "Vashi", "Panvel", "Kalyan"],
@@ -478,27 +479,14 @@ function ManagePage({
 
     setReimporting(true);
     try {
-      const token = localStorage.getItem('gt_admin_token');
-      const response = await fetch('http://localhost:10000/api/admin-tools/reimport-seed-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          storageKey,
-          seedData
-        })
+      const result = await apiRequest("/api/admin-tools/reimport-seed-data", {
+        method: "POST",
+        admin: true,
+        body: { storageKey, seedData },
       });
 
-      const result = await response.json();
-      
-      if (result.success) {
-        alert(`✅ Re-import complete!\n\nImported: ${result.data.imported}\nUpdated: ${result.data.updated}\nFailed: ${result.data.failed}\n\nRefreshing page...`);
-        window.location.reload();
-      } else {
-        alert(`❌ Re-import failed: ${result.error}`);
-      }
+      alert(`✅ Re-import complete!\n\nImported: ${result.imported}\nUpdated: ${result.updated}\nFailed: ${result.failed}\n\nRefreshing page...`);
+      window.location.reload();
     } catch (error) {
       alert(`❌ Re-import error: ${error.message}`);
     } finally {
