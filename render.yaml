@@ -17,7 +17,7 @@ services:
   - type: web
     name: gadvede-backend
     runtime: node
-    buildCommand: npm ci --prefix backend
+    buildCommand: cd backend && npm ci
     startCommand: node backend/src/server.js
     healthCheckPath: /api/health
     envVars:
