@@ -496,12 +496,14 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
   const [index, setIndex] = useState(visibleCount);
   const [transition, setTransition] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 768px)").matches);
+  const [isMobile, setIsMobile] = useState(
+    () => window.matchMedia("(max-width: 768px)").matches || window.matchMedia("(pointer: coarse)").matches
+  );
 
-  // Detect mobile — disable auto-rotation on phones/tablets
+  // Detect mobile/touch — disable auto-rotation on phones/tablets
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
-    const handler = (e) => setIsMobile(e.matches);
+    const handler = (e) => setIsMobile(e.matches || window.matchMedia("(pointer: coarse)").matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
