@@ -1,12 +1,15 @@
 import express from "express";
 import requireAdminJWT from "../middleware/requireAdminJWT.js";
 import supabaseAdmin from "../config/supabaseAdminClient.js";
+import { productRowFromItem } from "../utils/productMapper.js";
 
 const router = express.Router();
 
 /**
  * POST /api/admin-tools/reimport-seed-data
- * Re-import all seed data from frontend to Supabase
+ * Re-import all seed data from frontend to Supabase.
+ * Uses the same productRowFromItem mapper as the main upsert endpoint
+ * so column names are always correct.
  * Body: { storageKey: string, seedData: array }
  */
 router.post("/reimport-seed-data", requireAdminJWT, async (req, res) => {
@@ -22,101 +25,46 @@ router.post("/reimport-seed-data", requireAdminJWT, async (req, res) => {
 
     console.log(`[Admin Tools] Re-importing ${seedData.length} items for ${storageKey}`);
 
-    // Determine product type from storage key
-    const productTypeMap = {
-      gt_treks: "trek",
-      gt_tours: "tour",
-      gt_heritage: "heritage",
-      gt_camping: "camping",
-      gt_rentals: "rental",
-      gt_villas: "villa",
-      gt_iv: "iv",
-    };
-
-    const productType = productTypeMap[storageKey];
-    if (!productType) {
-      return res.status(400).json({
-        success: false,
-        error: `Unknown storage key: ${storageKey}`,
-      });
-    }
-
     let imported = 0;
-    let updated = 0;
     let failed = 0;
     const errors = [];
 
     for (const item of seedData) {
       try {
-        // Build product row
-        const productRow = {
-          slug: item.slug || "",
-          product_type: productType,
-          name: item.name || "",
-          subtitle: item.subtitle || "",
-          location: item.location || "",
-          region: item.region || "mumbai",
-          difficulty: item.difficulty || "Medium",
-          duration: item.duration || "",
-          altitude: item.altitude || "",
-          price: item.price || 0,
-          original_price: item.originalPrice || item.price || 0,
-          rating: item.rating || 0,
-          review_count: item.reviews || 0,
-          image_url: item.image || "",
-          image_gallery: item.imageGallery || "[]",
-          about: item.about || "",
-          history: item.history || "",
-          highlights: item.highlights || "",
-          included: item.included || "",
-          not_included: item.notIncluded || "",
-          things_to_carry: item.thingsToCarry || "",
-          itinerary_pdf_url: item.itineraryPdfUrl || "",
-          sort_order: item.sortOrder || 999,
-          is_active: item.active !== false,
-          metadata: JSON.stringify({
-            baseVillage: item.baseVillage || "",
-            climbTime: item.climbTime || "",
-            distance: item.distance || "",
-            wildlifeSanctuary: item.wildlifeSanctuary || "",
-          }),
-        };
+        const productRow = productRowFromItem(storageKey, item);
 
-        // Upsert to Supabase
-        const { data, error } = await supabaseAdmin
+        if (!productRow) {
+          failed++;
+          errors.push(`${item.name || "unknown"}: Invalid storageKey ${storageKey}`);
+          continue;
+        }
+
+        const { error } = await supabaseAdmin
           .from("products")
-          .upsert(productRow, { onConflict: "slug" })
-          .select("id")
-          .single();
+          .upsert(productRow, { onConflict: "slug" });
 
         if (error) {
           failed++;
           errors.push(`${item.name}: ${error.message}`);
-          console.error(`[Admin Tools] Failed to import ${item.name}:`, error.message);
+          console.error(`[Admin Tools] Failed: ${item.name} —`, error.message);
         } else {
-          if (data) {
-            imported++;
-            console.log(`[Admin Tools] ✅ Imported: ${item.name}`);
-          } else {
-            updated++;
-            console.log(`[Admin Tools] ✅ Updated: ${item.name}`);
-          }
+          imported++;
+          console.log(`[Admin Tools] ✅ ${item.name}`);
         }
       } catch (err) {
         failed++;
         errors.push(`${item.name}: ${err.message}`);
-        console.error(`[Admin Tools] Error importing ${item.name}:`, err);
+        console.error(`[Admin Tools] Error: ${item.name}`, err);
       }
     }
 
-    console.log(`[Admin Tools] Import complete: ${imported} imported, ${updated} updated, ${failed} failed`);
+    console.log(`[Admin Tools] Done: ${imported} imported, ${failed} failed`);
 
     return res.json({
       success: true,
       data: {
         total: seedData.length,
         imported,
-        updated,
         failed,
         errors: errors.length > 0 ? errors : undefined,
       },
