@@ -17,7 +17,7 @@
 import { getAdminItems, saveAdminItems, normaliseItem } from "../data/adminStorage";
 import { productsApi } from "../api/products.api";
 
-const SYNC_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const SYNC_TTL_MS = 60 * 1000; // 1 minute — keeps frontend in sync with admin changes
 
 function getSyncedAt(storageKey) {
   return Number(localStorage.getItem(`${storageKey}_syncedAt`) || 0);
@@ -44,18 +44,24 @@ export const productService = {
 
   /**
    * Fetch products for a listing page.
+   * Always fetches from API on page mount (force=true by default).
    * Writes API result back to localStorage so the app works offline.
    * Returns null if the API is unreachable (caller should use getLocal).
    */
-  async sync(productType, storageKey, { force = false } = {}) {
+  async sync(productType, storageKey, { force = true } = {}) {
     if (!force && !isCacheStale(storageKey)) {
       return getAdminItems(storageKey) || null;
     }
-    const items = await productsApi.getAll(productType);
-    if (!Array.isArray(items) || items.length === 0) return null;
-    saveAdminItems(storageKey, items);
-    setSyncedAt(storageKey);
-    return items;
+    try {
+      const items = await productsApi.getAll(productType);
+      if (!Array.isArray(items) || items.length === 0) return null;
+      saveAdminItems(storageKey, items);
+      setSyncedAt(storageKey);
+      return items;
+    } catch {
+      // API unreachable — return cached data silently
+      return getAdminItems(storageKey) || null;
+    }
   },
 
   /** Read the locally-cached product list (synchronous, never throws). */

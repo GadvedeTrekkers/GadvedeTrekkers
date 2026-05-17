@@ -27,7 +27,7 @@ export function startRealtimeSync() {
     setTimeout(async () => {
       syncQueued = false;
       try {
-        await syncAllProductCatalogs();
+        await syncAllProductCatalogs({ force: true }); // Always force fresh fetch
         // Notify all components that data may have changed
         window.dispatchEvent(new CustomEvent("gt:storage-updated", { detail: { source: "realtime" } }));
       } catch {
