@@ -496,16 +496,26 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
   const [index, setIndex] = useState(visibleCount);
   const [transition, setTransition] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 768px)").matches);
+
+  // Detect mobile — disable auto-rotation on phones/tablets
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const safeItems = Array.isArray(items) ? items : [];
 
   useEffect(() => {
-    if (safeItems.length <= visibleCount || isPaused) return undefined;
+    // No auto-rotation on mobile — user uses arrows
+    if (safeItems.length <= visibleCount || isPaused || isMobile) return undefined;
     const timer = setInterval(() => {
       setIndex((prev) => prev + 1);
     }, interval);
     return () => clearInterval(timer);
-  }, [interval, safeItems.length, visibleCount, isPaused]);
+  }, [interval, safeItems.length, visibleCount, isPaused, isMobile]);
 
   useEffect(() => {
     setIndex(visibleCount);
