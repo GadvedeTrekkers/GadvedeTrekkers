@@ -5188,3 +5188,387 @@ footer .row > div {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ============================================================
+   GLOBAL MOBILE RESPONSIVENESS — All screens ≤ 768px
+   ============================================================ */
+
+/* Prevent horizontal overflow on all screens */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+* {
+  max-width: 100%;
+}
+
+/* ── Navbar / Header ── */
+@media (max-width: 991px) {
+  /* Remove any negative margins that push logo off-screen */
+  .navbar-brand {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .navbar .container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+/* ── Home Page Hero ── */
+@media (max-width: 768px) {
+  .hero-new {
+    padding-top: 60px;
+    min-height: auto;
+  }
+
+  .hero-new-title {
+    font-size: clamp(1.6rem, 7vw, 2.2rem);
+  }
+
+  .hero-new-desc {
+    font-size: 0.9rem;
+  }
+
+  .hero-stats-box {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .hero-stat-item {
+    flex: 1 0 45%;
+    min-width: 0;
+    padding: 10px 8px;
+  }
+
+  /* Hero strip cards */
+  .hero-strip {
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  .hero-strip-card {
+    flex: 0 0 160px;
+    height: 130px;
+  }
+}
+
+/* ── Section headings ── */
+@media (max-width: 768px) {
+  h2.fw-bold {
+    font-size: clamp(1.3rem, 5vw, 1.8rem) !important;
+  }
+
+  h3.fw-bold {
+    font-size: clamp(1.1rem, 4vw, 1.5rem) !important;
+  }
+}
+
+/* ── Trek Cards on Home ── */
+@media (max-width: 768px) {
+  /* Trek card buttons — stack on mobile */
+  .trek-card-actions {
+    grid-template-columns: 1fr !important;
+    gap: 6px;
+  }
+
+  .trek-card-actions .btn {
+    font-size: 0.82rem !important;
+    padding: 9px 10px !important;
+  }
+
+  .trek-current-price {
+    font-size: 1.3rem;
+  }
+
+  .trek-card-title {
+    font-size: 0.95rem;
+  }
+}
+
+/* ── Sliding Cards (Camping, Rentals) ── */
+@media (max-width: 768px) {
+  .sliding-cards-container {
+    padding: 0 8px;
+  }
+
+  /* Show 1 card at a time on very small screens */
+  .sliding-card-item {
+    min-width: calc(100% - 16px) !important;
+  }
+}
+
+/* ── Tour Region Cards ── */
+@media (max-width: 768px) {
+  /* Tour region grid — 2 columns on mobile */
+  .tour-region-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+}
+
+/* ── Stats Bar (Total Treks, Happy Trekkers etc) ── */
+@media (max-width: 576px) {
+  .stats-bar-container {
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  .stats-bar-item {
+    flex: 1 0 50%;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    padding: 12px 8px !important;
+  }
+}
+
+/* ── Trek Detail Page ── */
+@media (max-width: 768px) {
+  .trek-hero {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+
+  .trek-heading {
+    font-size: clamp(1.8rem, 7vw, 2.8rem);
+  }
+
+  .trek-stats-strip {
+    width: 100%;
+    padding: 10px 12px;
+  }
+
+  .trek-stat-item {
+    padding: 0 10px;
+  }
+
+  .trek-stat-value {
+    font-size: 1.1rem;
+  }
+
+  .trek-filter-bar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .trek-filter-tabs {
+    gap: 6px;
+  }
+
+  .trek-filter-tab {
+    padding: 7px 12px;
+    font-size: 0.82rem;
+  }
+}
+
+/* ── Tour Detail Page ── */
+@media (max-width: 768px) {
+  .td-heading {
+    font-size: clamp(1.6rem, 6vw, 2.4rem) !important;
+  }
+
+  .td-tab-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+    padding-bottom: 4px;
+  }
+
+  .td-tab-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .td-tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
+/* ── Booking Form ── */
+@media (max-width: 768px) {
+  .booking-form-container {
+    padding: 16px 12px !important;
+  }
+
+  .booking-form-container .row > div {
+    margin-bottom: 12px;
+  }
+}
+
+/* ── Footer ── */
+@media (max-width: 768px) {
+  footer .row > div {
+    margin-bottom: 20px;
+  }
+
+  footer h5 {
+    font-size: 1rem;
+  }
+
+  .footer-link {
+    font-size: 13px;
+  }
+}
+
+/* ── Containers — prevent overflow ── */
+@media (max-width: 576px) {
+  .container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Section padding */
+  .py-5 {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  /* Card padding */
+  .card-body {
+    padding: 12px !important;
+  }
+}
+
+/* ── Images — never overflow ── */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── Tables — horizontal scroll on mobile ── */
+@media (max-width: 768px) {
+  .table-responsive-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── Buttons — full width on very small screens ── */
+@media (max-width: 400px) {
+  .btn-group-mobile-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .btn-group-mobile-stack .btn {
+    width: 100%;
+  }
+}
+
+/* ── Admin Panel Mobile ── */
+@media (max-width: 768px) {
+  /* Admin sidebar — hide on mobile, show as overlay */
+  .adm-sidebar {
+    position: fixed !important;
+    left: -100% !important;
+    top: 0 !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    transition: left 0.3s ease !important;
+    width: 260px !important;
+  }
+
+  .adm-sidebar.is-open {
+    left: 0 !important;
+  }
+
+  /* Admin main content — full width on mobile */
+  .adm-main {
+    margin-left: 0 !important;
+    padding: 12px !important;
+  }
+
+  /* Admin page title */
+  .adm-page-title {
+    font-size: 1.1rem !important;
+  }
+
+  /* Admin page header — stack on mobile */
+  .adm-page-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* Admin form — full width fields */
+  .adm-form-card .col-md-4,
+  .adm-form-card .col-md-6,
+  .adm-form-card .col-md-8 {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Admin table — horizontal scroll */
+  .adm-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Admin stat cards — 2 columns */
+  .adm-stat-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* Admin card list items */
+  .adm-item-card {
+    padding: 12px !important;
+  }
+
+  /* Re-import button — full width */
+  .adm-page-header .btn {
+    font-size: 0.8rem !important;
+    padding: 6px 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .adm-stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Prevent text overflow ── */
+.text-truncate-mobile {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Touch-friendly tap targets ── */
+@media (max-width: 768px) {
+  a, button, .btn, [role="button"] {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Exception for inline links */
+  p a, li a, .dropdown-item {
+    min-height: unset;
+    display: inline;
+  }
+}
+
+/* ── Smooth scrolling ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Safe area for notched phones (iPhone X+) ── */
+@supports (padding: max(0px)) {
+  .navbar {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  footer {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}

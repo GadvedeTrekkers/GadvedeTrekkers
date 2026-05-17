@@ -137,20 +137,20 @@ function Header() {
         <Link
           className="navbar-brand d-flex align-items-center fw-semibold fs-5 text-white me-auto"
           to="/"
-          style={{ minWidth: 0, marginLeft: "-44px", transition: "all 0.3s ease" }}
+          style={{ minWidth: 0, transition: "all 0.3s ease" }}
         >
           <img
             src={logo}
             alt="Gadvede Trekkers Logo"
             style={{ 
-              height: isScrolled ? "clamp(24px, 4vw, 32px)" : "clamp(48px, 8vw, 64px)", 
-              marginRight: isScrolled ? "8px" : "12px", 
+              height: isScrolled ? "clamp(24px, 4vw, 32px)" : "clamp(32px, 6vw, 56px)", 
+              marginRight: isScrolled ? "6px" : "10px", 
               objectFit: "contain",
               transition: "all 0.3s ease"
             }}
           />
           <span style={{ 
-            fontSize: isScrolled ? "clamp(0.85rem, 2.2vw, 1.1rem)" : "clamp(1.3rem, 3.5vw, 1.8rem)", 
+            fontSize: isScrolled ? "clamp(0.75rem, 2vw, 1rem)" : "clamp(1rem, 3vw, 1.6rem)", 
             lineHeight: 1.2, 
             fontWeight: 800,
             transition: "all 0.3s ease"
