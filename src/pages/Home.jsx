@@ -493,38 +493,39 @@ function IVDestCard({ dest, idx, onEnquire }) {
 }
 
 function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) {
-  const [index, setIndex] = useState(visibleCount);
+  const isTouchDevice = () =>
+    window.matchMedia("(pointer: coarse)").matches ||
+    window.matchMedia("(max-width: 768px)").matches;
+
+  const [isMobile, setIsMobile] = useState(() => isTouchDevice());
+  const effectiveVisible = isMobile ? 1 : visibleCount;
+
+  const [index, setIndex] = useState(effectiveVisible);
   const [transition, setTransition] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
-  const [isMobile, setIsMobile] = useState(
-    () => window.matchMedia("(max-width: 768px)").matches || window.matchMedia("(pointer: coarse)").matches
-  );
 
-  // Detect mobile/touch — disable auto-rotation on phones/tablets
+  // Detect screen size changes
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
-    const handler = (e) => setIsMobile(e.matches || window.matchMedia("(pointer: coarse)").matches);
+    const handler = () => {
+      const mobile = isTouchDevice();
+      setIsMobile(mobile);
+    };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // On mobile show 1 card, on tablet show 2, on desktop use the passed visibleCount
-  const effectiveVisible = isMobile
-    ? 1
-    : window.matchMedia("(max-width: 1024px)").matches
-      ? Math.min(2, visibleCount)
-      : visibleCount;
-
   const safeItems = Array.isArray(items) ? items : [];
 
-  // Reset index when effectiveVisible changes (e.g. screen resize)
+  // Reset index when effectiveVisible changes
   useEffect(() => {
     setIndex(effectiveVisible);
-    setTransition(true);
-  }, [effectiveVisible, safeItems.length]);
+    setTransition(false);
+    requestAnimationFrame(() => requestAnimationFrame(() => setTransition(true)));
+  }, [effectiveVisible]);
 
   useEffect(() => {
-    // No auto-rotation on mobile — user uses arrows
+    // No auto-rotation on mobile/touch
     if (safeItems.length <= effectiveVisible || isPaused || isMobile) return undefined;
     const timer = setInterval(() => {
       setIndex((prev) => prev + 1);
@@ -532,16 +533,14 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
     return () => clearInterval(timer);
   }, [interval, safeItems.length, effectiveVisible, isPaused, isMobile]);
 
-  if (safeItems.length === 0) {
-    return null;
-  }
+  if (safeItems.length === 0) return null;
 
   if (safeItems.length <= effectiveVisible) {
     return (
       <div className="row g-4">
-        {safeItems.map((item, itemIndex) => (
-          <div className={`col-12 col-md-${12 / effectiveVisible}`} key={item.id || item.name || itemIndex}>
-            {renderCard(item, itemIndex)}
+        {safeItems.map((item, i) => (
+          <div className={`col-12 col-md-${12 / effectiveVisible}`} key={item.id || item.name || i}>
+            {renderCard(item, i)}
           </div>
         ))}
       </div>
@@ -569,10 +568,12 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
     }
   };
 
+  const cardWidthPct = 100 / effectiveVisible;
+
   return (
     <div className="trek-slider-container">
       <button className="trek-slider-btn left" onClick={prev} aria-label="Previous">❮</button>
-      <div 
+      <div
         className="trek-slider-wrapper"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
@@ -580,18 +581,18 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
         <div
           className="trek-slider-track"
           style={{
-            transform: `translateX(-${index * (100 / effectiveVisible)}%)`,
-            transition: transition ? "transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)" : "none",
+            transform: `translateX(-${index * cardWidthPct}%)`,
+            transition: transition ? "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)" : "none",
           }}
           onTransitionEnd={handleTransitionEnd}
         >
-          {extended.map((item, itemIndex) => (
+          {extended.map((item, i) => (
             <div
               className="trek-slide"
-              key={`${item.id || item.name || "item"}-${itemIndex}`}
-              style={{ flex: `0 0 ${100 / effectiveVisible}%` }}
+              key={`${item.id || item.name || "item"}-${i}`}
+              style={{ flex: `0 0 ${cardWidthPct}%`, maxWidth: `${cardWidthPct}%` }}
             >
-              {renderCard(item, itemIndex)}
+              {renderCard(item, i)}
             </div>
           ))}
         </div>

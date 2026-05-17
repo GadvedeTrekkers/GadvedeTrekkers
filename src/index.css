@@ -458,8 +458,10 @@ html, body {
 }
 
 .trek-slide {
-  flex: 0 0 33.3333%;
+  flex: 0 0 33.3333%; /* overridden by inline style on mobile */
   padding: 0 15px;
+  min-width: 0;
+}
   transition: transform 0.3s ease;
 }
 
@@ -575,20 +577,35 @@ html, body {
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
   .trek-slide,
   .tour-slide {
-    flex: 0 0 100%;
+    flex: 0 0 100% !important;
+    padding: 0 8px;
   }
 
   .trek-slider-btn.left,
   .tour-slider-btn.left {
-    left: 5px;
+    left: 2px;
   }
 
   .trek-slider-btn.right,
   .tour-slider-btn.right {
-    right: 5px;
+    right: 2px;
+  }
+}
+
+@media (max-width: 576px) {
+  .trek-slider-btn.left,
+  .tour-slider-btn.left {
+    left: 2px;
+  }
+
+  .trek-slider-btn.right,
+  .tour-slider-btn.right {
+    right: 2px;
+  }
+}
   }
 }
 /* ================= HEADER ================= */
