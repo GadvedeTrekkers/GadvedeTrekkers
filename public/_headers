@@ -1,0 +1,15 @@
+# Render Static Site headers (Netlify-compatible format).
+# Render copies everything under /public into the publish dir at build time.
+
+# index.html: never cache the SPA shell. Cloudflare must revalidate on every
+# request so users see the latest deploy immediately. Without this header,
+# Render's default `s-maxage=300` caused stale builds to linger on the CDN
+# for up to 5 minutes after a successful deploy.
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Hashed Vite assets: filename changes on every build (e.g. index-CWpxtB6z.css),
+# so we can safely cache them forever. `immutable` tells well-behaved clients
+# not to even attempt revalidation.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
