@@ -1204,11 +1204,23 @@ function Home() {
                 }}
               >
                 <img src={camp.img} className="card-img-top standard-img" alt={camp.name} />
-                <div className="card-body">
+                <div className="card-body d-flex flex-column">
                   <h5>{camp.name}</h5>
                   <p className="text-muted small mb-2">{camp.location}</p>
                   <h6 className="fw-bold text-success">{camp.price}</h6>
-                  <Link to={`/camping/${camp.id || "alibaug-camping"}`} className="btn btn-success mt-3">Explore →</Link>
+                  <div className="trek-card-actions mt-3">
+                    <BookingCTA trek={camp} className="trek-primary-btn">
+                      <WhatsAppIcon />
+                      Book on WhatsApp
+                    </BookingCTA>
+                    <Link to={`/camping/${camp.id || "alibaug-camping"}`} className="trek-secondary-btn">
+                      Details
+                      <ArrowRightIcon />
+                    </Link>
+                    <Link to={`/camping/${camp.id || "alibaug-camping"}`} className="trek-tertiary-btn">
+                      Explore
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}
@@ -1238,10 +1250,22 @@ function Home() {
                   <div className="col-md-4" key={i}>
                     <div className="card border-0 shadow-sm h-100 text-center">
                       <img src={item.img} className="card-img-top standard-img" alt={item.name} />
-                      <div className="card-body">
+                      <div className="card-body d-flex flex-column">
                         <h5>{item.name}</h5>
                         <h6 className="fw-bold text-success">{item.price}</h6>
-                        <Link to="/heritage" state={item.state} className="btn btn-success mt-3">Explore →</Link>
+                        <div className="trek-card-actions mt-3">
+                          <BookingCTA trek={item} className="trek-primary-btn">
+                            <WhatsAppIcon />
+                            Book on WhatsApp
+                          </BookingCTA>
+                          <Link to="/heritage" state={item.state} className="trek-secondary-btn">
+                            Details
+                            <ArrowRightIcon />
+                          </Link>
+                          <Link to="/heritage" state={item.state} className="trek-tertiary-btn">
+                            Explore
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1289,7 +1313,19 @@ function Home() {
                   <h5>{item.name}</h5>
                   <p className="text-muted small mb-2">{item.location}</p>
                   <h6 className="fw-bold text-success">{item.price}</h6>
-                  <Link to={`/rentals/${item.id}`} state={{ item: item.item }} className="btn btn-success mt-auto">Explore →</Link>
+                  <div className="trek-card-actions mt-auto">
+                    <BookingCTA trek={item} className="trek-primary-btn">
+                      <WhatsAppIcon />
+                      Book on WhatsApp
+                    </BookingCTA>
+                    <Link to={`/rentals/${item.id}`} state={{ item: item.item }} className="trek-secondary-btn">
+                      Details
+                      <ArrowRightIcon />
+                    </Link>
+                    <Link to={`/rentals/${item.id}`} state={{ item: item.item }} className="trek-tertiary-btn">
+                      Explore
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}

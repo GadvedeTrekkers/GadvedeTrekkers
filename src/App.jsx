@@ -7,6 +7,7 @@ import WebsiteNotificationBridge from "./components/WebsiteNotificationBridge";
 import { ToastProvider } from "./components/Toast";
 import { ConfirmProvider } from "./components/ConfirmModal";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ScrollToTop from "./components/ScrollToTop";
 import { syncAllProductCatalogs } from "./services/productCatalogSync.service";
 import { startRealtimeSync, stopRealtimeSync } from "./services/realtimeSync.service";
 import { startKeepAlive, stopKeepAlive } from "./services/keepAlive.service";
@@ -81,6 +82,7 @@ function AppInner() {
 
   return (
     <div className={hideChrome ? "" : "d-flex flex-column min-vh-100"} key={displayLocation.pathname}>
+      <ScrollToTop />
       <WebsiteNotificationBridge />
       {!hideChrome && <Header />}
       <ErrorBoundary>
