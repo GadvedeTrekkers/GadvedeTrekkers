@@ -504,21 +504,18 @@ function Trek() {
                     )}
                   </div>
 
-                  <div className="trek-card-actions" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <BookingCTA trek={trek} className="trek-primary-btn" style={{ flex: 1 }}>
-                        <WhatsAppIcon />
-                        Book on WhatsApp
-                      </BookingCTA>
-                      <Link
-                        to={`/treks/${slugifyTrekName(trek.name)}`}
-                        className="trek-secondary-btn"
-                        style={{ flex: 1 }}
-                      >
-                        Details
-                        <ArrowRightIcon />
-                      </Link>
-                    </div>
+                  <div className="trek-card-actions">
+                    <BookingCTA trek={trek} className="trek-primary-btn">
+                      <WhatsAppIcon />
+                      Book on WhatsApp
+                    </BookingCTA>
+                    <Link
+                      to={`/treks/${slugifyTrekName(trek.name)}`}
+                      className="trek-secondary-btn"
+                    >
+                      Details
+                      <ArrowRightIcon />
+                    </Link>
                     <button
                       type="button"
                       disabled={!trek.itineraryPdfUrl}
@@ -534,7 +531,6 @@ function Trek() {
                         }
                       }}
                       className={`trek-tertiary-btn${trek.itineraryPdfUrl ? "" : " is-disabled"}`}
-                      style={{ width: "100%" }}
                       title={trek.itineraryPdfUrl ? "Download Itinerary PDF" : "Itinerary coming soon"}
                     >
                       <DownloadIcon />
