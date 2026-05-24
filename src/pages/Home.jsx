@@ -1217,9 +1217,6 @@ function Home() {
                       Details
                       <ArrowRightIcon />
                     </Link>
-                    <Link to={`/camping/${camp.id || "alibaug-camping"}`} className="trek-tertiary-btn">
-                      Explore
-                    </Link>
                   </div>
                 </div>
               </div>
@@ -1261,9 +1258,6 @@ function Home() {
                           <Link to="/heritage" state={item.state} className="trek-secondary-btn">
                             Details
                             <ArrowRightIcon />
-                          </Link>
-                          <Link to="/heritage" state={item.state} className="trek-tertiary-btn">
-                            Explore
                           </Link>
                         </div>
                       </div>
@@ -1321,9 +1315,6 @@ function Home() {
                     <Link to={`/rentals/${item.id}`} state={{ item: item.item }} className="trek-secondary-btn">
                       Details
                       <ArrowRightIcon />
-                    </Link>
-                    <Link to={`/rentals/${item.id}`} state={{ item: item.item }} className="trek-tertiary-btn">
-                      Explore
                     </Link>
                   </div>
                 </div>
