@@ -32,7 +32,11 @@ function AppInner() {
       const fadeOutTimer = setTimeout(() => {
         setDisplayLocation(location);
         setTransitionStage("switching"); // New intermediate state
-        window.scrollTo({ top: 0, behavior: "instant" });
+        // Direct .scrollTop = 0 bypasses CSS scroll-behavior:smooth in App.css.
+        // window.scrollTo({behavior:"instant"}) is supposed to override but
+        // gets interrupted mid-animation during this transition.
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
         
         // Start fade in after a brief moment
         setTimeout(() => {

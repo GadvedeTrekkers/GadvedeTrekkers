@@ -2,11 +2,18 @@
  * ScrollToTop — resets window scroll to (0, 0) on every route change.
  *
  * Why useLayoutEffect: runs synchronously *before* the browser paints the
- * new route. Using a plain useEffect can leave the user looking at the
- * old scroll position for one frame while the new page renders.
+ * new route, so the user never sees a frame of the old scroll position.
  *
- * Why "instant" behavior: this is intentional snap-to-top, not a smooth
- * animated scroll — smooth scrolling on every navigation feels broken.
+ * Why direct .scrollTop = 0 (instead of window.scrollTo with behavior):
+ * App.css sets `html { scroll-behavior: smooth }` for in-page anchor
+ * scrolls. The `behavior: "instant"` option on window.scrollTo is
+ * supposed to override that, but combined with the App's 400 ms fade-out
+ * transition, the smooth-scroll animation can be interrupted mid-flight
+ * and land somewhere other than the top. Setting .scrollTop directly is
+ * always instant, never animated, regardless of CSS.
+ *
+ * Both documentElement and body are set to cover legacy quirks-mode
+ * documents.
  *
  * Renders nothing. Mount once inside <BrowserRouter>.
  */
@@ -18,7 +25,8 @@ export default function ScrollToTop() {
   const { pathname } = useLocation();
 
   useLayoutEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, [pathname]);
 
   return null;
