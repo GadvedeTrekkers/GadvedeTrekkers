@@ -1447,6 +1447,7 @@ footer .row > div {
   grid-template-columns: 1fr;
   gap: 8px;
   margin-top: auto;
+  padding: 0 4px;
 }
 
 /* ── Show More / SEO ───────────────────────── */
@@ -1567,7 +1568,8 @@ footer .row > div {
   box-shadow: 0 2px 8px rgba(15, 138, 95, 0.28);
 }
 
-/* Secondary — solid slate (Details), hovers to brand emerald */
+/* Secondary — solid slate (Details). Stays the same color on hover —
+   only the elevation changes for press-feel. */
 .trek-secondary-btn {
   background: #1F2937;
   color: #fff;
@@ -1576,13 +1578,14 @@ footer .row > div {
 
 .trek-secondary-btn:hover {
   transform: translateY(-2px);
-  background: linear-gradient(135deg, #0F8A5F 0%, #16C088 100%);
+  background: #111827;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(15, 138, 95, 0.32);
+  box-shadow: 0 10px 24px rgba(15, 25, 40, 0.32);
 }
 
 .trek-secondary-btn:active {
   transform: translateY(0);
+  background: #1F2937;
 }
 
 /* Tertiary — amber outline (Download Itinerary) */
