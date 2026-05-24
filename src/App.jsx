@@ -7,6 +7,7 @@ import WebsiteNotificationBridge from "./components/WebsiteNotificationBridge";
 import { ToastProvider } from "./components/Toast";
 import { ConfirmProvider } from "./components/ConfirmModal";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ScrollToTop from "./components/ScrollToTop";
 import { syncAllProductCatalogs } from "./services/productCatalogSync.service";
 import { startRealtimeSync, stopRealtimeSync } from "./services/realtimeSync.service";
 import { startKeepAlive, stopKeepAlive } from "./services/keepAlive.service";
@@ -31,7 +32,11 @@ function AppInner() {
       const fadeOutTimer = setTimeout(() => {
         setDisplayLocation(location);
         setTransitionStage("switching"); // New intermediate state
-        window.scrollTo({ top: 0, behavior: "instant" });
+        // Direct .scrollTop = 0 bypasses CSS scroll-behavior:smooth in App.css.
+        // window.scrollTo({behavior:"instant"}) is supposed to override but
+        // gets interrupted mid-animation during this transition.
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
         
         // Start fade in after a brief moment
         setTimeout(() => {
@@ -81,6 +86,7 @@ function AppInner() {
 
   return (
     <div className={hideChrome ? "" : "d-flex flex-column min-vh-100"} key={displayLocation.pathname}>
+      <ScrollToTop />
       <WebsiteNotificationBridge />
       {!hideChrome && <Header />}
       <ErrorBoundary>

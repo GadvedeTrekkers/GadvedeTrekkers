@@ -10,6 +10,7 @@ import EnquiryModal from "../components/EnquiryModal";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import { getAdminItems, normaliseItem, saveAdminItems } from "../data/adminStorage";
 import BookingCTA from "../components/BookingCTA";
+import { WhatsAppIcon, ArrowRightIcon, DownloadIcon } from "../components/icons";
 import { syncProductsFromApi } from "../api/getAll";
 
 const CAMPING_ROUTE_BY_NAME = {
@@ -259,25 +260,26 @@ function HomeTrekCard({ trek }) {
           <span>{trek.nextDate}</span>
         </div>
 
-        <div className="trek-card-actions" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <BookingCTA trek={trek} className="btn trek-primary-btn" label="Book on WhatsApp" style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", border: "2px solid #000", fontWeight: "bold", color: "#fff" }} />
-            <Link
-              to={`/treks/${slugifyTrekName(trek.name)}`}
-              className="btn trek-secondary-btn"
-              style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", border: "2px solid #000", background: "#dc3545", fontWeight: "bold", color: "#fff" }}
-            >
-              Details
-            </Link>
-          </div>
+        <div className="trek-card-actions">
+          <BookingCTA trek={trek} className="trek-primary-btn">
+            <WhatsAppIcon />
+            Book on WhatsApp
+          </BookingCTA>
+          <Link
+            to={`/treks/${slugifyTrekName(trek.name)}`}
+            className="trek-secondary-btn"
+          >
+            Details
+            <ArrowRightIcon />
+          </Link>
           <button
             type="button"
-            className="btn trek-secondary-btn"
-            style={{ width: "100%", padding: "6px 12px", fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, border: "2px solid #000", background: "#ffc107", fontWeight: "bold", color: "#fff" }}
+            className="trek-tertiary-btn"
             title="Download Itinerary PDF"
             onClick={(e) => { e.preventDefault(); downloadTrekPdf(trek); }}
           >
-            Itinerary
+            <DownloadIcon />
+            Download Itinerary
           </button>
         </div>
       </div>
@@ -1202,11 +1204,20 @@ function Home() {
                 }}
               >
                 <img src={camp.img} className="card-img-top standard-img" alt={camp.name} />
-                <div className="card-body">
+                <div className="card-body d-flex flex-column">
                   <h5>{camp.name}</h5>
                   <p className="text-muted small mb-2">{camp.location}</p>
                   <h6 className="fw-bold text-success">{camp.price}</h6>
-                  <Link to={`/camping/${camp.id || "alibaug-camping"}`} className="btn btn-success mt-3">Explore →</Link>
+                  <div className="trek-card-actions mt-3">
+                    <BookingCTA trek={camp} className="trek-primary-btn">
+                      <WhatsAppIcon />
+                      Book on WhatsApp
+                    </BookingCTA>
+                    <Link to={`/camping/${camp.id || "alibaug-camping"}`} className="trek-secondary-btn">
+                      Details
+                      <ArrowRightIcon />
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}
@@ -1236,10 +1247,19 @@ function Home() {
                   <div className="col-md-4" key={i}>
                     <div className="card border-0 shadow-sm h-100 text-center">
                       <img src={item.img} className="card-img-top standard-img" alt={item.name} />
-                      <div className="card-body">
+                      <div className="card-body d-flex flex-column">
                         <h5>{item.name}</h5>
                         <h6 className="fw-bold text-success">{item.price}</h6>
-                        <Link to="/heritage" state={item.state} className="btn btn-success mt-3">Explore →</Link>
+                        <div className="trek-card-actions mt-3">
+                          <BookingCTA trek={item} className="trek-primary-btn">
+                            <WhatsAppIcon />
+                            Book on WhatsApp
+                          </BookingCTA>
+                          <Link to="/heritage" state={item.state} className="trek-secondary-btn">
+                            Details
+                            <ArrowRightIcon />
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1287,7 +1307,16 @@ function Home() {
                   <h5>{item.name}</h5>
                   <p className="text-muted small mb-2">{item.location}</p>
                   <h6 className="fw-bold text-success">{item.price}</h6>
-                  <Link to={`/rentals/${item.id}`} state={{ item: item.item }} className="btn btn-success mt-auto">Explore →</Link>
+                  <div className="trek-card-actions mt-auto">
+                    <BookingCTA trek={item} className="trek-primary-btn">
+                      <WhatsAppIcon />
+                      Book on WhatsApp
+                    </BookingCTA>
+                    <Link to={`/rentals/${item.id}`} state={{ item: item.item }} className="trek-secondary-btn">
+                      Details
+                      <ArrowRightIcon />
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}
