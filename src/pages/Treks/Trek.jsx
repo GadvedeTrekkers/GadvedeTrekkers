@@ -4,6 +4,7 @@ import { uniqueTreks, slugifyTrekName } from "../../data/treks";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
+import { WhatsAppIcon, ArrowRightIcon, DownloadIcon } from "../../components/icons";
 import { syncProductsFromApi } from "../../api/getAll";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 
@@ -505,16 +506,22 @@ function Trek() {
 
                   <div className="trek-card-actions" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     <div style={{ display: "flex", gap: "8px" }}>
-                      <BookingCTA trek={trek} className="btn trek-primary-btn" label="Book on WhatsApp" style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", border: "2px solid #000", fontWeight: "bold", color: "#fff" }} />
+                      <BookingCTA trek={trek} className="trek-primary-btn" style={{ flex: 1 }}>
+                        <WhatsAppIcon />
+                        Book on WhatsApp
+                      </BookingCTA>
                       <Link
                         to={`/treks/${slugifyTrekName(trek.name)}`}
-                        className="btn trek-secondary-btn"
-                        style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", border: "2px solid #000", background: "#dc3545", fontWeight: "bold", color: "#fff" }}
+                        className="trek-secondary-btn"
+                        style={{ flex: 1 }}
                       >
                         Details
+                        <ArrowRightIcon />
                       </Link>
                     </div>
                     <button
+                      type="button"
+                      disabled={!trek.itineraryPdfUrl}
                       onClick={(e) => {
                         e.preventDefault();
                         if (trek.itineraryPdfUrl) {
@@ -526,24 +533,12 @@ function Trek() {
                           document.body.removeChild(link);
                         }
                       }}
-                      className="btn trek-secondary-btn"
-                      style={{ 
-                        width: "100%", 
-                        padding: "6px 12px", 
-                        fontSize: "0.85rem", 
-                        display: "flex", 
-                        alignItems: "center", 
-                        justifyContent: "center", 
-                        gap: 4, 
-                        border: "2px solid #000", 
-                        background: trek.itineraryPdfUrl ? "#ffc107" : "#9ca3af", 
-                        fontWeight: "bold", 
-                        color: "#fff", 
-                        cursor: trek.itineraryPdfUrl ? "pointer" : "default"
-                      }}
+                      className={`trek-tertiary-btn${trek.itineraryPdfUrl ? "" : " is-disabled"}`}
+                      style={{ width: "100%" }}
                       title={trek.itineraryPdfUrl ? "Download Itinerary PDF" : "Itinerary coming soon"}
                     >
-                      Itinerary
+                      <DownloadIcon />
+                      Download Itinerary
                     </button>
                   </div>
                 </div>

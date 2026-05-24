@@ -27,6 +27,7 @@ export default function BookingCTA({
   className = "",
   style = {},
   block = false,
+  children,
 }) {
   if (!trek) return null;
 
@@ -47,7 +48,7 @@ export default function BookingCTA({
         style={resolvedStyle}
         aria-label={`Book ${trek.name} via WhatsApp`}
       >
-        {text}
+        {children ?? text}
       </a>
     );
   }
@@ -57,7 +58,7 @@ export default function BookingCTA({
     const text = label ?? CTA_LABELS.DIRECT_BOOKING;
     return (
       <Link to="/book" state={{ trek }} className={className} style={resolvedStyle}>
-        {text}
+        {children ?? text}
       </Link>
     );
   }
@@ -75,7 +76,7 @@ export default function BookingCTA({
           console.warn("Payment gateway not yet implemented.");
         }}
       >
-        {text}
+        {children ?? text}
       </button>
     );
   }
@@ -90,7 +91,7 @@ export default function BookingCTA({
       className={className}
       style={resolvedStyle}
     >
-      {label ?? "Book Now"}
+      {children ?? (label ?? "Book Now")}
     </a>
   );
 }

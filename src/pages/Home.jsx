@@ -10,6 +10,7 @@ import EnquiryModal from "../components/EnquiryModal";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import { getAdminItems, normaliseItem, saveAdminItems } from "../data/adminStorage";
 import BookingCTA from "../components/BookingCTA";
+import { WhatsAppIcon, ArrowRightIcon, DownloadIcon } from "../components/icons";
 import { syncProductsFromApi } from "../api/getAll";
 
 const CAMPING_ROUTE_BY_NAME = {
@@ -261,23 +262,28 @@ function HomeTrekCard({ trek }) {
 
         <div className="trek-card-actions" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <div style={{ display: "flex", gap: "8px" }}>
-            <BookingCTA trek={trek} className="btn trek-primary-btn" label="Book on WhatsApp" style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", border: "2px solid #000", fontWeight: "bold", color: "#fff" }} />
+            <BookingCTA trek={trek} className="trek-primary-btn" style={{ flex: 1 }}>
+              <WhatsAppIcon />
+              Book on WhatsApp
+            </BookingCTA>
             <Link
               to={`/treks/${slugifyTrekName(trek.name)}`}
-              className="btn trek-secondary-btn"
-              style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", border: "2px solid #000", background: "#dc3545", fontWeight: "bold", color: "#fff" }}
+              className="trek-secondary-btn"
+              style={{ flex: 1 }}
             >
               Details
+              <ArrowRightIcon />
             </Link>
           </div>
           <button
             type="button"
-            className="btn trek-secondary-btn"
-            style={{ width: "100%", padding: "6px 12px", fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, border: "2px solid #000", background: "#ffc107", fontWeight: "bold", color: "#fff" }}
+            className="trek-tertiary-btn"
+            style={{ width: "100%" }}
             title="Download Itinerary PDF"
             onClick={(e) => { e.preventDefault(); downloadTrekPdf(trek); }}
           >
-            Itinerary
+            <DownloadIcon />
+            Download Itinerary
           </button>
         </div>
       </div>
