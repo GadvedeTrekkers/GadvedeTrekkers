@@ -79,8 +79,8 @@ export async function apiRequest(path, { method = "GET", body, admin = false } =
 
     return payload?.data ?? payload;
   } catch (error) {
-    // Network errors (backend not running, CORS issues, etc.)
-    if (error.name === 'TypeError' || error.message.toLowerCase().includes('fetch')) {
+    // Real network failures from fetch itself (backend down, CORS, DNS, etc.)
+    if (error instanceof TypeError) {
       console.error("apiRequest: Network error - backend might be down", error);
       throw new Error("Cannot connect to backend. Please ensure the backend server is running at " + API_BASE_URL);
     }

@@ -1,17 +1,17 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   getAllEarnings, saveEarning, deleteEarning,
   queryEarnings, getEarningsSummary, computeProfit,
 } from "../data/earningsStorage";
 import {
   getAllTrekPayments, createTrekPayment, markSubPaymentDone,
-  deleteTrekPayment, getTrekPaymentStats, updateTrekPaymentConfig,
+  deleteTrekPayment, getTrekPaymentStats, hydrateTrekPaymentsFromBackend, updateTrekPaymentConfig,
 } from "../data/trekPaymentStorage";
-import { currentUserHasPermission, getCurrentAdminUser } from "../data/permissionStorage";
+import { currentUserHasPermission } from "../data/permissionStorage";
 import { logActivity } from "../data/activityLogStorage";
 import { getAllEmployees } from "../data/employeeStorage";
 import { getAllVendors } from "../data/vendorStorage";
-import { getAllIncentives, getIncentiveStats, markIncentivePaid, markAllIncentivesPaid, INCENTIVE_AMOUNT_PER_BOOKING } from "../data/incentiveStorage";
+import { getAllIncentives, getIncentiveStats, markAllIncentivesPaid, INCENTIVE_AMOUNT_PER_BOOKING } from "../data/incentiveStorage";
 import DownloadButton from "../components/DownloadButton";
 
 /* ── Constants ── */
@@ -78,13 +78,14 @@ function PieChart({ data }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   if (!total) return <div style={{ color: "#94a3b8", textAlign: "center", padding: 20, fontSize: 13 }}>No data</div>;
 
-  let cursor = 0;
-  const slices = data.map((d) => {
+  const slices = data.reduce((state, d) => {
     const pct = d.value / total;
-    const start = cursor;
-    cursor += pct;
-    return { ...d, pct, start };
-  });
+    const slice = { ...d, pct, start: state.cursor };
+    return {
+      cursor: state.cursor + pct,
+      slices: [...state.slices, slice],
+    };
+  }, { cursor: 0, slices: [] }).slices;
 
   const r = 60; const cx = 80; const cy = 80;
   function arc(start, end) {
@@ -409,30 +410,34 @@ function TrekPaymentsTab({ tick, onRefresh }) {
     setOverrides({});
   };
 
-  const handleInitiate = () => {
+  const handleInitiate = async () => {
     if (!canSubmit) return;
-    const record = createTrekPayment({
-      trekName: selectedTrek?.name || selectedTrekId,
-      trekId: selectedTrek?.id || "",
-      eventDate,
-      participants: Number(participants),
-      config,
-      overrides: Object.fromEntries(
-        Object.entries(overrides).filter(([, v]) => v.amount !== "")
-          .map(([k, v]) => [k, { amount: Number(v.amount), reason: v.reason }])
-      ),
-    });
-    logActivity({
-      action: "TREK_PAYMENT_INITIATED",
-      actionLabel: `Initiated payment for ${record.trekName}`,
-      details: `Event: ${eventDate} | Participants: ${participants} | Leader: ${config.trekLeaderName || "—"} | Total: ₹${record.calculations.totalCost.toLocaleString("en-IN")}`,
-      module: "Payments",
-      severity: "warning",
-    });
-    resetForm();
-    setFormMsg("Payment initiated successfully!");
-    setTimeout(() => setFormMsg(""), 3000);
-    onRefresh();
+    try {
+      const record = await createTrekPayment({
+        trekName: selectedTrek?.name || selectedTrekId,
+        trekId: selectedTrek?.id || "",
+        eventDate,
+        participants: Number(participants),
+        config,
+        overrides: Object.fromEntries(
+          Object.entries(overrides).filter(([, v]) => v.amount !== "")
+            .map(([k, v]) => [k, { amount: Number(v.amount), reason: v.reason }])
+        ),
+      });
+      logActivity({
+        action: "TREK_PAYMENT_INITIATED",
+        actionLabel: `Initiated payment for ${record.trekName}`,
+        details: `Event: ${eventDate} | Participants: ${participants} | Leader: ${config.trekLeaderName || "—"} | Total: ₹${record.calculations.totalCost.toLocaleString("en-IN")}`,
+        module: "Payments",
+        severity: "warning",
+      });
+      resetForm();
+      setFormMsg("Payment initiated successfully!");
+      setTimeout(() => setFormMsg(""), 3000);
+      onRefresh();
+    } catch (error) {
+      setFormMsg(error.message || "Payment could not be initiated.");
+    }
   };
 
   const payments = getAllTrekPayments();
@@ -445,30 +450,34 @@ function TrekPaymentsTab({ tick, onRefresh }) {
 
   const getMarkKey = (paymentId, recipientType) => `${paymentId}-${recipientType}`;
 
-  const handleMarkPaid = (paymentId, recipientType) => {
+  const handleMarkPaid = async (paymentId, recipientType) => {
     const key = getMarkKey(paymentId, recipientType);
     const mf = markForm[key] || {};
-    markSubPaymentDone({ paymentId, recipientType, method: mf.method || "UPI", reference: mf.reference || "" });
-    logActivity({
-      action: "TREK_SUBPAYMENT_COMPLETED",
-      description: `Marked ${recipientType} payment as COMPLETED for payment ${paymentId} via ${mf.method || "UPI"}`,
-      module: "Payments",
-      severity: "info",
-    });
-    setMarkForm((prev) => { const n = { ...prev }; delete n[key]; return n; });
-    onRefresh();
+    const updated = await markSubPaymentDone({ paymentId, recipientType, method: mf.method || "UPI", reference: mf.reference || "" });
+    if (updated) {
+      logActivity({
+        action: "TREK_SUBPAYMENT_COMPLETED",
+        description: `Marked ${recipientType} payment as COMPLETED for payment ${paymentId} via ${mf.method || "UPI"}`,
+        module: "Payments",
+        severity: "info",
+      });
+      setMarkForm((prev) => { const n = { ...prev }; delete n[key]; return n; });
+      onRefresh();
+    }
   };
 
-  const handleDelete = (paymentId) => {
+  const handleDelete = async (paymentId) => {
     if (!window.confirm("Delete this payment record? This cannot be undone.")) return;
-    deleteTrekPayment(paymentId);
-    logActivity({
-      action: "TREK_PAYMENT_DELETED",
-      description: `Deleted trek payment record ${paymentId}`,
-      module: "Payments",
-      severity: "warning",
-    });
-    onRefresh();
+    const deleted = await deleteTrekPayment(paymentId);
+    if (deleted) {
+      logActivity({
+        action: "TREK_PAYMENT_DELETED",
+        description: `Deleted trek payment record ${paymentId}`,
+        module: "Payments",
+        severity: "warning",
+      });
+      onRefresh();
+    }
   };
 
   if (!hasPermission) {
@@ -576,7 +585,6 @@ function TrekPaymentsTab({ tick, onRefresh }) {
                 { key: "ENTRY_FEES", label: "Entry Fees Total", recipient: "Entry Fees / Government",              baseAmount: liveEntry },
               ].filter(row => row.baseAmount > 0 || overrides[row.key]?.amount !== undefined).map(({ key, label, recipient, baseAmount }) => {
                 const ovr = overrides[key] || { amount: "", reason: "" };
-                const currentVal = ovr.amount !== "" ? Number(ovr.amount) : baseAmount;
                 const changed = ovr.amount !== "" && Number(ovr.amount) !== baseAmount;
                 return (
                   <div key={key} style={{ background: "#fff", border: `1px solid ${changed ? "#fbbf24" : "#e2e8f0"}`, borderRadius: 6, padding: "8px 10px" }}>
@@ -689,8 +697,8 @@ function TrekPaymentsTab({ tick, onRefresh }) {
                                     value={waEditVal}
                                     onChange={e => setWaEditVal(e.target.value)}
                                   />
-                                  <button className="btn btn-success btn-sm py-0 px-2" style={{ fontSize: 11 }} onClick={() => {
-                                    updateTrekPaymentConfig(rec.paymentId, { whatsappGroupLink: waEditVal.trim() });
+                                  <button className="btn btn-success btn-sm py-0 px-2" style={{ fontSize: 11 }} onClick={async () => {
+                                    await updateTrekPaymentConfig(rec.paymentId, { whatsappGroupLink: waEditVal.trim() });
                                     setWaEditId(null); setWaEditVal(""); onRefresh();
                                   }}>Save</button>
                                   <button className="btn btn-outline-secondary btn-sm py-0 px-2" style={{ fontSize: 11 }} onClick={() => { setWaEditId(null); setWaEditVal(""); }}>Cancel</button>
@@ -788,7 +796,7 @@ function TrekPaymentsTab({ tick, onRefresh }) {
 /* ═════════════════════════════════════════════
    IncentivePayoutsSection — admin view of referral incentives
 ═════════════════════════════════════════════ */
-function IncentivePayoutsSection({ tick, onRefresh }) {
+function IncentivePayoutsSection({ onRefresh }) {
   const hasPermission = currentUserHasPermission("vendor_payments");
   const [payForm, setPayForm] = useState({});    // { [empId]: { via, ref } }
   const [expanded, setExpanded] = useState(null);
@@ -896,6 +904,16 @@ export default function ManageEarnings() {
   const [saveMsg,      setSaveMsg]      = useState("");
 
   const refresh = () => setTick((t) => t + 1);
+
+  useEffect(() => {
+    let active = true;
+    hydrateTrekPaymentsFromBackend().then(() => {
+      if (active) refresh();
+    }).catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const summary  = useMemo(() => getEarningsSummary(), [tick]);
   const payStats = useMemo(() => getTrekPaymentStats(), [tick]);
@@ -1056,7 +1074,7 @@ export default function ManageEarnings() {
       {tab === "payments" && (
         <>
           <TrekPaymentsTab tick={tick} onRefresh={refresh} />
-          <IncentivePayoutsSection tick={tick} onRefresh={refresh} />
+          <IncentivePayoutsSection onRefresh={refresh} />
         </>
       )}
 

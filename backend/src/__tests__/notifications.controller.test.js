@@ -8,70 +8,55 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-/* ── Mock Supabase admin client ── */
-const mockSelect   = vi.fn();
-const mockEq       = vi.fn();
-const mockMaybeSingle = vi.fn();
-const mockUpsert   = vi.fn();
-const mockSingle   = vi.fn();
-const mockOrder    = vi.fn();
+const { mockFrom, mockSendEmail } = vi.hoisted(() => ({
+  mockFrom: vi.fn(),
+  mockSendEmail: vi.fn(),
+}));
 
-// Chain builder — each method returns the chain so calls can be fluent
 function buildChain(terminalResult) {
-  const chain = {
-    select:      vi.fn().mockReturnThis(),
-    eq:          vi.fn().mockReturnThis(),
+  return {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-    upsert:      vi.fn().mockReturnThis(),
-    single:      vi.fn().mockResolvedValue(terminalResult),
-    order:       vi.fn().mockResolvedValue(terminalResult),
+    upsert: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue(terminalResult),
+    order: vi.fn().mockResolvedValue(terminalResult),
   };
-  return chain;
 }
-
-const mockFrom = vi.fn();
 
 vi.mock("../config/supabaseAdminClient.js", () => ({
   default: { from: mockFrom },
 }));
 
-/* ── Mock email service ── */
-const mockSendEmail = vi.fn();
 vi.mock("../services/emailService.js", () => ({
   sendTrekAssignmentEmail: mockSendEmail,
 }));
 
 import { notifyTrekAssigned, getLeaderTreks } from "../controllers/notifications.controller.js";
 
-/* ── Helper: create minimal Express req / res mocks ── */
 function mockRes() {
-  const res = {
+  return {
     _status: 200,
     _body: null,
     status(code) { this._status = code; return this; },
-    json(body)   { this._body   = body; return this; },
+    json(body) { this._body = body; return this; },
   };
-  return res;
 }
 
-/* ── Shared valid payload ── */
 const VALID_BODY = {
   leaderEmail: "rahul.patil@gadvede.com",
-  leaderName:  "Rahul Patil",
-  leaderId:    "EMP-SEED-001",
-  trekName:    "Kalsubai Trek",
-  trekId:      "TREK-001",
-  eventDate:   "2026-05-15",
+  leaderName: "Rahul Patil",
+  leaderId: "EMP-SEED-001",
+  trekName: "Kalsubai Trek",
+  trekId: "TREK-001",
+  eventDate: "2026-05-15",
   participants: 20,
-  leaderFee:   2500,
+  leaderFee: 2500,
   whatsappGroupLink: "https://chat.whatsapp.com/test",
-  config:      { trekLeaderName: "Rahul Patil", leaderFee: 2500 },
+  config: { trekLeaderName: "Rahul Patil", leaderFee: 2500 },
 };
 
-/* ────────────────────────────────────────────────────────
-   notifyTrekAssigned — validation
-──────────────────────────────────────────────────────── */
-describe("notifyTrekAssigned — input validation", () => {
+describe("notifyTrekAssigned - input validation", () => {
   it("returns 400 when leaderEmail is missing", async () => {
     const req = { body: { ...VALID_BODY, leaderEmail: undefined } };
     const res = mockRes();
@@ -112,10 +97,7 @@ describe("notifyTrekAssigned — input validation", () => {
   });
 });
 
-/* ────────────────────────────────────────────────────────
-   notifyTrekAssigned — happy path
-──────────────────────────────────────────────────────── */
-describe("notifyTrekAssigned — happy path", () => {
+describe("notifyTrekAssigned - happy path", () => {
   beforeEach(() => {
     mockFrom.mockImplementation(() => buildChain({ data: { id: 1, event_id: "GT-EVT-TEST" }, error: null }));
     mockSendEmail.mockResolvedValue({ ok: true });
@@ -142,12 +124,12 @@ describe("notifyTrekAssigned — happy path", () => {
     await notifyTrekAssigned(req, res);
     expect(mockSendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        leaderEmail:  "rahul.patil@gadvede.com",
-        leaderName:   "Rahul Patil",
-        trekName:     "Kalsubai Trek",
-        eventDate:    "2026-05-15",
+        leaderEmail: "rahul.patil@gadvede.com",
+        leaderName: "Rahul Patil",
+        trekName: "Kalsubai Trek",
+        eventDate: "2026-05-15",
         participants: 20,
-        leaderFee:    2500,
+        leaderFee: 2500,
       })
     );
   });
@@ -162,17 +144,14 @@ describe("notifyTrekAssigned — happy path", () => {
   });
 });
 
-/* ────────────────────────────────────────────────────────
-   notifyTrekAssigned — graceful failure handling
-──────────────────────────────────────────────────────── */
-describe("notifyTrekAssigned — graceful failure", () => {
+describe("notifyTrekAssigned - graceful failure", () => {
   it("still returns 200 when Supabase upsert fails", async () => {
     mockFrom.mockImplementation(() => ({
-      select:      vi.fn().mockReturnThis(),
-      eq:          vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
       maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-      upsert:      vi.fn().mockReturnThis(),
-      single:      vi.fn().mockResolvedValue({ data: null, error: { message: "DB error" } }),
+      upsert: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: { message: "DB error" } }),
     }));
     mockSendEmail.mockResolvedValue({ ok: true });
 
@@ -209,11 +188,11 @@ describe("notifyTrekAssigned — graceful failure", () => {
 
   it("reports supabase: false when DB save fails", async () => {
     mockFrom.mockImplementation(() => ({
-      select:      vi.fn().mockReturnThis(),
-      eq:          vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
       maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-      upsert:      vi.fn().mockReturnThis(),
-      single:      vi.fn().mockResolvedValue({ data: null, error: { message: "DB error" } }),
+      upsert: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: { message: "DB error" } }),
     }));
     mockSendEmail.mockResolvedValue({ ok: true });
 
@@ -224,9 +203,6 @@ describe("notifyTrekAssigned — graceful failure", () => {
   });
 });
 
-/* ────────────────────────────────────────────────────────
-   getLeaderTreks
-──────────────────────────────────────────────────────── */
 describe("getLeaderTreks", () => {
   const TREK_ROWS = [
     { id: 1, trek_name: "Kalsubai Trek", event_date: "2026-05-15", leader_name: "Rahul Patil" },
@@ -234,10 +210,11 @@ describe("getLeaderTreks", () => {
   ];
 
   beforeEach(() => {
+    delete globalThis.process.env.FEATURE_CANONICAL_EVENT_MAPPER;
     mockFrom.mockImplementation(() => ({
       select: vi.fn().mockReturnThis(),
-      eq:     vi.fn().mockReturnThis(),
-      order:  vi.fn().mockResolvedValue({ data: TREK_ROWS, error: null }),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: TREK_ROWS, error: null }),
     }));
   });
 
@@ -260,8 +237,8 @@ describe("getLeaderTreks", () => {
   it("returns empty array when leader has no assigned treks", async () => {
     mockFrom.mockImplementation(() => ({
       select: vi.fn().mockReturnThis(),
-      eq:     vi.fn().mockReturnThis(),
-      order:  vi.fn().mockResolvedValue({ data: [], error: null }),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
     }));
     const req = { params: { leaderName: "Unknown Leader" } };
     const res = mockRes();
@@ -280,8 +257,8 @@ describe("getLeaderTreks", () => {
   it("returns 500 when Supabase returns an error", async () => {
     mockFrom.mockImplementation(() => ({
       select: vi.fn().mockReturnThis(),
-      eq:     vi.fn().mockReturnThis(),
-      order:  vi.fn().mockResolvedValue({ data: null, error: { message: "Connection failed" } }),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: null, error: { message: "Connection failed" } }),
     }));
     const req = { params: { leaderName: "Rahul Patil" } };
     const res = mockRes();
@@ -294,8 +271,8 @@ describe("getLeaderTreks", () => {
   it("returns treks ordered by event_date ascending", async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
-      eq:     vi.fn().mockReturnThis(),
-      order:  vi.fn().mockResolvedValue({ data: TREK_ROWS, error: null }),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: TREK_ROWS, error: null }),
     };
     mockFrom.mockReturnValue(chain);
     const req = { params: { leaderName: "Rahul Patil" } };
@@ -307,8 +284,8 @@ describe("getLeaderTreks", () => {
   it("queries trek_events table with correct leader_name", async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
-      eq:     vi.fn().mockReturnThis(),
-      order:  vi.fn().mockResolvedValue({ data: TREK_ROWS, error: null }),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: TREK_ROWS, error: null }),
     };
     mockFrom.mockReturnValue(chain);
     const req = { params: { leaderName: "Rahul Patil" } };
@@ -316,5 +293,58 @@ describe("getLeaderTreks", () => {
     await getLeaderTreks(req, res);
     expect(mockFrom).toHaveBeenCalledWith("trek_events");
     expect(chain.eq).toHaveBeenCalledWith("leader_name", "Rahul Patil");
+  });
+
+  it("returns canonical leader event records when canonicalEventMapper flag is enabled", async () => {
+    globalThis.process.env.FEATURE_CANONICAL_EVENT_MAPPER = "true";
+    mockFrom.mockImplementation(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({
+        data: [{
+          id: 1,
+          event_id: "GT-EVT-TEST",
+          trek_name: "Kalsubai Trek",
+          event_date: "2026-05-15T00:00:00.000Z",
+          leader_name: "Rahul Patil",
+          seats_total: 24,
+          status: "UPCOMING",
+          config: {
+            paymentConfig: {
+              trekLeaderName: "Rahul Patil",
+              whatsappGroupLink: "https://chat.whatsapp.com/test",
+            },
+            calculations: { leaderFee: 2500 },
+            payments: [{ recipientType: "LEADER", amount: 2500 }],
+            meta: { trekId: "TREK-001" },
+          },
+          created_at: "2026-05-01T10:00:00.000Z",
+        }],
+        error: null,
+      }),
+    }));
+
+    const req = { params: { leaderName: "Rahul Patil" } };
+    const res = mockRes();
+    await getLeaderTreks(req, res);
+
+    expect(res._status).toBe(200);
+    expect(res._body.data).toEqual([
+      expect.objectContaining({
+        paymentId: "GT-EVT-TEST",
+        trekName: "Kalsubai Trek",
+        trekId: "TREK-001",
+        eventDate: "2026-05-15",
+        participants: 24,
+        status: "UPCOMING",
+        canonicalEvent: true,
+        source: "backend",
+        config: expect.objectContaining({
+          trekLeaderName: "Rahul Patil",
+          whatsappGroupLink: "https://chat.whatsapp.com/test",
+        }),
+        calculations: { leaderFee: 2500 },
+      }),
+    ]);
   });
 });

@@ -18,7 +18,15 @@ import { getAllEmployees } from "../../data/employeeStorage";
 import { getEmployeeIncentiveStats, getIncentivesByEmployee, INCENTIVE_AMOUNT_PER_BOOKING } from "../../data/incentiveStorage";
 import { getAllVendors } from "../../data/vendorStorage";
 import { ENQUIRY_STATUS, ENQUIRY_TAGS, getEnquiries, setEnquiryStatus, setEnquiryTags } from "../../data/enquiryStorage";
+import { getLocalLeaderTrekEvents, loadLeaderTrekEvents } from "../../services/leaderEvents.service";
 import { buildWhatsAppMessage, DEFAULT_SALES_SMS, openSmsWithMessage } from "../../utils/leadActions";
+import {
+  compareEventsAscending,
+  compareEventsDescending,
+  getDaysUntilEvent,
+  isEventPast,
+  isEventUpcomingOrUndated,
+} from "../../utils/eventDate";
 
 const BASE_URL = window.location.origin;
 
@@ -48,13 +56,6 @@ function getEmployeeRatings(employeeName) {
   try {
     const feedback = JSON.parse(localStorage.getItem("gt_feedback")) || [];
     return feedback.filter(f => f.trekLeader === employeeName || f.guideName === employeeName);
-  } catch { return []; }
-}
-
-function getLeaderTrekEvents(empName) {
-  try {
-    const payments = JSON.parse(localStorage.getItem("gt_trek_payments")) || [];
-    return payments.filter(p => p.config?.trekLeaderName === empName);
   } catch { return []; }
 }
 
@@ -192,6 +193,7 @@ export default function EmployeePortal() {
   const [showPastTreks, setShowPastTreks] = useState(false);
   const [tick, setTick] = useState(0);
   const [trainingModules, setTrainingModules] = useState(() => getTrainingModules());
+  const [myTrekEvents, setMyTrekEvents] = useState(() => getLocalLeaderTrekEvents(session.fullName));
 
   useEffect(() => {
     const name = getTrainingUpdateEventName();
@@ -200,13 +202,28 @@ export default function EmployeePortal() {
     return () => window.removeEventListener(name, handler);
   }, []);
 
+  useEffect(() => {
+    let isActive = true;
+
+    setMyTrekEvents(getLocalLeaderTrekEvents(session.fullName));
+
+    loadLeaderTrekEvents(session.fullName).then((events) => {
+      if (isActive) {
+        setMyTrekEvents(events);
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [session.fullName, tick]);
+
   const emp = useMemo(() => getAllEmployees().find(e => e.employeeId === session.employeeId), [tick]);
   const cred = useMemo(() => getCredentialsByEmployeeId(session.employeeId), []);
   const incentives = useMemo(() => getIncentivesByEmployee(session.employeeId), [tick]);
   const incStats = useMemo(() => getEmployeeIncentiveStats(session.employeeId), [tick]);
   const ratings = useMemo(() => getEmployeeRatings(session.fullName), [tick]);
   const treks = useMemo(() => getUpcomingTreks(), [tick]);
-  const myTrekEvents = useMemo(() => getLeaderTrekEvents(session.fullName), [tick]);
   const canViewEnquiries = useMemo(() => canAccessAssignedEnquiries(session, emp), [session, emp]);
   // emp is a dep: management status is derived from session.username (stable),
   // but emp must be included so the list re-evaluates if the employee record changes.
@@ -462,28 +479,26 @@ export default function EmployeePortal() {
                     </div>
                     <div style={{ display: "flex", gap: 0, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, overflow: "hidden" }}>
                       <button onClick={() => setShowPastTreks(false)} style={{ border: "none", padding: "6px 14px", fontSize: 12, fontWeight: !showPastTreks ? 700 : 500, background: !showPastTreks ? "#22c55e" : "transparent", color: !showPastTreks ? "#fff" : S.muted, cursor: "pointer" }}>
-                        🚀 Upcoming ({myTrekEvents.filter(e => !e.eventDate || new Date(e.eventDate) >= new Date()).length})
+                        🚀 Upcoming ({myTrekEvents.filter((event) => isEventUpcomingOrUndated(event.eventDate)).length})
                       </button>
                       <button onClick={() => setShowPastTreks(true)} style={{ border: "none", padding: "6px 14px", fontSize: 12, fontWeight: showPastTreks ? 700 : 500, background: showPastTreks ? "#22c55e" : "transparent", color: showPastTreks ? "#fff" : S.muted, cursor: "pointer" }}>
-                        🕒 Past ({myTrekEvents.filter(e => e.eventDate && new Date(e.eventDate) < new Date()).length})
+                        🕒 Past ({myTrekEvents.filter((event) => isEventPast(event.eventDate)).length})
                       </button>
                     </div>
                   </div>
 
                   {(() => {
-                    const today = new Date(); today.setHours(0, 0, 0, 0);
                     const filtered = myTrekEvents.filter(e => {
-                      const d = e.eventDate ? new Date(e.eventDate) : null;
-                      return showPastTreks ? (d && d < today) : (!d || d >= today);
+                      return showPastTreks ? isEventPast(e.eventDate) : isEventUpcomingOrUndated(e.eventDate);
                     });
                     if (filtered.length === 0) return <div style={{ ...S.card(14), textAlign: "center", padding: "3rem", color: S.muted }}>{showPastTreks ? "No past treks found." : "No upcoming treks assigned to you yet."}</div>;
-                    return filtered.sort((a, b) => showPastTreks ? new Date(b.eventDate) - new Date(a.eventDate) : new Date(a.eventDate || "9999") - new Date(b.eventDate || "9999")).map(evt => {
+                    return filtered.sort((a, b) => showPastTreks ? compareEventsDescending(a, b) : compareEventsAscending(a, b)).map(evt => {
                       const participants = getTrekParticipants(evt.trekName, evt.eventDate);
                       const pending = participants.filter(p => p.paymentStatus === "PARTIAL" || p.paymentStatus === "PENDING" || !p.paymentStatus);
                       const paid = participants.filter(p => p.paymentStatus === "PAID");
                       const isOpen = expandedEvent === evt.paymentId;
                       const waLink = evt.config?.whatsappGroupLink;
-                      const daysTo = evt.eventDate ? Math.round((new Date(evt.eventDate) - new Date()) / 86400000) : null;
+                      const daysTo = getDaysUntilEvent(evt.eventDate);
                       return (
                         <div key={evt.paymentId} style={{ ...S.card(14), marginBottom: 10, padding: 0, overflow: "hidden" }}>
                           <div style={{ padding: "11px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "rgba(255,255,255,0.02)", borderBottom: isOpen ? "1px solid rgba(255,255,255,0.05)" : "none" }}>

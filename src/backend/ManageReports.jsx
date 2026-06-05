@@ -1,12 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { getAllBookings } from "../data/bookingStorage";
 import { getAllTransactions } from "../data/transactionStorage";
 import { getAllCustomers } from "../data/customerStorage";
-import { getAllTrekPayments } from "../data/trekPaymentStorage";
+import { getAllTrekPayments, hydrateTrekPaymentsFromBackend } from "../data/trekPaymentStorage";
 import { getAllIncentives } from "../data/incentiveStorage";
 import { getAllEarnings, computeProfit } from "../data/earningsStorage";
 import {
-  getAllTrekEvents, syncFromTrekPayments, advanceStage, setStage, updateTask,
+  syncFromTrekPayments, advanceStage, setStage, updateTask,
   getMissingActions, STAGES, STAGE_LABELS, STAGE_COLORS,
 } from "../data/trekEventStorage";
 
@@ -14,8 +14,6 @@ import {
    Helpers
 ══════════════════════════════════════════════ */
 function fmt(n) { return "₹" + Number(n || 0).toLocaleString("en-IN"); }
-function fmtN(n) { return Number(n || 0).toLocaleString("en-IN"); }
-
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function monthKey(iso) {
   const d = new Date(iso);
@@ -153,18 +151,23 @@ function LineChart({ data, color = "#0891b2", height = 160 }) {
 function PieChart({ data }) {
   if (!data?.length || data.every(d => d.value === 0)) return <p className="text-muted" style={{ fontSize: 12 }}>No data</p>;
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  let cursor = -Math.PI / 2;
   const cx = 80, cy = 80, r = 65;
+  const slices = data.reduce((state, d) => {
+    if (!d.value) return state;
+    const angle = (d.value / total) * 2 * Math.PI;
+    return {
+      cursor: state.cursor + angle,
+      slices: [...state.slices, { ...d, start: state.cursor, angle }],
+    };
+  }, { cursor: -Math.PI / 2, slices: [] }).slices;
   return (
     <div className="adm-pie-wrap">
       <svg viewBox="0 0 160 160" style={{ width: 160, height: 160, flexShrink: 0 }}>
-        {data.map((d, i) => {
-          if (!d.value) return null;
-          const angle = (d.value / total) * 2 * Math.PI;
-          const x1 = cx + r * Math.cos(cursor), y1 = cy + r * Math.sin(cursor);
-          cursor += angle;
-          const x2 = cx + r * Math.cos(cursor), y2 = cy + r * Math.sin(cursor);
-          return <path key={i} d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${angle > Math.PI ? 1 : 0} 1 ${x2} ${y2} Z`} fill={d.color}/>;
+        {slices.map((d, i) => {
+          const x1 = cx + r * Math.cos(d.start), y1 = cy + r * Math.sin(d.start);
+          const end = d.start + d.angle;
+          const x2 = cx + r * Math.cos(end), y2 = cy + r * Math.sin(end);
+          return <path key={i} d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${d.angle > Math.PI ? 1 : 0} 1 ${x2} ${y2} Z`} fill={d.color}/>;
         })}
       </svg>
       <ul className="adm-pie-legend">
@@ -210,20 +213,20 @@ function TrekEventCard({ event, onUpdate }) {
   const doneTasks = event.tasks.filter(t => t.status === "DONE").length;
   const progressPct = Math.round((doneTasks / totalTasks) * 100);
 
-  const handleAdvance = () => {
-    advanceStage(event.eventId);
+  const handleAdvance = async () => {
+    await advanceStage(event.eventId);
     setAdvMsg("Stage advanced!");
     setTimeout(() => setAdvMsg(""), 2000);
     onUpdate();
   };
 
-  const handleSetStage = (stage) => {
-    setStage(event.eventId, stage);
+  const handleSetStage = async (stage) => {
+    await setStage(event.eventId, stage);
     onUpdate();
   };
 
-  const handleToggleTask = (taskKey, currentStatus) => {
-    updateTask(event.eventId, taskKey, { status: currentStatus === "DONE" ? "PENDING" : "DONE" });
+  const handleToggleTask = async (taskKey, currentStatus) => {
+    await updateTask(event.eventId, taskKey, { status: currentStatus === "DONE" ? "PENDING" : "DONE" });
     onUpdate();
   };
 
@@ -403,6 +406,16 @@ export default function ManageReports() {
 
   const refresh = () => setTick(t => t + 1);
 
+  useEffect(() => {
+    let active = true;
+    hydrateTrekPaymentsFromBackend().then(() => {
+      if (active) refresh();
+    }).catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   /* ── Raw data ── */
   const bookings     = useMemo(() => getAllBookings(),      [tick]);
   const transactions = useMemo(() => getAllTransactions(),  [tick]);
@@ -425,26 +438,26 @@ export default function ManageReports() {
 
   /* ── Chart data ── */
   const months = last6Months();
-  const bookingTrend = useMemo(() => {
+  const bookingTrend = (() => {
     const counts = {};
     bookings.forEach(b => { const k = monthKey(b.savedAt || b.bookingDate); counts[k] = (counts[k] || 0) + 1; });
     return months.map(m => ({ label: m.label, value: counts[m.key] || 0 }));
-  }, [bookings]);
+  })();
 
-  const revenueTrend = useMemo(() => {
+  const revenueTrend = (() => {
     const totals = {};
     transactions.filter(t => t.transactionStatus === "SUCCESS").forEach(t => {
       const k = monthKey(t.createdAt);
       totals[k] = (totals[k] || 0) + (t.grossAmount || 0);
     });
     return months.map(m => ({ label: m.label, value: totals[m.key] || 0 }));
-  }, [transactions]);
+  })();
 
-  const customerGrowth = useMemo(() => {
+  const customerGrowth = (() => {
     const counts = {};
     customers.forEach(c => { const k = monthKey(c.createdAt); counts[k] = (counts[k] || 0) + 1; });
     return months.map(m => ({ label: m.label, value: counts[m.key] || 0 }));
-  }, [customers]);
+  })();
 
   const txnPie = [
     { label: "Success",  value: transactions.filter(t => t.transactionStatus === "SUCCESS").length,  color: "#22c55e" },
@@ -471,8 +484,6 @@ export default function ManageReports() {
   const profitColor = totals.netProfit >= 0 ? "#16a34a" : "#dc2626";
   const profitBg    = totals.netProfit >= 0 ? "#f0fdf4" : "#fef2f2";
   const profitIcon  = totals.netProfit >= 0 ? "📈" : "📉";
-  const displayRevenue = totals.totalRevenue || totals.revenue || 0;
-
   return (
     <div className="adm-page">
       <h3 className="adm-page-title">📊 Reports & Analytics</h3>

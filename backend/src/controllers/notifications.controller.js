@@ -1,5 +1,7 @@
 import { sendTrekAssignmentEmail } from "../services/emailService.js";
 import supabaseAdmin from "../config/supabaseAdminClient.js";
+import { isFeatureEnabled } from "../config/featureFlags.js";
+import { mapTrekEventRowToLeaderEvent } from "../utils/trekEventMapper.js";
 
 function generateEventId() {
   return "GT-EVT-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -73,5 +75,11 @@ export async function getLeaderTreks(req, res) {
     .order("event_date", { ascending: true });
 
   if (error) return res.status(500).json({ success: false, error: error.message });
-  return res.json({ success: true, data: data || [] });
+
+  const rows = data || [];
+  const payload = isFeatureEnabled("canonicalEventMapper")
+    ? rows.map(mapTrekEventRowToLeaderEvent)
+    : rows;
+
+  return res.json({ success: true, data: payload });
 }

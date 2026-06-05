@@ -6,7 +6,7 @@ import { getAllBookings } from "../data/bookingStorage";
 import { getTransactionStats } from "../data/transactionStorage";
 import { getAllCustomers } from "../data/customerStorage";
 import { getAllEmergencyContacts, saveEmergencyContact, deleteEmergencyContact } from "../data/emergencyStorage";
-import { getAllTrekPayments } from "../data/trekPaymentStorage";
+import { getAllTrekPayments, hydrateTrekPaymentsFromBackend } from "../data/trekPaymentStorage";
 import { getAllIncentives } from "../data/incentiveStorage";
 import { syncFromTrekPayments, getMissingActions, STAGE_LABELS, STAGE_COLORS } from "../data/trekEventStorage";
 
@@ -42,6 +42,7 @@ const EMPTY_CONTACT = { name: "", contactNumber: "", location: "", type: "Hospit
 function fmt(n) { return "₹" + Number(n || 0).toLocaleString("en-IN"); }
 
 function Dashboard() {
+  const [syncTick, setSyncTick] = useState(0);
   const stats = SECTIONS.map((s) => ({ ...s, count: getAdminItems(s.key).length }));
   const total = stats.reduce((sum, s) => sum + s.count, 0);
   const txnStats      = getTransactionStats();
@@ -50,9 +51,9 @@ function Dashboard() {
 
   /* ── Financial health ── */
   const bookings    = useMemo(() => getAllBookings(),     []);
-  const trekPayments = useMemo(() => getAllTrekPayments(), []);
+  const trekPayments = useMemo(() => getAllTrekPayments(), [syncTick]);
   const incentives   = useMemo(() => getAllIncentives(),   []);
-  const trekEvents   = useMemo(() => syncFromTrekPayments(), []);
+  const trekEvents   = useMemo(() => syncFromTrekPayments(), [syncTick]);
 
   const revenue      = bookings.filter(b => b.status !== "CANCELLED").reduce((s, b) => s + Number(b.pricePaid || 0), 0);
   const leaderFees   = trekPayments.reduce((s, p) => s + Number(p.calculations?.leaderFee || 0), 0);
@@ -77,6 +78,16 @@ function Dashboard() {
   useEffect(() => {
     const t = setInterval(() => setQuoteIdx((i) => (i + 1) % QUOTES.length), 6000);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    hydrateTrekPaymentsFromBackend().then(() => {
+      if (active) setSyncTick((tick) => tick + 1);
+    }).catch(() => {});
+    return () => {
+      active = false;
+    };
   }, []);
 
   /* ── Emergency contacts ── */

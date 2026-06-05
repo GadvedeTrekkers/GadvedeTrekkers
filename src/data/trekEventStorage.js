@@ -3,6 +3,9 @@
    Trek Lifecycle Tracking: stage transitions + task management
 ══════════════════════════════════════════════ */
 
+import { isFeatureEnabled } from "./featureFlags";
+import { getAllTrekPayments, updateTrekPaymentLifecycle } from "./trekPaymentStorage";
+
 const KEY = "gt_trek_events";
 
 export const STAGES = [
@@ -60,6 +63,10 @@ function _save(list) {
   localStorage.setItem(KEY, JSON.stringify(list));
 }
 
+function _linkedPaymentIdFromEvent(event) {
+  return event?._linkedPaymentId || event?.eventId?.replace(/^EVT-/, "") || "";
+}
+
 function _makeTasks(eventId, overrides = {}) {
   return DEFAULT_TASKS.map(t => ({
     taskId:      `${eventId}-${t.taskKey}`,
@@ -109,7 +116,24 @@ export function createTrekEvent({ trekName, trekDate, createdBy }) {
   return event;
 }
 
-export function advanceStage(eventId, { note = "" } = {}) {
+async function _persistLifecycle(event) {
+  const linkedPaymentId = _linkedPaymentIdFromEvent(event);
+  if (!isFeatureEnabled("backendEventWrites") || !linkedPaymentId) {
+    return event;
+  }
+
+  await updateTrekPaymentLifecycle(linkedPaymentId, {
+    eventId: event.eventId,
+    currentStage: event.currentStage,
+    stageHistory: event.stageHistory,
+    tasks: event.tasks,
+    notes: event.notes || "",
+  });
+
+  return event;
+}
+
+export async function advanceStage(eventId, { note = "" } = {}) {
   const all = getAllTrekEvents();
   const idx = all.findIndex(e => e.eventId === eventId);
   if (idx === -1) return null;
@@ -122,10 +146,10 @@ export function advanceStage(eventId, { note = "" } = {}) {
   event.stageHistory.push({ stage: newStage, changedAt: new Date().toISOString(), changedBy: user.name, note });
   all[idx] = event;
   _save(all);
-  return event;
+  return _persistLifecycle(event);
 }
 
-export function setStage(eventId, stage, { note = "" } = {}) {
+export async function setStage(eventId, stage, { note = "" } = {}) {
   if (!STAGES.includes(stage)) return null;
   const all = getAllTrekEvents();
   const idx = all.findIndex(e => e.eventId === eventId);
@@ -134,10 +158,10 @@ export function setStage(eventId, stage, { note = "" } = {}) {
   all[idx].currentStage = stage;
   all[idx].stageHistory.push({ stage, changedAt: new Date().toISOString(), changedBy: user.name, note });
   _save(all);
-  return all[idx];
+  return _persistLifecycle(all[idx]);
 }
 
-export function updateTask(eventId, taskKey, { status, assignedTo, note } = {}) {
+export async function updateTask(eventId, taskKey, { status, assignedTo, note } = {}) {
   const all = getAllTrekEvents();
   const idx = all.findIndex(e => e.eventId === eventId);
   if (idx === -1) return null;
@@ -150,20 +174,24 @@ export function updateTask(eventId, taskKey, { status, assignedTo, note } = {}) 
       ...(status    !== undefined ? { status }    : {}),
       ...(assignedTo !== undefined ? { assignedTo } : {}),
       ...(note      !== undefined ? { note }      : {}),
-      ...(isDone ? { completedAt: new Date().toISOString(), completedBy: user.name } : {}),
+      ...(isDone
+        ? { completedAt: new Date().toISOString(), completedBy: user.name }
+        : status === "PENDING"
+          ? { completedAt: null, completedBy: null }
+          : {}),
     };
   });
   _save(all);
-  return all[idx];
+  return _persistLifecycle(all[idx]);
 }
 
-export function updateEventNotes(eventId, notes) {
+export async function updateEventNotes(eventId, notes) {
   const all = getAllTrekEvents();
   const idx = all.findIndex(e => e.eventId === eventId);
   if (idx === -1) return null;
   all[idx].notes = notes;
   _save(all);
-  return all[idx];
+  return _persistLifecycle(all[idx]);
 }
 
 export function deleteTrekEvent(eventId) {
@@ -172,16 +200,15 @@ export function deleteTrekEvent(eventId) {
 
 /* ── Auto-sync from trek payment records ── */
 export function syncFromTrekPayments() {
-  const payments = JSON.parse(localStorage.getItem("gt_trek_payments") || "[]");
-  const all = getAllTrekEvents();
-  const existingKeys = new Set(all.map(e => `${e.trekName}||${e.trekDate}`));
+  const payments = getAllTrekPayments();
+  const existingEvents = getAllTrekEvents();
+  const linkedEvents = new Map();
+  const manualEvents = existingEvents.filter(event => !_linkedPaymentIdFromEvent(event));
   let changed = false;
 
   payments.forEach(p => {
-    const key = `${p.trekName}||${p.eventDate}`;
-    if (existingKeys.has(key)) return;
-
-    const eventId = `EVT-${p.paymentId}`;
+    const linkedPaymentId = p.eventId || p.paymentId;
+    const eventId = `EVT-${linkedPaymentId}`;
     const hasLeader  = !!p.config?.trekLeaderName;
     const hasFood    = !!(p.config?.foodVendorName  || (p.calculations?.foodTotal  > 0));
     const hasBus     = !!(p.config?.busVendorName   || (p.calculations?.transportTotal > 0));
@@ -203,32 +230,40 @@ export function syncFromTrekPayments() {
     if (p.status === "COMPLETED") stage = "PAYMENTS_SETTLED";
     else if (trekDateObj && trekDateObj < now) stage = "COMPLETED";
 
-    const stageHistory = [
+    const fallbackStageHistory = [
       { stage: "CREATED",      changedAt: p.createdAt, changedBy: "admin", note: "Synced from payment record" },
       { stage: "BOOKING_OPEN", changedAt: p.createdAt, changedBy: "admin", note: "Auto-advanced" },
     ];
     if (stage !== "BOOKING_OPEN") {
-      stageHistory.push({ stage, changedAt: p.createdAt, changedBy: "admin", note: "Auto-detected" });
+      fallbackStageHistory.push({ stage, changedAt: p.createdAt, changedBy: "admin", note: "Auto-detected" });
     }
 
-    all.push({
+    const lifecycle = p.lifecycle && typeof p.lifecycle === "object" ? p.lifecycle : {};
+    const nextEvent = {
       eventId,
       trekName: p.trekName,
       trekDate: p.eventDate,
-      currentStage: stage,
-      stageHistory,
-      tasks: _makeTasks(eventId, taskOverrides),
-      notes: "",
+      currentStage: lifecycle.currentStage || stage,
+      stageHistory: Array.isArray(lifecycle.stageHistory) && lifecycle.stageHistory.length > 0 ? lifecycle.stageHistory : fallbackStageHistory,
+      tasks: Array.isArray(lifecycle.tasks) && lifecycle.tasks.length > 0 ? lifecycle.tasks : _makeTasks(eventId, taskOverrides),
+      notes: lifecycle.notes || "",
       createdAt: p.createdAt,
-      createdBy: "admin",
-      _linkedPaymentId: p.paymentId,
-    });
-    existingKeys.add(key);
-    changed = true;
+      createdBy: p.createdBy || "admin",
+      _linkedPaymentId: linkedPaymentId,
+    };
+
+    linkedEvents.set(linkedPaymentId, nextEvent);
   });
 
-  if (changed) _save(all);
-  return getAllTrekEvents();
+  const nextEvents = [...manualEvents, ...linkedEvents.values()];
+  const serializedExisting = JSON.stringify(existingEvents);
+  const serializedNext = JSON.stringify(nextEvents);
+  if (serializedExisting !== serializedNext) {
+    _save(nextEvents);
+    changed = true;
+  }
+
+  return changed ? nextEvents : existingEvents;
 }
 
 /* ── Missing-action detection ── */
