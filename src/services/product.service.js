@@ -16,6 +16,7 @@
 
 import { getAdminItems, saveAdminItems, normaliseItem } from "../data/adminStorage";
 import { productsApi } from "../api/products.api";
+import supabase from "../utils/supabase/client";
 
 const SYNC_TTL_MS = 60 * 1000; // 1 minute — keeps frontend in sync with admin changes
 
@@ -39,6 +40,52 @@ function slugify(value = "") {
     .replace(/^-+|-+$/g, "");
 }
 
+function mapPublicProductRow(row) {
+  const rawItem = row?.extra_content?.rawItem || {};
+  return {
+    ...rawItem,
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    location: row.location,
+    price: row.base_price ?? rawItem.price ?? "",
+    originalPrice: row.compare_at_price ?? rawItem.originalPrice ?? "",
+    duration: row.duration_label ?? rawItem.duration ?? "",
+    altitude: row.altitude_label ?? rawItem.altitude ?? "",
+    difficulty: row.difficulty ?? rawItem.difficulty ?? "",
+    enduranceLevel: row.endurance_level ?? rawItem.enduranceLevel ?? "",
+    subtitle: row.short_description ?? rawItem.subtitle ?? "",
+    description: row.description ?? rawItem.description ?? "",
+    history: row.history ?? rawItem.history ?? "",
+    mainAttractions: row.main_attractions ?? rawItem.mainAttractions ?? "",
+    detailedHistory: row.detailed_history ?? rawItem.detailedHistory ?? "",
+    image: row.primary_image_url ?? rawItem.image ?? "",
+    imageGallery: JSON.stringify(row.gallery || []),
+    active: row.is_active,
+    sortOrder: row.sort_order,
+    rating: row.rating ?? rawItem.rating ?? "",
+    reviews: row.review_count ?? rawItem.reviews ?? "",
+  };
+}
+
+async function fetchPublicProductsFromSupabase(productType) {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .eq("product_type", productType);
+
+  if (error || !Array.isArray(data) || data.length === 0) {
+    return null;
+  }
+
+  return data.map(mapPublicProductRow);
+}
+
 export const productService = {
   /* ── Public listing pages ─────────────────────────────────────────────── */
 
@@ -54,11 +101,23 @@ export const productService = {
     }
     try {
       const items = await productsApi.getAll(productType);
-      if (!Array.isArray(items) || items.length === 0) return null;
+      if (!Array.isArray(items) || items.length === 0) {
+        const directItems = await fetchPublicProductsFromSupabase(productType);
+        if (!directItems) return getAdminItems(storageKey) || null;
+        saveAdminItems(storageKey, directItems);
+        setSyncedAt(storageKey);
+        return directItems;
+      }
       saveAdminItems(storageKey, items);
       setSyncedAt(storageKey);
       return items;
     } catch {
+      const directItems = await fetchPublicProductsFromSupabase(productType);
+      if (directItems) {
+        saveAdminItems(storageKey, directItems);
+        setSyncedAt(storageKey);
+        return directItems;
+      }
       // API unreachable — return cached data silently
       return getAdminItems(storageKey) || null;
     }
