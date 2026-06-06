@@ -8,6 +8,8 @@ import { WhatsAppIcon, ArrowRightIcon, DownloadIcon } from "../../components/ico
 import { syncProductsFromApi } from "../../api/getAll";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 
+const ALLOW_STATIC_TREK_FALLBACK = import.meta.env.DEV;
+
 const parseGallery = (value, fallback) => {
   try {
     const parsed = JSON.parse(value || "[]").filter(Boolean);
@@ -18,7 +20,12 @@ const parseGallery = (value, fallback) => {
 };
 
 function buildTreks(rawItems = getAdminItems("gt_treks")) {
-  const source = rawItems.length > 0 ? rawItems : uniqueTreks;
+  const source =
+    rawItems.length > 0
+      ? rawItems
+      : ALLOW_STATIC_TREK_FALLBACK
+      ? uniqueTreks
+      : [];
 
   return source
     .filter((t) => t.active !== false)

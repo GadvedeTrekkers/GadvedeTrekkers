@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminData } from "../hooks/useAdminData";
 import { logActivity } from "../data/activityLogStorage";
+import { getPickupLocationCatalog, getPickupLocationsForCity, rememberPickupLocations } from "../data/pickupLocationStorage";
 import { apiRequest } from "../api/backendClient";
+import { formatTimeFromInput, toTimeInputValue } from "../utils/pickupTime";
+import InfoTooltip from "../components/InfoTooltip";
+import { useToast } from "../components/Toast";
 
 const CITY_STOPS = {
   Mumbai: ["Dadar", "Thane", "Borivali", "Ghatkopar", "Andheri", "Bandra", "CST / CSMT", "Kurla", "Mulund", "Vashi", "Panvel", "Kalyan"],
@@ -24,8 +28,95 @@ function parseJsonValue(value, fallback) {
   }
 }
 
-function PickupPointsField({ value, onChange, cities }) {
+function buildPickupOptions(city, savedLocations = []) {
+  const options = new Map();
+
+  savedLocations.forEach((entry) => {
+    if (!entry?.location) return;
+    options.set(entry.location, {
+      location: entry.location,
+      mapUrl: entry.mapUrl || "",
+      source: "saved",
+    });
+  });
+
+  (CITY_STOPS[city] || []).forEach((stop) => {
+    if (!options.has(stop)) {
+      options.set(stop, {
+        location: stop,
+        mapUrl: "",
+        source: "preset",
+      });
+    }
+  });
+
+  return Array.from(options.values());
+}
+
+function validatePickupRowsByCity(parsed = {}) {
+  const issues = [];
+
+  Object.entries(parsed || {}).forEach(([city, rows]) => {
+    (rows || []).forEach((row, index) => {
+      const time = String(row?.time || "").trim();
+      const location = String(row?.location || "").trim();
+      const mapUrl = String(row?.mapUrl || "").trim();
+      const hasAnyValue = time || location || mapUrl;
+
+      if (!hasAnyValue) return;
+      if (!location) {
+        issues.push(`${city} pickup ${index + 1}: add a pickup location.`);
+      }
+      if (mapUrl && !/^https?:\/\//i.test(mapUrl)) {
+        issues.push(`${city} pickup ${index + 1}: Google Maps link should start with http:// or https://.`);
+      }
+    });
+  });
+
+  return issues;
+}
+
+function validateTrekDates(rows = []) {
+  const issues = [];
+
+  (rows || []).forEach((row, index) => {
+    const hasAnyValue = String(row?.date || "").trim() || String(row?.label || "").trim() || String(row?.whatsappGroupLink || "").trim();
+    if (!hasAnyValue) return;
+    if (!String(row?.date || "").trim()) {
+      issues.push(`Batch ${index + 1}: date is required.`);
+    }
+    if (String(row?.whatsappGroupLink || "").trim() && !/^https?:\/\//i.test(String(row.whatsappGroupLink).trim())) {
+      issues.push(`Batch ${index + 1}: WhatsApp link should start with http:// or https://.`);
+    }
+  });
+
+  return issues;
+}
+
+function validateAdminForm(fields, form) {
+  const nextErrors = {};
+
+  fields.forEach((field) => {
+    if (field.type === "departurePlans" || field.type === "pickups") {
+      const parsed = parseJsonValue(form[field.key], {});
+      const issues = validatePickupRowsByCity(parsed);
+      if (issues.length) nextErrors[field.key] = issues;
+    } else if (field.type === "trekDates") {
+      const rows = parseJsonValue(form[field.key], []);
+      const issues = validateTrekDates(rows);
+      if (issues.length) nextErrors[field.key] = issues;
+    } else if (field.required && !String(form[field.key] ?? "").trim()) {
+      nextErrors[field.key] = [`${field.label} is required.`];
+    }
+  });
+
+  return nextErrors;
+}
+
+function PickupPointsField({ value, onChange, cities, errorMessages = [] }) {
   const parsed = useMemo(() => parseJsonValue(value, {}), [value]);
+  const [savedLocations, setSavedLocations] = useState(() => getPickupLocationCatalog());
+  const toast = useToast();
 
   const update = (next) => onChange(JSON.stringify(next));
 
@@ -37,7 +128,7 @@ function PickupPointsField({ value, onChange, cities }) {
   };
 
   const addPoint = (city) => {
-    update({ ...parsed, [city]: [...(parsed[city] || []), { time: "", location: "" }] });
+    update({ ...parsed, [city]: [...(parsed[city] || []), { time: "", location: "", mapUrl: "" }] });
   };
 
   const editPoint = (city, idx, field, val) => {
@@ -46,12 +137,40 @@ function PickupPointsField({ value, onChange, cities }) {
     update({ ...parsed, [city]: pts });
   };
 
+  const applySavedLocation = (city, idx, location) => {
+    if (!location) return;
+    const option = buildPickupOptions(city, getPickupLocationsForCity(city)).find((entry) => entry.location === location);
+    editPoint(city, idx, "location", location);
+    if (option?.mapUrl) {
+      editPoint(city, idx, "mapUrl", option.mapUrl);
+    }
+    toast?.info(`Loaded saved pickup "${location}" for ${city}.`, 2400);
+  };
+
+  const commitPoint = (city, idx) => {
+    const point = (parsed[city] || [])[idx];
+    if (rememberPickupLocations([{ city, ...point }])) {
+      setSavedLocations(getPickupLocationCatalog());
+      toast?.success(`Saved pickup "${point.location}" for ${city}.`);
+    }
+  };
+
   const removePoint = (city, idx) => {
     update({ ...parsed, [city]: (parsed[city] || []).filter((_, i) => i !== idx) });
   };
 
   return (
     <div className="adm-pickups-wrap">
+      <div className="small text-muted mb-2">
+        Flow: choose the city, pick a saved stop or type a new one, add the Google Maps link if you have it, then save. The next trek can reuse the same pickup.
+      </div>
+      {errorMessages.length > 0 && (
+        <div className="alert alert-danger py-2 px-3 small mb-3">
+          {errorMessages.map((message) => (
+            <div key={message}>{message}</div>
+          ))}
+        </div>
+      )}
       <div className="adm-city-list mb-3">
         {cities.map((city) => (
           <label key={city} className="adm-city-check">
@@ -73,17 +192,39 @@ function PickupPointsField({ value, onChange, cities }) {
           {(parsed[city] || []).map((pt, i) => (
             <div key={i} className="adm-pickup-row">
               <input
+                type="time"
                 className="form-control form-control-sm"
-                placeholder="Time (e.g. 09:00 PM)"
-                value={pt.time}
+                value={toTimeInputValue(pt.time || "")}
+                onChange={(e) => editPoint(city, i, "time", formatTimeFromInput(e.target.value))}
+              />
+              <input
+                className="form-control form-control-sm"
+                placeholder="Manual time (e.g. 09:00 PM)"
+                value={pt.time || ""}
                 onChange={(e) => editPoint(city, i, "time", e.target.value)}
               />
-              <select className="form-select form-select-sm" value={pt.location} onChange={(e) => editPoint(city, i, "location", e.target.value)}>
-                <option value="">- Select stop -</option>
-                {(CITY_STOPS[city] || []).map((stop) => (
-                  <option key={stop} value={stop}>{stop}</option>
+              <select className="form-select form-select-sm" value="" onChange={(e) => applySavedLocation(city, i, e.target.value)}>
+                <option value="">- Use saved / preset pickup -</option>
+                {buildPickupOptions(city, savedLocations.filter((entry) => entry.city === city)).map((stop) => (
+                  <option key={`${city}_${stop.location}`} value={stop.location}>
+                    {stop.location}{stop.source === "saved" ? " (saved)" : ""}
+                  </option>
                 ))}
               </select>
+              <input
+                className="form-control form-control-sm"
+                placeholder="Pickup location"
+                value={pt.location || ""}
+                onChange={(e) => editPoint(city, i, "location", e.target.value)}
+                onBlur={() => commitPoint(city, i)}
+              />
+              <input
+                className="form-control form-control-sm"
+                placeholder="Geo / Google Maps URL (optional)"
+                value={pt.mapUrl || ""}
+                onChange={(e) => editPoint(city, i, "mapUrl", e.target.value)}
+                onBlur={() => commitPoint(city, i)}
+              />
               <button type="button" className="btn btn-outline-danger btn-sm py-0 px-2" onClick={() => removePoint(city, i)}>x</button>
             </div>
           ))}
@@ -93,7 +234,7 @@ function PickupPointsField({ value, onChange, cities }) {
   );
 }
 
-function TrekDatesField({ value, onChange }) {
+function TrekDatesField({ value, onChange, errorMessages = [] }) {
   const rows = parseJsonValue(value, []);
 
   const updateRows = (next) => onChange(JSON.stringify(next));
@@ -115,6 +256,16 @@ function TrekDatesField({ value, onChange }) {
 
   return (
     <div className="adm-pickups-wrap">
+      <div className="small text-muted mb-2">
+        Guide: add each departure batch date once, then optionally attach the matching WhatsApp group link for that batch.
+      </div>
+      {errorMessages.length > 0 && (
+        <div className="alert alert-danger py-2 px-3 small mb-3">
+          {errorMessages.map((message) => (
+            <div key={message}>{message}</div>
+          ))}
+        </div>
+      )}
       <div className="d-flex justify-content-between align-items-center mb-2">
         <div className="small text-muted">Add multiple departure dates and map the WhatsApp group link for each batch.</div>
         <button type="button" className="btn btn-outline-success btn-sm" onClick={addRow}>+ Add Date</button>
@@ -289,6 +440,7 @@ function DeparturePlansField({ value, onChange, cityOptions = [] }) {
   const plans = parseJsonValue(value, {});
   const selectedCities = Object.keys(plans);
   const [activeCity, setActiveCity] = useState(selectedCities[0] || "");
+  const [savedLocations, setSavedLocations] = useState(() => getPickupLocationCatalog());
 
   useEffect(() => {
     if (selectedCities.length === 0) {
@@ -323,7 +475,7 @@ function DeparturePlansField({ value, onChange, cityOptions = [] }) {
 
   const addPickup = (city) => {
     const current = plans[city] || { pickupPoints: [] };
-    updatePlan(city, "pickupPoints", [...(current.pickupPoints || []), { time: "", location: "" }]);
+    updatePlan(city, "pickupPoints", [...(current.pickupPoints || []), { time: "", location: "", mapUrl: "" }]);
   };
 
   const updatePickup = (city, index, field, fieldValue) => {
@@ -331,6 +483,26 @@ function DeparturePlansField({ value, onChange, cityOptions = [] }) {
     const nextPickups = [...(current.pickupPoints || [])];
     nextPickups[index] = { ...(nextPickups[index] || {}), [field]: fieldValue };
     updatePlan(city, "pickupPoints", nextPickups);
+  };
+
+  const applySavedPickup = (city, index, location) => {
+    if (!location) return;
+    const option = buildPickupOptions(city, getPickupLocationsForCity(city)).find((entry) => entry.location === location);
+    const current = plans[city] || { pickupPoints: [] };
+    const nextPickups = [...(current.pickupPoints || [])];
+    nextPickups[index] = {
+      ...(nextPickups[index] || {}),
+      location,
+      mapUrl: option?.mapUrl || nextPickups[index]?.mapUrl || "",
+    };
+    updatePlan(city, "pickupPoints", nextPickups);
+  };
+
+  const commitPickup = (city, index) => {
+    const point = (plans[city]?.pickupPoints || [])[index];
+    if (rememberPickupLocations([{ city, ...point }])) {
+      setSavedLocations(getPickupLocationCatalog());
+    }
   };
 
   const removePickup = (city, index) => {
@@ -451,6 +623,225 @@ function DeparturePlansField({ value, onChange, cityOptions = [] }) {
   );
 }
 
+function EnhancedDeparturePlansField({ value, onChange, cityOptions = [], errorMessages = [] }) {
+  const plans = parseJsonValue(value, {});
+  const selectedCities = Object.keys(plans);
+  const [activeCity, setActiveCity] = useState(selectedCities[0] || "");
+  const [savedLocations, setSavedLocations] = useState(() => getPickupLocationCatalog());
+  const toast = useToast();
+
+  useEffect(() => {
+    if (selectedCities.length === 0) {
+      setActiveCity("");
+      return;
+    }
+    if (!selectedCities.includes(activeCity)) {
+      setActiveCity(selectedCities[0]);
+    }
+  }, [activeCity, selectedCities]);
+
+  const updatePlans = (next) => onChange(JSON.stringify(next));
+
+  const addCity = (city) => {
+    if (plans[city]) {
+      setActiveCity(city);
+      return;
+    }
+    updatePlans({ ...plans, [city]: { price: "", pickupPoints: [], itinerary: "" } });
+    setActiveCity(city);
+  };
+
+  const removeCity = (city) => {
+    const next = { ...plans };
+    delete next[city];
+    updatePlans(next);
+  };
+
+  const updatePlan = (city, field, fieldValue) => {
+    updatePlans({ ...plans, [city]: { ...plans[city], [field]: fieldValue } });
+  };
+
+  const replacePickup = (city, index, patch) => {
+    const current = plans[city] || { pickupPoints: [] };
+    const nextPickups = [...(current.pickupPoints || [])];
+    nextPickups[index] = { ...(nextPickups[index] || {}), ...patch };
+    updatePlan(city, "pickupPoints", nextPickups);
+  };
+
+  const addPickup = (city) => {
+    const current = plans[city] || { pickupPoints: [] };
+    updatePlan(city, "pickupPoints", [...(current.pickupPoints || []), { time: "", location: "", mapUrl: "" }]);
+  };
+
+  const applySavedPickup = (city, index, location) => {
+    if (!location) return;
+    const option = buildPickupOptions(city, getPickupLocationsForCity(city)).find((entry) => entry.location === location);
+    replacePickup(city, index, {
+      location,
+      mapUrl: option?.mapUrl || plans[city]?.pickupPoints?.[index]?.mapUrl || "",
+    });
+    toast?.info(`Loaded saved pickup "${location}" for ${city}.`, 2400);
+  };
+
+  const commitPickup = (city, index) => {
+    const point = (plans[city]?.pickupPoints || [])[index];
+    if (rememberPickupLocations([{ city, ...point }])) {
+      setSavedLocations(getPickupLocationCatalog());
+      toast?.success(`Saved pickup "${point.location}" for ${city}.`);
+    }
+  };
+
+  const removePickup = (city, index) => {
+    const current = plans[city] || { pickupPoints: [] };
+    updatePlan(city, "pickupPoints", (current.pickupPoints || []).filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="adm-pickups-wrap">
+      <div className="small text-muted mb-2">
+        Add departure cities once, then switch between city tabs. Saved pickup locations can be reused across treks, so you do not have to type them again.
+      </div>
+      <div className="small text-muted mb-3" style={{ background: "#f8f9fa", padding: "10px 12px", borderRadius: 8, borderLeft: "3px solid #198754" }}>
+        Flow: 1. Add the departure city. 2. Add a pickup row. 3. Use a saved stop or type a new stop. 4. Pick time with the clock or manual text. 5. Add the maps link to remember the geo location for future treks.
+      </div>
+      {errorMessages.length > 0 && (
+        <div className="alert alert-danger py-2 px-3 small mb-3">
+          {errorMessages.map((message) => (
+            <div key={message}>{message}</div>
+          ))}
+        </div>
+      )}
+
+      <div className="adm-city-list mb-3">
+        {cityOptions.map((city) => (
+          <button key={city} type="button" className="btn btn-outline-success btn-sm" onClick={() => addCity(city)}>
+            {plans[city] ? `Edit ${city}` : `+ ${city}`}
+          </button>
+        ))}
+      </div>
+
+      {selectedCities.length === 0 ? (
+        <div className="text-muted small">No departure city selected yet.</div>
+      ) : (
+        <>
+          <div className="adm-city-list mb-3">
+            {selectedCities.map((city) => (
+              <label key={city} className="adm-city-check">
+                <input type="radio" name="departure-city-editor" checked={activeCity === city} onChange={() => setActiveCity(city)} />
+                {city}
+              </label>
+            ))}
+          </div>
+
+          {activeCity && (
+            <div className="border rounded-3 p-3 mb-3 bg-light">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <div className="fw-semibold">{activeCity} Settings</div>
+                <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => removeCity(activeCity)}>
+                  Remove {activeCity}
+                </button>
+              </div>
+
+              <div className="row g-3">
+                <div className="col-md-4">
+                  <label className="form-label small fw-semibold mb-1">{activeCity} Price (INR)</label>
+                  <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    placeholder={`Enter ${activeCity} price`}
+                    value={plans[activeCity]?.price ?? ""}
+                    onChange={(e) => updatePlan(activeCity, "price", e.target.value)}
+                  />
+                </div>
+
+                <div className="col-md-8">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <label className="form-label small fw-semibold mb-1">
+                      {activeCity} Pickup Points
+                      <InfoTooltip text="Saved pickup locations for this city appear in the reuse dropdown. Manual entries still work and become reusable after save." />
+                    </label>
+                    <button type="button" className="btn btn-outline-success btn-sm py-0 px-2" onClick={() => addPickup(activeCity)}>+ Add Pickup</button>
+                  </div>
+
+                  {(plans[activeCity]?.pickupPoints || []).length === 0 ? (
+                    <div className="text-muted small mt-1">No pickup points added yet.</div>
+                  ) : (
+                    (plans[activeCity]?.pickupPoints || []).map((pickup, index) => (
+                      <div key={`${activeCity}_${index}`} className="adm-pickup-row">
+                        <input
+                          type="time"
+                          className="form-control form-control-sm"
+                          value={toTimeInputValue(pickup.time || "")}
+                          onChange={(e) => replacePickup(activeCity, index, { time: formatTimeFromInput(e.target.value) })}
+                        />
+                        <input
+                          className="form-control form-control-sm"
+                          placeholder="Manual time (e.g. 08:30 PM)"
+                          value={pickup.time || ""}
+                          onChange={(e) => replacePickup(activeCity, index, { time: e.target.value })}
+                        />
+                        <select
+                          className="form-select form-select-sm"
+                          value=""
+                          onChange={(e) => applySavedPickup(activeCity, index, e.target.value)}
+                        >
+                          <option value="">- Use saved / preset pickup -</option>
+                          {buildPickupOptions(activeCity, savedLocations.filter((entry) => entry.city === activeCity)).map((option) => (
+                            <option key={`${activeCity}_${option.location}`} value={option.location}>
+                              {option.location}{option.source === "saved" ? " (saved)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          className="form-select form-select-sm"
+                          value={(CITY_STOPS[activeCity] || []).includes(pickup.location || "") ? pickup.location || "" : "__manual__"}
+                          onChange={(e) => replacePickup(activeCity, index, { location: e.target.value === "__manual__" ? "" : e.target.value })}
+                        >
+                          <option value="">- Select stop -</option>
+                          {(CITY_STOPS[activeCity] || []).map((stop) => (
+                            <option key={stop} value={stop}>{stop}</option>
+                          ))}
+                          <option value="__manual__">Other (manual entry)</option>
+                        </select>
+                        <input
+                          className="form-control form-control-sm"
+                          placeholder="Manual pickup location"
+                          value={pickup.location || ""}
+                          onChange={(e) => replacePickup(activeCity, index, { location: e.target.value })}
+                          onBlur={() => commitPickup(activeCity, index)}
+                        />
+                        <input
+                          className="form-control form-control-sm"
+                          placeholder="Geo / Google Maps URL (optional)"
+                          value={pickup.mapUrl || ""}
+                          onChange={(e) => replacePickup(activeCity, index, { mapUrl: e.target.value })}
+                          onBlur={() => commitPickup(activeCity, index)}
+                        />
+                        <button type="button" className="btn btn-outline-danger btn-sm py-0 px-2" onClick={() => removePickup(activeCity, index)}>x</button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="col-12">
+                  <label className="form-label small fw-semibold mb-1">{activeCity} Itinerary</label>
+                  <textarea
+                    className="form-control form-control-sm"
+                    rows={4}
+                    placeholder={`One entry per line - format: Time|Description\nExample:\n06:00 AM|Meet at pickup point\n07:30 AM|Depart for base village\n12:00 PM|Summit`}
+                    value={plans[activeCity]?.itinerary || ""}
+                    onChange={(e) => updatePlan(activeCity, "itinerary", e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function ManagePage({
   title,
   icon,
@@ -464,6 +855,7 @@ function ManagePage({
 }) {
   const { data, add, update, remove, toggleActive } = useAdminData(storageKey, seedData);
   const [form, setForm] = useState(defaultForm);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [editId, setEditId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
@@ -471,6 +863,7 @@ function ManagePage({
   const formRef = useRef(null);
   const [aiModal, setAiModal] = useState({ open: false, label: "", prompt: "" });
   const [copied, setCopied] = useState(false);
+  const toast = useToast();
 
   const handleReimport = async () => {
     if (!window.confirm(`Re-import all ${seedData.length} items from seed data? This will add any missing items to Supabase.`)) {
@@ -505,12 +898,14 @@ function ManagePage({
 
   const openCreate = () => {
     setForm(defaultForm);
+    setFieldErrors({});
     setEditId(null);
     setShowForm(true);
   };
 
   const openEdit = (item) => {
     setForm({ ...defaultForm, ...item });
+    setFieldErrors({});
     setEditId(item.id);
     setShowForm(true);
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
@@ -518,12 +913,20 @@ function ManagePage({
 
   const handleCancel = () => {
     setForm(defaultForm);
+    setFieldErrors({});
     setEditId(null);
     setShowForm(false);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const validationErrors = validateAdminForm(fields, form);
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      toast?.error("Please fix the highlighted form issues before saving.");
+      return;
+    }
+
     const preparedForm = transformForm ? transformForm(form, { editId }) : form;
     let savedItem;
     if (editId) {
@@ -546,6 +949,7 @@ function ManagePage({
       });
     }
     afterSubmit?.(savedItem, { editId });
+    toast?.success(editId ? `${title} updated successfully.` : `${title} saved successfully.`);
     handleCancel();
   };
 
@@ -597,6 +1001,12 @@ function ManagePage({
                       {f.label}
                       {f.required && <span className="text-danger ms-1">*</span>}
                     </label>
+                    {f.type === "departurePlans" && (
+                      <InfoTooltip text="Pickup rows are stored inside departure plans. Reused locations only change data entry speed; the saved trek structure and customer flow stay the same." />
+                    )}
+                    {f.type === "trekDates" && (
+                      <InfoTooltip text="Each batch needs a valid date. WhatsApp links stay optional, but if added they should be full links." />
+                    )}
                     {f.aiPrompt && (
                       <button type="button" className="btn btn-sm py-0 px-2" style={{ fontSize: "0.7rem", background: "linear-gradient(135deg,#7c3aed,#a855f7)", color: "#fff", borderRadius: 6, lineHeight: 1.6 }} onClick={() => openAiPrompt(f)}>
                         ✨ AI Prompt
@@ -605,20 +1015,20 @@ function ManagePage({
                   </div>
 
                   {f.type === "select" ? (
-                    <select className="form-select form-select-sm" value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} required={f.required}>
+                    <select className={`form-select form-select-sm ${fieldErrors[f.key] ? "is-invalid" : ""}`} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} required={f.required}>
                       <option value="">- Select {f.label} -</option>
                       {f.options.map((o) => (
                         <option key={o} value={o}>{o}</option>
                       ))}
                     </select>
                   ) : f.type === "textarea" ? (
-                    <textarea className="form-control form-control-sm" rows={3} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} placeholder={f.placeholder || ""} required={f.required} />
+                    <textarea className={`form-control form-control-sm ${fieldErrors[f.key] ? "is-invalid" : ""}`} rows={3} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} placeholder={f.placeholder || ""} required={f.required} />
                   ) : f.type === "pickups" ? (
-                    <PickupPointsField value={form[f.key] ?? "{}"} onChange={(val) => setForm({ ...form, [f.key]: val })} cities={f.cities || []} />
+                    <PickupPointsField value={form[f.key] ?? "{}"} onChange={(val) => setForm({ ...form, [f.key]: val })} cities={f.cities || []} errorMessages={fieldErrors[f.key] || []} />
                   ) : f.type === "trekDates" ? (
-                    <TrekDatesField value={form[f.key] ?? "[]"} onChange={(val) => setForm({ ...form, [f.key]: val })} />
+                    <TrekDatesField value={form[f.key] ?? "[]"} onChange={(val) => setForm({ ...form, [f.key]: val })} errorMessages={fieldErrors[f.key] || []} />
                   ) : f.type === "departurePlans" ? (
-                    <DeparturePlansField value={form[f.key] ?? "{}"} onChange={(val) => setForm({ ...form, [f.key]: val })} cityOptions={f.cityOptions || []} />
+                    <EnhancedDeparturePlansField value={form[f.key] ?? "{}"} onChange={(val) => setForm({ ...form, [f.key]: val })} cityOptions={f.cityOptions || []} errorMessages={fieldErrors[f.key] || []} />
                   ) : f.type === "checklistTextarea" ? (
                     <ChecklistTextareaField value={form[f.key] ?? ""} onChange={(val) => setForm({ ...form, [f.key]: val })} options={f.options || []} manualPlaceholder={f.placeholder || ""} />
                   ) : f.type === "discountCodes" ? (
@@ -632,7 +1042,12 @@ function ManagePage({
                   ) : f.type === "imageGallery" ? (
                     <ImageGalleryField value={form[f.key] ?? "[]"} onChange={(val) => setForm({ ...form, [f.key]: val })} />
                   ) : (
-                    <input type={f.type || "text"} className="form-control form-control-sm" value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} placeholder={f.placeholder || ""} required={f.required} />
+                    <input type={f.type || "text"} className={`form-control form-control-sm ${fieldErrors[f.key] ? "is-invalid" : ""}`} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} placeholder={f.placeholder || ""} required={f.required} />
+                  )}
+                  {fieldErrors[f.key] && f.type !== "pickups" && f.type !== "departurePlans" && (
+                    <div className="invalid-feedback d-block">
+                      {fieldErrors[f.key][0]}
+                    </div>
                   )}
                   {f.helpText && (
                     <div style={{ fontSize: "0.71rem", color: "#6c757d", marginTop: 6, lineHeight: 1.55, background: "#f8f9fa", padding: "8px 12px", borderRadius: 6, borderLeft: "3px solid #adb5bd", whiteSpace: "pre-line" }}>

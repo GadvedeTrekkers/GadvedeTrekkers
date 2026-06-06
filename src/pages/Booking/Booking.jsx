@@ -117,9 +117,25 @@ function Booking() {
   const location = useLocation();
   const navigate = useNavigate();
   const formRef = useRef(null);
+  const queryTrek = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const trekName = params.get("trekName");
+    const trekId = params.get("trekId");
+
+    if (trekName) {
+      return findTrekBySlug(slugifyTrekName(trekName));
+    }
+
+    if (trekId) {
+      return findTrekBySlug(trekId);
+    }
+
+    return null;
+  }, [location.search]);
   const selectedTrek =
     location.state?.trek ??
-    (location.state?.trekSlug ? findTrekBySlug(location.state.trekSlug) : null);
+    (location.state?.trekSlug ? findTrekBySlug(location.state.trekSlug) : null) ??
+    queryTrek;
   const bookingForm = useMemo(() => getBookingFormConfig(), []);
   const bookingPaymentOptions = useMemo(
     () => parseLines(bookingForm.paymentOptions).length ? parseLines(bookingForm.paymentOptions) : paymentOptions,
@@ -430,9 +446,18 @@ function Booking() {
     }
 
     const bookingId = `GTK-${Date.now().toString().slice(-8)}`;
+    const initialPricePaid =
+      formData.paymentOption === "Partial Payment" ? payableNow : totalAmount;
+    const initialPaymentStatus =
+      initialPricePaid >= totalAmount
+        ? "PAID"
+        : initialPricePaid > 0
+        ? "PARTIAL"
+        : "PENDING";
     const bookingRecord = {
       bookingId,
       trekName: selectedTrek.name,
+      eventName: selectedTrek.name,
       trekLocation: selectedTrek.location,
       trekSlug: slugifyTrekName(selectedTrek.name),
       tickets: ticketCount,
@@ -449,15 +474,21 @@ function Booking() {
       paymentOption: formData.paymentOption,
       baseAmount,
       taxAmount,
+      totalPrice: totalAmount,
       totalAmount,
+      pricePaid: initialPricePaid,
       payableNow,
       remainingAmount,
+      paymentStatus: initialPaymentStatus,
+      leaderCollected: 0,
       bookingDate: new Date().toLocaleString("en-IN"),
       nextDate: selectedTrek.nextDate,
       additionalTravelers,
       travelerPricing,
       consent,
       referralCode: refCode || "",
+      bookingStatus: "CONFIRMED",
+      status: "CONFIRMED",
     };
 
     localStorage.setItem("latestBooking", JSON.stringify(bookingRecord));

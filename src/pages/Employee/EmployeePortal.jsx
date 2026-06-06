@@ -19,7 +19,7 @@ import { getEmployeeIncentiveStats, getIncentivesByEmployee, INCENTIVE_AMOUNT_PE
 import { getAllVendors } from "../../data/vendorStorage";
 import { ENQUIRY_STATUS, ENQUIRY_TAGS, getEnquiries, setEnquiryStatus, setEnquiryTags } from "../../data/enquiryStorage";
 import { getLocalLeaderTrekEvents, loadLeaderTrekEvents } from "../../services/leaderEvents.service";
-import { buildWhatsAppMessage, DEFAULT_SALES_SMS, openSmsWithMessage } from "../../utils/leadActions";
+import { buildSalesFollowUpWhatsAppMessage, DEFAULT_SALES_SMS, openSmsWithMessage } from "../../utils/leadActions";
 import {
   compareEventsAscending,
   compareEventsDescending,
@@ -266,7 +266,7 @@ export default function EmployeePortal() {
   };
   const handleEnquiryWhatsApp = (item) => {
     if (!item.phone) return;
-    const msg = buildWhatsAppMessage({ packageName: item.eventName, location: item.location || item.eventName?.split("–")[0]?.trim() || "Pune/Mumbai", category: item.category || "Enquiry", customerName: item.name, customerPhone: item.phone, customerEmail: item.email, pax: item.pax, preferredDate: item.date });
+    const msg = buildSalesFollowUpWhatsAppMessage({ eventName: item.eventName, location: item.location || item.eventName?.split("–")[0]?.trim() || "Pune/Mumbai", category: item.category || "Enquiry", customerName: item.name });
     window.open(`https://wa.me/91${item.phone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
   };
 
@@ -634,7 +634,7 @@ export default function EmployeePortal() {
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(255px,1fr))", gap: 12 }}>
                         {treks.map(trek => {
                           const count = getTrekBookingCount(trek.id, trek.name);
-                          const trekRefLink = `${BASE_URL}/book?trekId=${trek.id || ""}&trekName=${encodeURIComponent(trek.name)}&ref=${referralCode}`;
+                          const trekRefLink = `${BASE_URL}/book?trekName=${encodeURIComponent(trek.name)}&ref=${encodeURIComponent(referralCode)}`;
                           return (
                             <motion.div key={trek.id || trek.name} whileHover={{ y: -4 }} style={{ ...S.card(14), padding: 0, overflow: "hidden" }}>
                               {trek.image && <img src={trek.image} alt={trek.name} style={{ width: "100%", height: 120, objectFit: "cover" }} />}

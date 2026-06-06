@@ -13,7 +13,7 @@ import {
   syncEnquiriesWithBookings,
 } from "../data/enquiryStorage";
 import {
-  buildWhatsAppMessage,
+  buildSalesFollowUpWhatsAppMessage,
   DEFAULT_SALES_SMS,
   openSmsWithMessage,
 } from "../utils/leadActions";
@@ -318,15 +318,11 @@ export default function ManageEnquiries() {
 
   const handleWhatsApp = (item) => {
     if (!item.phone) return;
-    const message = buildWhatsAppMessage({
-      packageName: item.eventName,
+    const message = buildSalesFollowUpWhatsAppMessage({
+      eventName: item.eventName,
       location: item.location || item.eventName?.split("–")[0]?.trim() || item.eventName || "Pune/Mumbai",
       category: item.category || "Enquiry",
       customerName: item.name,
-      customerPhone: item.phone,
-      customerEmail: item.email,
-      pax: item.pax,
-      preferredDate: item.date,
     });
     window.open(`https://wa.me/91${item.phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
   };

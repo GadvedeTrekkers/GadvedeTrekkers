@@ -5,6 +5,9 @@ import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import 'bootstrap/dist/css/bootstrap.min.css'
+import { registerEmployeeJourneyDemoSeed } from './data/devSeedEmployeeJourney.js'
+
+registerEmployeeJourneyDemoSeed()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -626,7 +626,17 @@ function TrekDetails() {
                               <span className="td-date-text">{displayDate}</span>
                               {d.label && <span className="td-date-badge">{d.label}</span>}
                             </div>
-                            <Link to="/book" state={{ trek }} className="td-date-book-btn">Book</Link>
+                            <Link
+                              to={
+                                referralCode
+                                  ? `/book?trekName=${encodeURIComponent(trek.name)}&ref=${encodeURIComponent(referralCode)}`
+                                  : `/book?trekName=${encodeURIComponent(trek.name)}`
+                              }
+                              state={{ trek }}
+                              className="td-date-book-btn"
+                            >
+                              Book
+                            </Link>
                           </div>
                         );
                       })}

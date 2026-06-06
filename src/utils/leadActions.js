@@ -52,6 +52,30 @@ export function buildWhatsAppMessage({
     .join("\n");
 }
 
+export function buildSalesFollowUpWhatsAppMessage({
+  eventName,
+  location,
+  category,
+  customerName,
+}) {
+  const eventLabel = eventName || "our event";
+  const locationLabel = location || "your preferred location";
+  const categoryLabel = category || "experience";
+
+  return [
+    `Hi${customerName ? ` ${customerName}` : ""} 👋`,
+    "",
+    `You had enquired about ${eventLabel}${category ? ` (${categoryLabel})` : ""} in ${locationLabel}.`,
+    "",
+    "Would you like to join us for this event?",
+    "I can share more details, pricing, available batches, and inclusions.",
+    "If you prefer, we can also arrange a quick call.",
+    "",
+    "Regards,",
+    "Gadvede Trekkers",
+  ].join("\n");
+}
+
 export function openSmsWithMessage(phone, message = DEFAULT_SALES_SMS) {
   const encoded = encodeURIComponent(message);
   const href = `sms:${phone}?body=${encoded}`;

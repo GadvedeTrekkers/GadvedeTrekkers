@@ -13,6 +13,8 @@ import BookingCTA from "../components/BookingCTA";
 import { WhatsAppIcon, ArrowRightIcon, DownloadIcon } from "../components/icons";
 import { syncProductsFromApi } from "../api/getAll";
 
+const ALLOW_STATIC_TREK_FALLBACK = import.meta.env.DEV;
+
 const CAMPING_ROUTE_BY_NAME = {
   "Alibaug Camping | Music | Barbecue | Bonfire": "alibaug-camping",
   "Pawna Lake Camping 2026": "pawna-lake-camping",
@@ -36,7 +38,12 @@ function parseGalleryHome(value, fallback) {
 }
 function buildActiveTreks() {
   const stored = getAdminItems("gt_treks");
-  const source = stored.length > 0 ? stored : uniqueTreks;
+  const source =
+    stored.length > 0
+      ? stored
+      : ALLOW_STATIC_TREK_FALLBACK
+      ? uniqueTreks
+      : [];
   return source
     .filter((t) => t.active !== false)
     .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))

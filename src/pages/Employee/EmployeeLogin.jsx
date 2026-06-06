@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { employeeLogin, setEmployeeSession } from "../../data/employeePortalStorage";
 
-const BG_IMAGE   = "/TrekImages/PuneTrek.png";
+const BG_IMAGE   = "/employee-login-team-gadvede.jpeg";
 const LOGO_IMAGE = "/gadvedelogo.png";
 
 /* ── Animated slide wrapper ────────────────────────────────── */
@@ -301,16 +301,22 @@ export default function EmployeeLogin() {
         <img
           src={BG_IMAGE}
           alt=""
-          style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.06)" }}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "center center",
+            transform: "scale(1.03)",
+          }}
         />
         <div style={{
           position: "absolute", inset: 0,
-          background: "rgba(0,0,0,0.50)",
-          backdropFilter: "blur(1px)",
+          background: "rgba(3,10,8,0.42)",
+          backdropFilter: "blur(0.5px)",
         }} />
         <div style={{
           position: "absolute", inset: 0,
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 45%, rgba(0,0,0,0.65) 100%)",
+          background: "linear-gradient(135deg, rgba(5,22,17,0.44) 0%, rgba(0,0,0,0.1) 38%, rgba(0,0,0,0.72) 100%)",
         }} />
       </div>
 
