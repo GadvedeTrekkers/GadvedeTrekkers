@@ -16,12 +16,16 @@
 
 import { getAdminItems, saveAdminItems, normaliseItem } from "../data/adminStorage";
 import { productsApi } from "../api/products.api";
-import supabase from "../utils/supabase/client";
+import supabase, { SUPABASE_ANON_KEY, SUPABASE_URL } from "../utils/supabase/client";
 
 const SYNC_TTL_MS = 60 * 1000; // 1 minute — keeps frontend in sync with admin changes
 
 function getSyncedAt(storageKey) {
-  return Number(localStorage.getItem(`${storageKey}_syncedAt`) || 0);
+  try {
+    return Number(localStorage.getItem(`${storageKey}_syncedAt`) || 0);
+  } catch {
+    return 0;
+  }
 }
 
 function setSyncedAt(storageKey) {
@@ -68,22 +72,74 @@ function mapPublicProductRow(row) {
   };
 }
 
-async function fetchPublicProductsFromSupabase(productType) {
-  if (!supabase) return null;
-
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true })
-    .eq("product_type", productType);
-
-  if (error || !Array.isArray(data) || data.length === 0) {
-    return null;
+function persistProductCache(storageKey, items) {
+  try {
+    saveAdminItems(storageKey, items);
+    setSyncedAt(storageKey);
+    return true;
+  } catch (error) {
+    console.warn(
+      `productService.sync: Failed to persist ${storageKey} cache, rendering fetched data without cache`,
+      error
+    );
+    return false;
   }
+}
 
-  return data.map(mapPublicProductRow);
+async function fetchPublicProductsFromSupabase(productType) {
+  const fromSdk = async () => {
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .eq("product_type", productType);
+
+    if (error || !Array.isArray(data) || data.length === 0) {
+      return null;
+    }
+
+    return data.map(mapPublicProductRow);
+  };
+
+  const fromRest = async () => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || typeof fetch !== "function") return null;
+
+    const url = new URL(`${SUPABASE_URL}/rest/v1/products`);
+    url.searchParams.set("select", "*");
+    url.searchParams.set("is_active", "eq.true");
+    url.searchParams.set("product_type", `eq.${productType}`);
+    url.searchParams.set("order", "sort_order.asc,created_at.asc");
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json().catch(() => null);
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return data.map(mapPublicProductRow);
+  };
+
+  try {
+    const sdkItems = await fromSdk();
+    if (sdkItems?.length) return sdkItems;
+  } catch {}
+
+  try {
+    const restItems = await fromRest();
+    if (restItems?.length) return restItems;
+  } catch {}
+
+  return null;
 }
 
 export const productService = {
@@ -104,18 +160,15 @@ export const productService = {
       if (!Array.isArray(items) || items.length === 0) {
         const directItems = await fetchPublicProductsFromSupabase(productType);
         if (!directItems) return getAdminItems(storageKey) || null;
-        saveAdminItems(storageKey, directItems);
-        setSyncedAt(storageKey);
+        persistProductCache(storageKey, directItems);
         return directItems;
       }
-      saveAdminItems(storageKey, items);
-      setSyncedAt(storageKey);
+      persistProductCache(storageKey, items);
       return items;
     } catch {
       const directItems = await fetchPublicProductsFromSupabase(productType);
       if (directItems) {
-        saveAdminItems(storageKey, directItems);
-        setSyncedAt(storageKey);
+        persistProductCache(storageKey, directItems);
         return directItems;
       }
       // API unreachable — return cached data silently
