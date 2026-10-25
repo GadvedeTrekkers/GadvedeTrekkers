@@ -110,7 +110,7 @@ function Contact() {
               marginBottom: 12,
             }}
           >
-            We usually reply within a few hours
+            Treks · Tours · Camping · Corporate
           </span>
           <h1 className="fw-bold mb-2" style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>
             Contact Gadvede Trekkers
@@ -154,7 +154,7 @@ function Contact() {
                       +91 {phone}
                     </a>
                   ))}
-                  <p className="gt-contact-meta">{CONTACT.hours}</p>
+                  <p className="gt-contact-meta">Tap a number to call from your phone.</p>
                 </div>
               </div>
 

@@ -9,7 +9,6 @@ export const CONTACT = {
   email: "info@gadvede.com",
   supportEmail: "support@gadvede.com",
   addressLines: ["Gadvede Trekkers", "Pune, Maharashtra", "India"],
-  hours: "Mon – Sun, 9:00 AM – 9:00 PM",
   social: {
     instagram: "https://www.instagram.com/gadvedetrekkers",
     youtube: "https://www.youtube.com/@gadvedetrekkers",
