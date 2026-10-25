@@ -69,9 +69,9 @@ export const richTrekDetails = {
   "Kalsubai Trek": {
     heroKicker: "🏔 Maharashtra's Highest Peak",
     meta: {
-      title: "Kalsubai Trek 2025 | Highest Peak Maharashtra | Night Trek | Gadvede Trekkers",
+      title: "Kalsubai Peak Trek | Gadvede Trekkers",
       description:
-        "Book Kalsubai Trek — Maharashtra's highest peak (5400 ft). Night trek from Mumbai, Pune & Kasara. Sunrise, Milky Way, Temple darshan. Starting ₹799. Expert guides, safe batches.",
+        "Kalsubai Peak trek from Bari, Ahmednagar — Maharashtra's highest peak. 1 night. From ₹1,400. Book on WhatsApp with Gadvede Trekkers.",
       keywords:
         "Kalsubai trek booking, Kalsubai night trek, highest peak Maharashtra, Kalsubai from Mumbai, Kalsubai from Pune, Kalsubai from Kasara, Bari village trek, Sahyadri trek 2025",
     },
@@ -107,9 +107,9 @@ export const richTrekDetails = {
   "Harishchandragad Trek": {
     heroKicker: "🏔 Ancient Hill Fort — Konkan Kada",
     meta: {
-      title: "Harishchandragad Trek 2025 | Konkan Kada | Kedareshwar Cave | Gadvede Trekkers",
+      title: "Harishchandragad Trek | Gadvede Trekkers",
       description:
-        "Book Harishchandragad Trek from Pune 2025. Night trek to Maharashtra's iconic hill fort — Konkan Kada, Kedareshwar Cave, Harishchandreshwar Temple. ₹1,449/person. Expert guides, safe batches.",
+        "Harishchandragad trek from Pachnai, Ahmednagar. 1 night, 2 days to Konkan Kada. From ₹1,400. Book on WhatsApp with Gadvede Trekkers.",
       keywords:
         "Harishchandragad trek, Harishchandragad from Pune, Konkan Kada, Kedareshwar cave, Pachnai village trek, Harishchandragad 2025, Maharashtra fort trek",
     },
@@ -619,9 +619,9 @@ export const richTrekDetails = {
   "Vasota Fort Trek": {
     heroKicker: "🌲 Koyna forest fort",
     meta: {
-      title: "Vasota Fort Trek | Pune ₹1800 | Mumbai ₹3200 | Gadvede Trekkers",
+      title: "Vasota Fort Trek | Gadvede Trekkers",
       description:
-        "Vasota Fort Trek with Gadvede Trekkers. Boat across Shivsagar, forest walk, and a night at Bamnoli. Pune ₹1,800. Mumbai ₹3,200.",
+        "Vasota Fort trek in Koyna Wildlife Sanctuary, Satara. 2 days with a Bamnoli camp and boat. From ₹1,800 (Pune). Book on WhatsApp.",
       keywords: "Vasota fort trek, Vasota from Pune, Vasota from Mumbai, Bamnoli camp, Shivsagar boat",
     },
     overview: {
@@ -647,7 +647,7 @@ export const richTrekDetails = {
     meta: {
       title: "New Year Beach Side Camping | Gadvede Trekkers",
       description:
-        "Gadvede New Year beach camp. Leave 30 December night, return 1 January. Tent Pune ₹2,800 / Mumbai ₹3,000. 4-share room Pune ₹3,500 / Mumbai ₹3,700.",
+        "New Year beach camping on the Konkan coast, 30 Dec night to 1 Jan. Tent from ₹2,800 (Pune). Book on WhatsApp with Gadvede Trekkers.",
       keywords: "New Year beach camping Pune, New Year camping Mumbai, Gadvede beach camp",
     },
     overview: {

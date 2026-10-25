@@ -11,6 +11,14 @@ import { syncProductsFromApi } from "../../api/getAll";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 import { CATALOG_HUBS, hubBySlug, inferHubSlug } from "../../data/catalogHubs";
 import { collectSellingPrices, genuineCompareAt, resolveTripGallery } from "../../utils/tripDisplay";
+import { useSeo } from "../../seo/useSeo";
+import {
+  SITE_ORIGIN,
+  TREKS_DESCRIPTION,
+  TREKS_TITLE,
+  listJsonLd,
+  ogForSlug,
+} from "../../seo/publicSeo";
 
 const parseGallery = (value, fallback) => {
   try {
@@ -138,93 +146,26 @@ function Trek() {
     };
   }, []);
   const initialVisibleTreks = 10;
-
-  /* ── SEO ─────────────────────────────────────── */
-  useEffect(() => {
-    document.title =
-      "Best Treks in Maharashtra 2025 | Weekend & Monsoon Treks Near Pune & Mumbai | Gadvede Trekkers";
-
-    const setMeta = (selector, attr, value) => {
-      let el = document.querySelector(selector);
-      if (!el) {
-        el = document.createElement("meta");
-        const [key, val] = attr.split("=");
-        el.setAttribute(key, val ?? attr);
-        document.head.appendChild(el);
-      }
-      el.setAttribute("content", value);
-    };
-
-    setMeta('meta[name="description"]', "name=description",
-      "Book the best treks in Maharashtra for 2025. Monsoon treks, weekend treks, and fort treks near Pune & Mumbai. Kalsubai, Harihar, Harishchandragad, Rajmachi & more. Starting ₹799. Expert guides, safe batches, guaranteed departures.");
-    setMeta('meta[name="keywords"]', "name=keywords",
-      "treks in Maharashtra, weekend treks near Pune, monsoon treks Maharashtra, Kalsubai trek booking, Harihar trek, Harishchandragad trek, trekking near Mumbai 2025, Maharashtra trekking packages, one day treks Pune, Rajmachi trek, Sandhan Valley trek, Gadvede Trekkers");
-    setMeta('meta[name="robots"]', "name=robots", "index, follow");
-    setMeta('meta[property="og:title"]', "property=og:title",
-      "Best Treks in Maharashtra 2025 | Gadvede Trekkers");
-    setMeta('meta[property="og:description"]', "property=og:description",
-      "Discover top-rated treks near Pune & Mumbai. Expert-led monsoon, weekend & fort treks starting ₹799. Book now!");
-    setMeta('meta[property="og:type"]', "property=og:type", "website");
-    setMeta('meta[name="twitter:card"]', "name=twitter:card", "summary_large_image");
-    setMeta('meta[name="twitter:title"]', "name=twitter:title",
-      "Best Treks in Maharashtra 2025 | Gadvede Trekkers");
-
-    /* canonical */
-    let canonical = document.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.rel = "canonical";
-      document.head.appendChild(canonical);
-    }
-    canonical.href = "https://www.gadvede.com/treks";
-
-    /* JSON-LD structured data */
-    const existingLd = document.querySelector("#trek-jsonld");
-    if (existingLd) existingLd.remove();
-    const script = document.createElement("script");
-    script.id = "trek-jsonld";
-    script.type = "application/ld+json";
-    script.text = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "ItemList",
-      name: "Best Treks in Maharashtra 2025",
-      description:
-        "Top-rated trekking experiences in Maharashtra including Kalsubai, Harihar, Harishchandragad and more, organized by Gadvede Trekkers.",
-      url: "https://www.gadvede.com/treks",
-      numberOfItems: treks.length,
-      itemListElement: treks.map((trek, i) => ({
-        "@type": "ListItem",
-        position: i + 1,
-        item: {
-          "@type": "TouristAttraction",
-          name: trek.name,
-          description: `${trek.difficulty} level trek in ${trek.location}. Duration: ${trek.duration}. Altitude: ${trek.altitude}. Starting from ₹${trek.price}.`,
-          address: {
-            "@type": "PostalAddress",
-            addressRegion: "Maharashtra",
-            addressCountry: "IN",
-          },
-          offers: {
-            "@type": "Offer",
-            price: trek.price,
-            priceCurrency: "INR",
-            availability: "https://schema.org/InStock",
-          },
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: trek.rating,
-            bestRating: "5",
-            reviewCount: trek.reviews,
-          },
-        },
-      })),
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      document.querySelector("#trek-jsonld")?.remove();
-    };
-  }, []);
+  const treksOg = ogForSlug("vasota-fort-trek");
+  const treksJsonLd = useMemo(
+    () =>
+      listJsonLd(
+        `${SITE_ORIGIN}/treks`,
+        "Maharashtra treks from Pune and Mumbai",
+        treks.map((trek) => ({ name: trek.name, path: tripDetailPath(trek) }))
+      ),
+    [treks]
+  );
+  useSeo({
+    title: TREKS_TITLE,
+    description: TREKS_DESCRIPTION,
+    canonical: `${SITE_ORIGIN}/treks`,
+    image: treksOg.url,
+    imageWidth: treksOg.width,
+    imageHeight: treksOg.height,
+    imageAlt: treksOg.alt,
+    jsonLd: treksJsonLd,
+  });
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -298,6 +239,14 @@ function Trek() {
   return (
     <section className="trek-page" aria-label="Maharashtra Trek Listings">
       <div className="container-fluid trek-page-shell py-4 py-md-5">
+
+        <p className="mb-3" style={{ fontSize: "0.85rem" }}>
+          <Link to="/" className="text-success text-decoration-none">Home</Link>
+          {" / "}
+          <span>Treks</span>
+          {" · "}
+          <Link to="/trips" className="text-success text-decoration-none">Open trips</Link>
+        </p>
 
         {/* ── HERO ─────────────────────────────────── */}
         <header className="trek-hero" role="banner">
@@ -482,7 +431,7 @@ function Trek() {
                       <img
                         key={`${trek.name}-${imageIndex}`}
                         src={image}
-                        alt={`${trek.name} trek in ${trek.location} - view ${imageIndex + 1}`}
+                        alt={imageIndex === 0 ? `${trek.name} cover` : `${trek.name} in ${trek.location} — view ${imageIndex + 1}`}
                         className="trek-gallery-image"
                         loading={index < 5 ? "eager" : "lazy"}
                         decoding="async"

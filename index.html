@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- ── Primary SEO ── -->
-    <title>Gadvede Trekkers | Treks, Tours & Adventures in Maharashtra</title>
-    <meta name="description" content="Book the best treks, tours, and adventures in Maharashtra with Gadvede Trekkers. Weekend treks, monsoon treks, fort treks, camping, heritage walks, and corporate outings near Pune & Mumbai. Starting ₹799. Expert guides, safe batches." />
-    <meta name="keywords" content="Gadvede Trekkers, treks Maharashtra, weekend treks Pune, monsoon treks Mumbai, Kalsubai trek, Harihar Fort trek, Harishchandragad trek, Ratangad trek, camping near Pune, college industrial visits, corporate trekking, adventure tours Maharashtra 2025" />
+    <title>Gadvede Trekkers | Maharashtra Treks from Pune &amp; Mumbai</title>
+    <meta name="description" content="Book Maharashtra treks from Pune and Mumbai with Gadvede Trekkers. Vasota, Harishchandragad, Kalsubai, and New Year beach camping from ₹1,400. WhatsApp booking." />
+    <meta name="keywords" content="Gadvede Trekkers, Maharashtra treks, treks from Pune, treks from Mumbai, Vasota Fort trek, Harishchandragad trek, Kalsubai Peak trek, New Year beach camping" />
     <meta name="robots" content="index, follow" />
     <meta name="author" content="Gadvede Trekkers" />
     <meta name="theme-color" content="#0f4c2a" />
@@ -19,19 +19,21 @@
     <meta property="og:type"        content="website" />
     <meta property="og:site_name"   content="Gadvede Trekkers" />
     <meta property="og:url"         content="https://www.gadvede.com/" />
-    <meta property="og:title"       content="Gadvede Trekkers | Treks, Tours & Adventures in Maharashtra" />
-    <meta property="og:description" content="Book weekend treks, monsoon treks, fort climbs, camping, and college tours near Pune & Mumbai. Expert-led safe batches. Starting ₹799." />
-    <meta property="og:image"       content="https://www.gadvede.com/gadvedelogo.png" />
-    <meta property="og:image:width"  content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:title"       content="Gadvede Trekkers | Maharashtra Treks from Pune &amp; Mumbai" />
+    <meta property="og:description" content="Book Maharashtra treks from Pune and Mumbai with Gadvede Trekkers. Vasota, Harishchandragad, Kalsubai, and New Year beach camping from ₹1,400. WhatsApp booking." />
+    <meta property="og:image"       content="https://www.gadvede.com/trips/vasota.jpg" />
+    <meta property="og:image:width"  content="1024" />
+    <meta property="og:image:height" content="516" />
+    <meta property="og:image:alt"   content="Vasota Fort trek with Gadvede Trekkers" />
     <meta property="og:locale"      content="en_IN" />
 
     <!-- ── Twitter Card ── -->
     <meta name="twitter:card"        content="summary_large_image" />
     <meta name="twitter:site"        content="@GadvedeTrekkers" />
-    <meta name="twitter:title"       content="Gadvede Trekkers | Treks & Adventures in Maharashtra" />
-    <meta name="twitter:description" content="Book weekend treks, camping, and heritage walks near Pune & Mumbai. Starting ₹799. Expert guides, safe batches." />
-    <meta name="twitter:image"       content="https://www.gadvede.com/gadvedelogo.png" />
+    <meta name="twitter:title"       content="Gadvede Trekkers | Maharashtra Treks from Pune &amp; Mumbai" />
+    <meta name="twitter:description" content="Book Maharashtra treks from Pune and Mumbai with Gadvede Trekkers. Vasota, Harishchandragad, Kalsubai, and New Year beach camping from ₹1,400. WhatsApp booking." />
+    <meta name="twitter:image"       content="https://www.gadvede.com/trips/vasota.jpg" />
+    <meta name="twitter:image:alt"   content="Vasota Fort trek with Gadvede Trekkers" />
 
     <!-- ── Geo / Local SEO ── -->
     <meta name="geo.region"      content="IN-MH" />
@@ -45,36 +47,43 @@
     <link rel="shortcut icon"    type="image/png"  href="/gadvedelogo.png" />
     <link rel="apple-touch-icon" sizes="180x180"   href="/gadvedelogo.png" />
 
-    <!-- ── JSON-LD: Organisation structured data ── -->
-    <script type="application/ld+json">
+    <!-- ── JSON-LD: Organization + TravelAgency, and WebSite (no SearchAction: search is an on-page filter) ── -->
+    <script id="gadvede-jsonld" type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "TravelAgency",
-      "name": "Gadvede Trekkers",
-      "url": "https://www.gadvede.com",
-      "logo": "https://www.gadvede.com/gadvedelogo.png",
-      "description": "Maharashtra's trusted trekking and adventure travel company. Weekend treks, monsoon treks, fort climbs, camping, college tours and corporate outings near Pune and Mumbai.",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Pune",
-        "addressRegion": "Maharashtra",
-        "addressCountry": "IN"
-      },
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "contactType": "customer service",
-        "availableLanguage": ["English", "Marathi", "Hindi"]
-      },
-      "sameAs": [
-        "https://www.instagram.com/gadvede_trekkers/",
-        "https://www.facebook.com/gadvedetrekkers",
-        "https://www.youtube.com/@gadvedetrekkers"
-      ],
-      "areaServed": {
-        "@type": "State",
-        "name": "Maharashtra"
-      },
-      "priceRange": "₹799 – ₹5,000"
+      "@graph": [
+        {
+          "@type": ["Organization", "LocalBusiness", "TravelAgency"],
+          "@id": "https://www.gadvede.com/#organization",
+          "name": "Gadvede Trekkers",
+          "url": "https://www.gadvede.com/",
+          "logo": "https://www.gadvede.com/gadvedelogo.png",
+          "image": "https://www.gadvede.com/trips/vasota.jpg",
+          "description": "Book Maharashtra treks from Pune and Mumbai with Gadvede Trekkers. Vasota, Harishchandragad, Kalsubai, and New Year beach camping from ₹1,400. WhatsApp booking.",
+          "telephone": "+91-9856112727",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Pune",
+            "addressRegion": "Maharashtra",
+            "addressCountry": "IN"
+          },
+          "sameAs": [
+            "https://www.instagram.com/gadvede_trekkers/"
+          ],
+          "areaServed": {
+            "@type": "State",
+            "name": "Maharashtra"
+          },
+          "priceRange": "₹1400–₹3700"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://www.gadvede.com/#website",
+          "name": "Gadvede Trekkers",
+          "url": "https://www.gadvede.com/",
+          "publisher": { "@id": "https://www.gadvede.com/#organization" }
+        }
+      ]
     }
     </script>
 

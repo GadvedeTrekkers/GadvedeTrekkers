@@ -12,6 +12,15 @@ import { syncProductsFromApi } from "../api/getAll";
 import { collectSellingPrices, genuineCompareAt, resolveTripGallery } from "../utils/tripDisplay";
 import { tripDetailPath } from "../data/publicTrips";
 import { FEATURED_TRIPS, mergeFeaturedTrips } from "../data/featuredTrips";
+import { useSeo } from "../seo/useSeo";
+import {
+  DEFAULT_OG,
+  HOME_DESCRIPTION,
+  HOME_TITLE,
+  SITE_ORIGIN,
+  absoluteUrl,
+  homeJsonLd,
+} from "../seo/publicSeo";
 
 // ─── Active treks (respects Live/Off status from admin panel) ─────────────────
 function parseGalleryHome(value, fallback) {
@@ -82,7 +91,7 @@ function HomeTrekCard({ trek }) {
             <img
               key={i}
               src={img}
-              alt={`${trek.name} - view ${i + 1}`}
+              alt={i === 0 ? `${trek.name} cover` : `${trek.name} — view ${i + 1}`}
               className="trek-gallery-image"
               style={{
                 opacity: i === imgIdx ? 1 : 0,
@@ -521,6 +530,17 @@ function Home() {
   const [activeTreks, setActiveTreks] = useState(() => buildActiveTreks(FEATURED_TRIPS));
   const [activeTours, setActiveTours] = useState([]);
   const [treksLoading, setTreksLoading] = useState(false);
+
+  useSeo({
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    canonical: `${SITE_ORIGIN}/`,
+    image: absoluteUrl(DEFAULT_OG.path),
+    imageWidth: DEFAULT_OG.width,
+    imageHeight: DEFAULT_OG.height,
+    imageAlt: DEFAULT_OG.alt,
+    jsonLd: homeJsonLd,
+  });
 
   // Treks section is trek + camping so seasonal camping stays beside the forts.
   useEffect(() => {
@@ -1003,9 +1023,8 @@ function Home() {
               className="mx-auto"
               style={{ maxWidth: "680px", color: "#555", lineHeight: 1.7, fontSize: "0.97rem" }}
             >
-              Discover the best treks near Pune and Mumbai with budget-friendly weekend treks
-              across the Sahyadri mountains. Join monsoon treks, winter treks, and
-              beginner-friendly hiking experiences with a trusted trekking community.
+              Open batches from Pune and Mumbai: Vasota Fort, Harishchandragad, Kalsubai Peak,
+              and New Year beach camping with Gadvede Trekkers.
             </p>
           </div>
 
@@ -1065,6 +1084,9 @@ function Home() {
             )}
             <Link to="/treks" className="btn btn-success fw-semibold px-4 py-2" style={{ borderRadius: "999px" }}>
               View All Treks →
+            </Link>
+            <Link to="/trips" className="btn btn-outline-success fw-semibold px-4 py-2" style={{ borderRadius: "999px" }}>
+              Open trips
             </Link>
           </div>
         </div>

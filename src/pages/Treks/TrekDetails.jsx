@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { findTrekBySlug, slugifyTrekName } from "../../data/treks";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
@@ -24,6 +24,8 @@ import {
   stripMarkdownInline,
   upcomingDepartures,
 } from "../../utils/tripDisplay";
+import { useSeo } from "../../seo/useSeo";
+import { buildTrekPageSeo } from "../../seo/publicSeo";
 
 
 const TABS = [
@@ -117,6 +119,34 @@ const parsePlaces = (value = "") =>
     const [name, desc] = item.split("|");
     return { icon: "📍", name: (name || item).trim(), desc: (desc || "").trim() };
   });
+
+function TrekHeroSlides({ name, images, current }) {
+  if (!images?.length) return null;
+  return (
+    <div className="td-hero-slides">
+      {images.map((image, index) => (
+        <div
+          key={`${name}-cover-${index}`}
+          className={`td-hero-slide${index === current ? " is-active" : ""}`}
+        >
+          <img className="td-hero-cover" src={image} alt={`${name} cover`} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TrekBreadcrumb({ name }) {
+  return (
+    <nav className="td-breadcrumb" aria-label="Breadcrumb">
+      <Link to="/">Home</Link>
+      <span aria-hidden="true"> / </span>
+      <Link to="/treks">Treks</Link>
+      <span aria-hidden="true"> / </span>
+      <span aria-current="page">{name}</span>
+    </nav>
+  );
+}
 
 function TrekDetails() {
   const { id } = useParams();
@@ -311,22 +341,21 @@ function TrekDetails() {
     if (win) { win.document.write(html); win.document.close(); }
   };
 
+  const pageSeo = useMemo(() => {
+    const cards = trek ? pricingCards(trek) : [];
+    const cardPricing = Object.fromEntries(cards.map((card) => [card.key, { price: card.price }]));
+    const rated = remoteTrek || adminTrek || previewTrek;
+    return buildTrekPageSeo({
+      slug: id,
+      trek: rated ? trek : { ...(trek || {}), rating: undefined, reviews: undefined },
+      pricing: Object.keys(cardPricing).length ? cardPricing : staticRichTrek?.pricing,
+    });
+  }, [id, trek, staticRichTrek, remoteTrek, adminTrek, previewTrek]);
+  useSeo(pageSeo);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
-    if (!staticRichTrek?.meta) return;
-    document.title = staticRichTrek.meta.title;
-    const setMeta = (name, content) => {
-      let el = document.querySelector(`meta[name="${name}"]`);
-      if (!el) {
-        el = document.createElement("meta");
-        el.name = name;
-        document.head.appendChild(el);
-      }
-      el.content = content;
-    };
-    setMeta("description", staticRichTrek.meta.description);
-    setMeta("keywords", staticRichTrek.meta.keywords);
-  }, [staticRichTrek]);
+  }, [id]);
 
   useEffect(() => {
     setCurrentHeroSlide(0);
@@ -344,7 +373,7 @@ function TrekDetails() {
 
   const formattedName =
     trek?.name ?? (id ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Trek Details");
-  const heroImages = trek?.gallery?.length ? trek.gallery.slice(0, 3) : [];
+  const heroImages = trek?.gallery?.length ? trek.gallery.slice(0, 3) : trek?.image ? [trek.image] : [];
 
   if (!isRich) {
     return (
@@ -352,18 +381,11 @@ function TrekDetails() {
         {trek ? (
           <>
             <div className="td-hero">
-              <div className="td-hero-slides">
-                {heroImages.map((image, index) => (
-                  <div
-                    key={`${trek.name}-basic-hero-${index}`}
-                    className={`td-hero-slide${index === currentHeroSlide ? " is-active" : ""}`}
-                    style={{ backgroundImage: `url(${image})` }}
-                  />
-                ))}
-              </div>
+              <TrekHeroSlides name={formattedName} images={heroImages} current={currentHeroSlide} />
               <div className="td-hero-overlay" />
               <div className="td-hero-content container-fluid td-shell">
                 <button onClick={() => navigate(-1)} className="td-back-btn">← Back</button>
+                <TrekBreadcrumb name={formattedName} />
                 <span className="td-kicker">🥾 Maharashtra Trek Experience</span>
                 <h1 className="td-heading">{formattedName}</h1>
                 <p className="td-subheading">{trek.location} · {trek.duration} · {trek.altitude}</p>
@@ -533,15 +555,7 @@ function TrekDetails() {
   return (
     <div className="td-page">
       <div className="td-hero">
-        <div className="td-hero-slides">
-          {heroImages.map((image, index) => (
-            <div
-              key={`${trek.name}-hero-${index}`}
-              className={`td-hero-slide${index === currentHeroSlide ? " is-active" : ""}`}
-              style={{ backgroundImage: `url(${image})` }}
-            />
-          ))}
-        </div>
+        <TrekHeroSlides name={trek.name} images={heroImages} current={currentHeroSlide} />
         <div className="td-hero-overlay" />
         <div className="td-hero-content container-fluid td-shell">
           <button
@@ -550,6 +564,7 @@ function TrekDetails() {
           >
             ← Back
           </button>
+          <TrekBreadcrumb name={trek.name} />
           <span className="td-kicker">{heroKicker}</span>
           <h1 className="td-heading">{trek.name}</h1>
           {heroTagline && <p className="td-subheading">{heroTagline}</p>}
@@ -915,7 +930,7 @@ function TrekDetails() {
       {lightboxImg && (
         <div className="td-lightbox" onClick={() => setLightboxImg(null)}>
           <div className="td-lightbox-inner" onClick={(e) => e.stopPropagation()}>
-            <img src={lightboxImg} alt="Full view" />
+            <img src={lightboxImg} alt={`${formattedName} full view`} />
             <button className="td-lightbox-close" onClick={() => setLightboxImg(null)}>✕</button>
           </div>
         </div>

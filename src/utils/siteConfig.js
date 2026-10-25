@@ -7,8 +7,8 @@
 export const SITE = {
   domain:      "https://www.gadvede.com",
   name:        "Gadvede Trekkers",
-  tagline:     "Treks, Tours & Adventures in Maharashtra",
-  description: "Book the best treks, tours, and adventures in Maharashtra. Weekend treks, monsoon treks, fort treks, camping, heritage walks and corporate outings near Pune & Mumbai. Expert guides, safe batches. Starting ₹799.",
+  tagline:     "Maharashtra Treks from Pune & Mumbai",
+  description: "Book Maharashtra treks from Pune and Mumbai with Gadvede Trekkers. Vasota, Harishchandragad, Kalsubai, and New Year beach camping from ₹1,400. WhatsApp booking.",
   logo:        "https://www.gadvede.com/gadvedelogo.png",
   phone:       "+91-9856112727",
   whatsapp:    "919856112727",     // no + or spaces

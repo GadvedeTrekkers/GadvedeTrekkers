@@ -7,6 +7,14 @@ import { mergeFeaturedTrips } from "../../data/featuredTrips";
 import { selectPublicTrips, tripDetailPath } from "../../data/publicTrips";
 import { productService } from "../../services/product.service";
 import { handleImageError } from "../../utils/imageFallback";
+import { useSeo } from "../../seo/useSeo";
+import {
+  SITE_ORIGIN,
+  TRIPS_DESCRIPTION,
+  TRIPS_TITLE,
+  listJsonLd,
+  ogForSlug,
+} from "../../seo/publicSeo";
 
 function formatBatch(batch) {
   if (!batch?.date) return "";
@@ -39,9 +47,23 @@ async function loadTripCards() {
 
 export default function Trips() {
   const [trips, setTrips] = useState(() => mergeFeaturedTrips([]));
+  const tripsOg = ogForSlug("vasota-fort-trek");
+  useSeo({
+    title: TRIPS_TITLE,
+    description: TRIPS_DESCRIPTION,
+    canonical: `${SITE_ORIGIN}/trips`,
+    image: tripsOg.url,
+    imageWidth: tripsOg.width,
+    imageHeight: tripsOg.height,
+    imageAlt: tripsOg.alt,
+    jsonLd: listJsonLd(
+      `${SITE_ORIGIN}/trips`,
+      "Open Gadvede Trekkers trips",
+      trips.map((trip) => ({ name: trip.name, path: tripDetailPath(trip) }))
+    ),
+  });
 
   useEffect(() => {
-    document.title = "Trips | Gadvede Trekkers";
     let cancelled = false;
     loadTripCards()
       .then((cards) => {
@@ -58,6 +80,8 @@ export default function Trips() {
       <p className="mb-2" style={{ fontSize: "0.8rem" }}>
         <Link to="/" className="text-success text-decoration-none">Home</Link>
         {" / "}
+        <Link to="/treks" className="text-success text-decoration-none">Treks</Link>
+        {" / "}
         <span>Trips</span>
       </p>
       <h1 className="fw-bold mb-2">Open trips</h1>
@@ -73,7 +97,7 @@ export default function Trips() {
               <article className="card h-100 border-0 shadow-sm">
                 <img
                   src={trip.image}
-                  alt={trip.name}
+                  alt={`${trip.name} cover`}
                   onError={handleImageError}
                   style={{ height: 180, objectFit: "cover" }}
                 />
