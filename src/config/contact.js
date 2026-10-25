@@ -10,7 +10,7 @@ export const CONTACT = {
   supportEmail: "support@gadvede.com",
   addressLines: ["Gadvede Trekkers", "Pune, Maharashtra", "India"],
   social: {
-    instagram: "https://www.instagram.com/gadvedetrekkers",
+    instagram: "https://www.instagram.com/gadvede_trekkers/",
     youtube: "https://www.youtube.com/@gadvedetrekkers",
     facebook: "https://www.facebook.com/gadvedetrekkers",
   },
