@@ -1,8 +1,7 @@
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { findTrekBySlug, slugifyTrekName } from "../../data/treks";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
-import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import { richTrekDetails, richTrekFor } from "../../data/richTrekDetails";
 import { FEATURED_TRIPS } from "../../data/featuredTrips";
 import { getTrekDates } from "../../data/trekDatesStorage";
@@ -10,6 +9,21 @@ import BookingCTA from "../../components/BookingCTA";
 import { buildShareWhatsAppUrl } from "../../config/bookingConfig";
 import { productService } from "../../services/product.service";
 import { cleanDisplayText, isPromptLike, stripPromptFields } from "../../utils/contentSanitizer";
+import {
+  asList,
+  collectSellingPrices,
+  genuineCompareAt,
+  itineraryHasEvents,
+  markdownBlocks,
+  parseDeparturePlanItineraries,
+  parseJsonish,
+  pickupGroups,
+  pricingCards,
+  resolveTripGallery,
+  sectionList,
+  stripMarkdownInline,
+  upcomingDepartures,
+} from "../../utils/tripDisplay";
 
 
 const TABS = [
@@ -19,18 +33,63 @@ const TABS = [
   { id: "details", label: "Details & Cost" },
 ];
 
-/* Render long copy as separate readable paragraphs instead of one dense block. */
+/* Overview copy is stored as markdown. Render headings and lists, never raw asterisks. */
 function Paragraphs({ text, className = "td-para" }) {
-  const parts = String(text || "")
-    .split(/\n\s*\n|\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  if (!parts.length) return null;
-  return parts.map((p, i) => (
-    <p className={className} key={i}>
-      {p}
-    </p>
-  ));
+  const blocks = markdownBlocks(text, { omitTitles: ["itinerary"] });
+  if (!blocks.length) return null;
+  return blocks.map((block, index) => {
+    if (block.type === "h") {
+      return (
+        <h3 className="td-subsection-title" key={`h-${index}`}>
+          {block.text}
+        </h3>
+      );
+    }
+    if (block.type === "ul") {
+      return (
+        <ul className="td-inclusions" key={`ul-${index}`}>
+          {block.items.map((item, itemIndex) => (
+            <li className="td-inclusion-item" key={`${index}-${itemIndex}`}>
+              {item}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    return (
+      <p className={className} key={`p-${index}`}>
+        {block.text}
+      </p>
+    );
+  });
+}
+
+function DepartureRows({ departures, trek }) {
+  if (!departures.length) return null;
+  return (
+    <div className="td-dates-list">
+      {departures.map((departure) => {
+        const when = departure.city ? `${departure.label} · ${departure.city}` : departure.label;
+        return (
+          <div key={departure.id} className="td-date-row">
+            <div className="td-date-info">
+              <span className="td-date-text">{departure.label}</span>
+              {departure.city ? <span className="td-date-badge">{departure.city}</span> : null}
+              {departure.fee ? (
+                <span className="td-date-badge">₹{Number(departure.fee).toLocaleString("en-IN")}</span>
+              ) : null}
+            </div>
+            <BookingCTA
+              trek={{ ...trek, price: departure.fee || trek.price }}
+              selectedDate={when}
+              className="td-date-book-btn"
+              label="Book Now"
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 const parseJsonValue = (value, fallback) => {
@@ -47,107 +106,16 @@ const parseLineItems = (value = "") =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-function toLines(value) {
-  if (Array.isArray(value)) {
-    return value.flatMap((entry) => {
-      if (typeof entry === "string") return entry.trim() ? [entry.trim()] : [];
-      if (entry && typeof entry === "object") {
-        const text = entry.text || entry.title || entry.name || entry.item || "";
-        return String(text).trim() ? [String(text).trim()] : [];
-      }
-      return [];
-    });
-  }
-  return parseLineItems(value);
-}
-
-function itineraryFromExtra(itinerary) {
-  const daysSource = Array.isArray(itinerary)
-    ? itinerary
-    : Array.isArray(itinerary?.days)
-      ? itinerary.days
-      : null;
-  if (!daysSource?.length) return null;
-
-  const days = daysSource
-    .map((day, index) => {
-      const items = Array.isArray(day?.items) ? day.items : Array.isArray(day?.events) ? day.events : [];
-      return {
-        title: day?.title || `Day ${day?.day || index + 1}`,
-        events: items
-          .map((item) => {
-            if (typeof item === "string") return { time: "", desc: item };
-            return {
-              time: item?.time || "",
-              desc: item?.desc || item?.description || item?.text || "",
-            };
-          })
-          .filter((event) => event.desc),
-      };
-    })
-    .filter((day) => day.title || day.events.length);
-
-  if (!days.length) return null;
-  return {
-    label: "Itinerary",
-    sublabel: "Trip plan",
-    icon: "🗓️",
-    note: "",
-    days,
-  };
-}
-
 const parseDiscountItems = (value = "") =>
   parseLineItems(value).map((line) => {
     const [code, desc] = line.split("|");
     return { code: code || line, desc: desc || "" };
   });
 
-const normaliseRouteKey = (city) =>
-  String(city || "")
-    .toLowerCase()
-    .replace(/\s+/g, "")
-    .replace(/[^a-z]/g, "");
-
-const parseDeparturePlanItineraries = (departurePlans) =>
-  Object.fromEntries(
-    Object.entries(parseJsonValue(departurePlans, {})).map(([city, plan]) => {
-      const key = normaliseRouteKey(city);
-      const lines = parseLineItems(plan?.itinerary || "");
-      const events = lines.map((line) => {
-        const parts = line.split("|");
-        if (parts.length >= 3) {
-          return { time: parts[1].trim(), desc: parts.slice(2).join("|").trim() };
-        }
-        if (parts.length === 2) {
-          return { time: parts[0].trim(), desc: parts[1].trim() };
-        }
-        return { time: "", desc: parts[0].trim() };
-      });
-      return [
-        key,
-        {
-          label: `From ${city}`,
-          sublabel: `${city} Route`,
-          icon: city === "Kasara" ? "🚂" : "🚌",
-          note: `${city} departure itinerary`,
-          days: [{ title: `${city} Departure`, events }],
-        },
-      ];
-    })
-  );
-
 const parsePlaces = (value = "") =>
   parseLineItems(value).map((item) => {
     const [name, desc] = item.split("|");
     return { icon: "📍", name: (name || item).trim(), desc: (desc || "").trim() };
-  });
-
-const createWhatsappHref = (trek) =>
-  createWhatsAppInquiryUrl({
-    packageName: trek.name,
-    location: trek.location,
-    category: "Trek",
   });
 
 function TrekDetails() {
@@ -158,44 +126,44 @@ function TrekDetails() {
     typeof window !== "undefined" ? sessionStorage.getItem("gt_trek_preview") : null;
   const previewItem = parseJsonValue(previewDraft, null);
   const previewSlug = previewItem?.name ? slugifyTrekName(previewItem.name) : "";
-  const adminMatch = getAdminItems("gt_treks").find((item) => slugifyTrekName(item.name || "") === id);
+  const adminMatch = getAdminItems("gt_treks").find(
+    (item) => item.slug === id || slugifyTrekName(item.name || "") === id
+  );
 
   const buildLocalTrek = (item) => {
-    const fallbackGallery = [item.image, item.image, item.image].filter(Boolean);
-    const gallery = parseJsonValue(item.imageGallery, fallbackGallery);
-    return { ...stripPromptFields(normaliseItem(item)), image: gallery[0] || item.image, gallery };
+    const gallery = resolveTripGallery(item);
+    const image = gallery[0] || item.image;
+    return { ...stripPromptFields(normaliseItem(item)), image, gallery: gallery.length ? gallery : [image].filter(Boolean) };
   };
 
   const adminTrek = adminMatch ? buildLocalTrek(adminMatch) : null;
   const previewTrek = previewItem && previewSlug === id ? buildLocalTrek(previewItem) : null;
-  const featuredTrek = FEATURED_TRIPS.find((item) => item.slug === id);
-  const fallbackTrek = featuredTrek
-    ? {
-        ...featuredTrek,
-        image: featuredTrek.image,
-        gallery: [featuredTrek.image],
-        altitude: "",
-        rating: 0,
-        reviews: 0,
-        originalPrice: 0,
-      }
+  const featuredBase = FEATURED_TRIPS.find((item) => item.slug === id);
+  const featuredTrek = featuredBase
+    ? buildLocalTrek({ ...featuredBase, originalPrice: 0, altitude: "", rating: 0, reviews: 0 })
     : null;
-  const trek = previewTrek || remoteTrek || adminTrek || (id ? findTrekBySlug(id) : null) || fallbackTrek;
-  const staticRichTrek = richTrekFor({ name: trek?.name, slug: id || trek?.slug }) || (trek?.name ? richTrekDetails[trek.name] : null);
-  const catalogTrek = remoteTrek || previewTrek || adminTrek || null;
-  const isRich = !!(staticRichTrek || catalogTrek);
-  const adminItineraryKeys =
-    catalogTrek ? Object.keys(parseDeparturePlanItineraries(trek?.departurePlans)) : [];
+  const trek = previewTrek || remoteTrek || adminTrek || (id ? findTrekBySlug(id) : null) || featuredTrek;
+  const staticRichTrek =
+    richTrekFor({ name: trek?.name, slug: id || trek?.slug }) ||
+    (trek?.name ? richTrekDetails[trek.name] || null : null);
+  const catalogItineraries = parseDeparturePlanItineraries(trek?.departurePlans);
+  const hasTimedItinerary = itineraryHasEvents(catalogItineraries);
+  const hasCatalogCopy = Boolean(
+    trek && (trek.description || trek.about || trek.includedItems || Object.keys(catalogItineraries).length)
+  );
+  const isRich = !!(staticRichTrek || adminTrek || previewTrek || hasCatalogCopy);
   const staticItineraryKeys = Object.keys(staticRichTrek?.itineraries || {});
-  const defaultItineraryKey = adminItineraryKeys[0] || staticItineraryKeys[0] || "kasara";
+  const defaultItineraryKey = Object.keys(catalogItineraries)[0] || staticItineraryKeys[0] || "kasara";
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const upcomingDates = trek
-    ? (
-        parseJsonValue(trek.trekDateBatches, []).length > 0
-          ? parseJsonValue(trek.trekDateBatches, [])
-          : getTrekDates(slugifyTrekName(trek.name))
-      ).filter((d) => d.date >= todayStr)
+  const departures = trek
+    ? upcomingDepartures(
+        parseJsonish(trek.trekDateBatches, []).length > 0
+          ? parseJsonish(trek.trekDateBatches, [])
+          : getTrekDates(slugifyTrekName(trek.name)),
+        trek.departurePlans,
+        todayStr
+      )
     : [];
 
   const [activeTab, setActiveTab] = useState("overview");
@@ -204,9 +172,7 @@ function TrekDetails() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
 
   /* ── Date selection for WhatsApp booking message ──────────── */
-  const [selectedBookingDate, setSelectedBookingDate] = useState(
-    upcomingDates.length > 0 ? upcomingDates[0].date : null
-  );
+  const activeBookingDate = departures[0]?.label || null;
 
   /* ── Referral code from URL ?ref= param ──────────────────── */
   const location = useLocation();
@@ -304,7 +270,17 @@ function TrekDetails() {
     const excList = excludedItems.map((i) => `<li>${i}</li>`).join("");
     const carryList = carryItems.map((i) => `<li>${i}</li>`).join("");
     const discountItems = discountCodes.map((d) => `<div class="discount"><span class="discount-code">${d.code}</span> &nbsp; <span style="color:#374151">${d.desc}</span></div>`).join("");
-    const aboutText = [overview.intro, ...(overview.sections || []).map((s) => `<strong>${s.title}</strong><br>${s.body}`)].filter(Boolean).join("<br><br>");
+    const aboutText = [
+      ...markdownBlocks(overview.intro, { omitTitles: ["itinerary"] }).map((block) => {
+        if (block.type === "h") return `<strong>${block.text}</strong>`;
+        if (block.type === "ul") return `<ul>${block.items.map((item) => `<li>${item}</li>`).join("")}</ul>`;
+        return block.text;
+      }),
+      ...(overview.sections || []).map((section) => `<strong>${section.title}</strong><br>${section.body}`),
+    ]
+      .filter(Boolean)
+      .join("<br><br>")
+      .replace(/\*/g, "");
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${trek.name} — Full Details</title><style>${css}</style></head><body>
       <p style="color:#6b7280;font-size:.8rem;margin-bottom:4px">Gadvede Trekkers &nbsp;·&nbsp; gadvedetrekkers.com</p>
@@ -407,61 +383,20 @@ function TrekDetails() {
                   ))}
                 </div>
                 <div className="td-hero-actions">
-                  <BookingCTA trek={trek} selectedDate={selectedBookingDate} className="btn td-book-btn" label={`Book on WhatsApp — ₹${trek.price}`} />
+                  <BookingCTA trek={trek} selectedDate={activeBookingDate} className="btn td-book-btn" label={`Book Now — ₹${trek.price}`} />
                   <button className="btn td-itinerary-btn" onClick={downloadItinerary} style={{ background: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.3)" }}>Itinerary</button>
                   <button className="btn td-itinerary-btn" onClick={() => setActiveTab("gallery")}>View Photos</button>
                 </div>
               </div>
             </div>
-            {upcomingDates.length > 0 && (
+            {departures.length > 0 && (
               <div className="container-fluid td-shell py-4">
                 <div className="td-card td-dates-card">
                   <h3 className="td-section-title">📅 Upcoming Departures</h3>
                   <p style={{ color: "#64748b", fontSize: "0.88rem", marginBottom: 12 }}>
-                    Select a date below, then tap <strong>Book on WhatsApp</strong> — we'll confirm your spot instantly.
+                    Choose a date and tap <strong>Book Now</strong> — it opens WhatsApp so we can confirm your spot.
                   </p>
-                  <div className="td-dates-list">
-                    {upcomingDates.map((d) => {
-                      const displayDate = new Date(`${d.date}T00:00:00`).toLocaleDateString("en-IN", {
-                        weekday: "short",
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      });
-                      const isSelected = selectedBookingDate === d.date;
-                      return (
-                        <div
-                          key={d.id}
-                          className="td-date-row"
-                          style={{
-                            cursor: "pointer",
-                            borderColor: isSelected ? "#16a34a" : undefined,
-                            background: isSelected ? "#f0fdf4" : undefined,
-                          }}
-                          onClick={() => setSelectedBookingDate(d.date)}
-                        >
-                          <div className="td-date-info">
-                            <input
-                              type="radio"
-                              name="bookingDate"
-                              value={d.date}
-                              checked={isSelected}
-                              onChange={() => setSelectedBookingDate(d.date)}
-                              style={{ accentColor: "#16a34a", marginRight: 8 }}
-                            />
-                            <span className="td-date-text">{displayDate}</span>
-                            {d.label && <span className="td-date-badge">{d.label}</span>}
-                          </div>
-                          <BookingCTA
-                            trek={trek}
-                            selectedDate={d.date}
-                            className="td-date-book-btn"
-                            label="Book on WhatsApp"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <DepartureRows departures={departures} trek={trek} />
                 </div>
               </div>
             )}
@@ -496,103 +431,98 @@ function TrekDetails() {
     );
   }
 
-  const adminItineraries =
-    catalogTrek ? parseDeparturePlanItineraries(trek?.departurePlans) : {};
-  const rawOverview =
-    catalogTrek
+  const copySource = trek?.about || trek?.description || "";
+  const rawOverview = hasCatalogCopy
       ? {
-          tagline: trek?.shortDescription || trek?.subtitle || "",
-          subtitle: trek?.shortDescription || trek?.subtitle || "",
-          intro: trek?.description || trek?.about || trek?.overview || staticRichTrek?.overview?.intro || "",
+          tagline: trek?.subtitle || "",
+          subtitle: trek?.subtitle || "",
+          intro: copySource,
           sections: [
-            ...(trek?.history ? [{ title: "History & Significance", body: trek.history }] : []),
             ...(trek?.mainAttractions ? [{ title: "Main Attractions", body: trek.mainAttractions }] : []),
-            ...(!trek?.history && !trek?.mainAttractions ? staticRichTrek?.overview?.sections || [] : []),
           ],
         }
       : staticRichTrek?.overview || { tagline: "", subtitle: "", intro: "", sections: [] };
   const overview = {
     ...rawOverview,
-    tagline: cleanDisplayText(rawOverview.tagline),
-    subtitle: cleanDisplayText(rawOverview.subtitle),
+    tagline: stripMarkdownInline(cleanDisplayText(rawOverview.tagline)),
+    subtitle: stripMarkdownInline(cleanDisplayText(rawOverview.subtitle)),
     intro: cleanDisplayText(rawOverview.intro),
     sections: (rawOverview.sections || [])
-      .map((section) => ({ ...section, body: cleanDisplayText(section.body) }))
+      .map((section) => ({
+        ...section,
+        title: stripMarkdownInline(section.title),
+        body: cleanDisplayText(section.body),
+      }))
       .filter((section) => section.body),
   };
   const history = cleanDisplayText(
-    (catalogTrek) && trek?.detailedHistory
-      ? trek.detailedHistory
+    hasCatalogCopy && (trek?.detailedHistory || trek?.history)
+      ? trek.detailedHistory || trek.history
       : staticRichTrek?.history || ""
   );
-  const apiHighlightLines = toLines(trek?.highlights);
+  const highlightSource = asList(trek?.highlights);
   const highlights = (
-    apiHighlightLines.length
-      ? apiHighlightLines.map((text) => ({ icon: "✨", text }))
+    highlightSource.length
+      ? highlightSource.map((text) => ({ icon: "✨", text: stripMarkdownInline(text) }))
       : staticRichTrek?.highlights || []
   ).filter((h) => h?.text && !isPromptLike(h.text));
-  const eventDetails =
-    catalogTrek
-      ? {
-          difficulty: trek?.difficulty || "",
-          endurance: trek?.enduranceLevel || trek?.difficulty || "",
-          baseVillage: trek?.baseVillage || "",
-          region: trek?.regionArea || trek?.location || "",
-          duration: trek?.duration || "",
-          climbTime: trek?.climbTime || "",
-          distance: trek?.distance || "",
-          altitude: trek?.altitude || "",
-          driveFromPune: trek?.drivePune || "",
-          driveMumbai: trek?.driveMumbai || "",
-          sanctuary: trek?.wildlifeSanctuary || "",
-          minGroup: trek?.minGroup || "",
-          bestTime: trek?.bestTime || "",
-          trailType: trek?.trailType || "",
-        }
-      : staticRichTrek?.eventDetails || {};
-  const catalogPricing = Object.fromEntries(
-    Object.entries(parseJsonValue(catalogTrek ? trek?.departurePlans : {}, {})).flatMap(([city, plan]) => {
-      if (plan?.price == null || plan.price === "") return [];
-      return [[city, { label: `${city} Departure`, price: Number(plan.price) || trek?.price || 0 }]];
-    })
-  );
-  const pricing = staticRichTrek?.pricing && Object.keys(staticRichTrek.pricing).length
-    ? staticRichTrek.pricing
-    : Object.keys(catalogPricing).length
-      ? catalogPricing
-      : trek?.price
-        ? { Fees: { label: "Fees", price: Number(trek.price) || trek.price } }
-        : {};
+  const catalogDetails = {
+    difficulty: trek?.difficulty || "",
+    endurance: trek?.enduranceLevel || "",
+    baseVillage: trek?.baseVillage || "",
+    region: trek?.regionArea || trek?.location || "",
+    duration: trek?.duration || "",
+    climbTime: trek?.climbTime || "",
+    distance: trek?.distance || "",
+    altitude: trek?.altitude || "",
+    driveFromPune: trek?.drivePune || "",
+    driveMumbai: trek?.driveMumbai || "",
+    sanctuary: trek?.wildlifeSanctuary || "",
+    minGroup: trek?.minGroup || "",
+    bestTime: trek?.bestTime || "",
+    trailType: trek?.trailType || "",
+  };
+  const eventDetails = {
+    ...(staticRichTrek?.eventDetails || {}),
+    ...Object.fromEntries(Object.entries(catalogDetails).filter(([, value]) => value)),
+  };
+  const catalogPrices = pricingCards(trek);
+  const pricing = catalogPrices.length ? catalogPrices : Object.values(staticRichTrek?.pricing || {});
+  const heroCompare = genuineCompareAt(trek?.originalPrice, trek?.price, collectSellingPrices(trek));
   const whyJoin = staticRichTrek?.whyJoin || [];
-  const apiItinerary = itineraryFromExtra(trek?.extraContent?.itinerary);
-  const staticItineraries = staticRichTrek?.itineraries || {};
-  const itineraries = apiItinerary
-    ? { itinerary: apiItinerary }
-    : Object.keys(staticItineraries).length
-      ? staticItineraries
-      : Object.keys(adminItineraries).length
-        ? adminItineraries
-        : {};
+  const itineraries = hasTimedItinerary ? catalogItineraries : staticRichTrek?.itineraries || {};
   const itineraryKeys = Object.keys(itineraries);
   const itinerary =
     itineraryKeys.length > 0
       ? itineraries[activeItinerary] ?? itineraries[itineraryKeys[0]]
       : { note: "Itinerary will appear once route details are added.", days: [] };
   const bookingSteps = staticRichTrek?.bookingSteps || [];
-  const catalogIncluded = toLines(trek?.includedItems?.length ? trek.includedItems : trek?.included);
-  const catalogExcluded = toLines(trek?.excludedItems?.length ? trek.excludedItems : trek?.notIncluded);
-  const catalogCarry = toLines(trek?.thingsToCarry);
-  const includedItems = (catalogIncluded.length ? catalogIncluded : staticRichTrek?.inclusions || []).map((item) =>
-    String(item).startsWith("✅") ? item : `✅ ${item}`
+  const listOr = (primary, secondary, titles, fallback) => {
+    const first = asList(primary);
+    if (first.length) return first;
+    const second = asList(secondary);
+    if (second.length) return second;
+    const fromCopy = sectionList(copySource, titles);
+    if (fromCopy.length) return fromCopy;
+    return fallback || [];
+  };
+  const includedItems = listOr(trek?.includedItems, trek?.included, ["includes", "inclusions"], staticRichTrek?.inclusions).map(
+    (item) => `✅ ${stripMarkdownInline(item)}`
   );
-  const excludedItems = (catalogExcluded.length ? catalogExcluded : staticRichTrek?.exclusions || []).map((item) =>
-    String(item).startsWith("❌") ? item : `❌ ${item}`
+  const excludedItems = listOr(trek?.excludedItems, trek?.notIncluded, ["excludes", "exclusions"], staticRichTrek?.exclusions).map(
+    (item) => `❌ ${stripMarkdownInline(item)}`
   );
-  const carryItems = catalogCarry.length ? catalogCarry : staticRichTrek?.thingsToCarry || [];
+  const carryItems = listOr(
+    trek?.thingsToCarry,
+    trek?.things_to_carry,
+    ["things to carry"],
+    staticRichTrek?.thingsToCarry
+  ).map((item) => stripMarkdownInline(item));
+  const pickups = pickupGroups(trek?.departurePlans);
   const placesToVisit =
-    catalogTrek ? parsePlaces(trek?.placesToVisit) : staticRichTrek?.placesToVisit || [];
+    hasCatalogCopy && trek?.placesToVisit ? parsePlaces(trek?.placesToVisit) : staticRichTrek?.placesToVisit || [];
   const discountCodes =
-    catalogTrek
+    adminTrek || previewTrek
       ? trek?.discountEnabled === false
         ? []
         : parseDiscountItems(trek?.discountCodes)
@@ -639,11 +569,11 @@ function TrekDetails() {
             ))}
           </div>
           <div className="td-hero-actions">
-            <BookingCTA trek={trek} selectedDate={selectedBookingDate} className="btn td-book-btn" label={`Book on WhatsApp — ₹${trek.price}`} />
+            <BookingCTA trek={trek} selectedDate={activeBookingDate} className="btn td-book-btn" label={`Book Now — ₹${trek.price}`} />
             <button className="btn td-itinerary-btn" onClick={downloadItinerary} style={{ background: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.3)" }}>Itinerary</button>
             <button className="btn td-itinerary-btn" onClick={() => setActiveTab("itinerary")}>View Itinerary</button>
             <a
-              href={buildShareWhatsAppUrl(trek, referralUrl, selectedBookingDate)}
+              href={buildShareWhatsAppUrl(trek, referralUrl, activeBookingDate)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn td-itinerary-btn"
@@ -720,33 +650,10 @@ function TrekDetails() {
               </div>
 
               <div className="td-overview-side">
-                {upcomingDates.length > 0 && (
+                {departures.length > 0 && (
                   <div className="td-card td-dates-card">
                     <h3 className="td-section-title">📅 Upcoming Departures</h3>
-                    <div className="td-dates-list">
-                      {upcomingDates.map((d) => {
-                        const displayDate = new Date(`${d.date}T00:00:00`).toLocaleDateString("en-IN", {
-                          weekday: "short",
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        });
-                        return (
-                          <div key={d.id} className="td-date-row">
-                            <div className="td-date-info">
-                              <span className="td-date-text">{displayDate}</span>
-                              {d.label && <span className="td-date-badge">{d.label}</span>}
-                            </div>
-                            <BookingCTA
-                              trek={referralCode ? { ...trek, referralCode } : trek}
-                              selectedDate={displayDate}
-                              className="td-date-book-btn"
-                              label="Book"
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <DepartureRows departures={departures} trek={trek} />
                   </div>
                 )}
 
@@ -799,7 +706,7 @@ function TrekDetails() {
             <h2 className="td-section-title">Photo Gallery</h2>
             <p className="td-muted">Hover to zoom · Click to view full screen</p>
             <div className="td-gallery-grid">
-              {[...trek.gallery, ...trek.gallery].map((img, index) => (
+              {(trek.gallery || []).map((img, index) => (
                 <div
                   className="td-gallery-item"
                   key={index}
@@ -864,7 +771,7 @@ function TrekDetails() {
             <div className="td-timeline">
               {(itinerary.days || []).map((day, dayIndex) => (
                 <div className="td-timeline-day" key={dayIndex}>
-                  <div className="td-timeline-day-title">{day.title}</div>
+                  {day.title ? <div className="td-timeline-day-title">{day.title}</div> : null}
                   <div className="td-timeline-events">
                     {(day.events || []).map((event, eventIndex) => (
                       <div className="td-timeline-event" key={eventIndex}>
@@ -890,9 +797,9 @@ function TrekDetails() {
                   ))}
                 </ol>
                 <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <BookingCTA trek={trek} selectedDate={selectedBookingDate} className="btn td-book-btn" />
+                  <BookingCTA trek={trek} selectedDate={activeBookingDate} className="btn td-book-btn" />
                   <a
-                    href={buildShareWhatsAppUrl(trek, referralUrl, selectedBookingDate)}
+                    href={buildShareWhatsAppUrl(trek, referralUrl, activeBookingDate)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn td-itinerary-btn"
@@ -941,14 +848,40 @@ function TrekDetails() {
               </div>
 
               <div>
+                {pickups.length > 0 && (
+                  <div className="td-card" style={{ marginBottom: 18 }}>
+                    <h2 className="td-section-title">Pickup points</h2>
+                    {pickups.map((group) => (
+                      <div key={group.city} style={{ marginBottom: 12 }}>
+                        <h3 className="td-subsection-title">{group.city}</h3>
+                        <ul className="td-inclusions">
+                          {group.points.map((point, index) => (
+                            <li className="td-inclusion-item" key={`${group.city}-${index}`}>
+                              {point.time ? `${point.time} — ` : ""}
+                              {point.location}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="td-card">
                   <h2 className="td-section-title">Pricing</h2>
                   <div className="td-pricing-cards">
-                    {Object.values(pricing).map((price) => (
+                    {pricing.map((price) => (
                       <div className="td-pricing-card" key={price.label}>
                         <div className="td-pricing-label">{price.label}</div>
-                        <div className="td-pricing-price">₹{price.price}<span>/person</span></div>
-                        <BookingCTA trek={trek} selectedDate={selectedBookingDate} className="btn td-pricing-book-btn" label="Book on WhatsApp" />
+                        {price.compareAt ? (
+                          <div className="td-cta-orig">₹{Number(price.compareAt).toLocaleString("en-IN")}</div>
+                        ) : null}
+                        <div className="td-pricing-price">₹{Number(price.price).toLocaleString("en-IN")}<span>/person</span></div>
+                        <BookingCTA
+                          trek={{ ...trek, price: price.price }}
+                          selectedDate={activeBookingDate}
+                          className="btn td-pricing-book-btn"
+                          label="Book Now"
+                        />
                       </div>
                     ))}
                   </div>
@@ -996,16 +929,18 @@ function TrekDetails() {
         <div className="td-cta-price">
           <span className="td-cta-from">from</span>
           <span className="td-cta-amount">₹{trek.price}</span>
-          <span className="td-cta-orig">₹{trek.originalPrice}</span>
+          {heroCompare ? (
+            <span className="td-cta-orig">₹{Number(heroCompare).toLocaleString("en-IN")}</span>
+          ) : null}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "center" }}>
-          <BookingCTA trek={trek} selectedDate={selectedBookingDate} className="btn td-cta-book-btn" />
+          <BookingCTA trek={trek} selectedDate={activeBookingDate} className="btn td-cta-book-btn" label="Book Now" />
           <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>
             Quick booking via WhatsApp
           </span>
         </div>
         <a
-          href={buildShareWhatsAppUrl(trek, referralUrl, selectedBookingDate)}
+          href={buildShareWhatsAppUrl(trek, referralUrl, activeBookingDate)}
           target="_blank"
           rel="noopener noreferrer"
           className="btn td-cta-book-btn"

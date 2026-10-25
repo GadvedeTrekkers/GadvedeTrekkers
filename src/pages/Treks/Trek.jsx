@@ -4,13 +4,13 @@ import { slugifyTrekName } from "../../data/treks";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { tripDetailPath } from "../../data/publicTrips";
 import { FEATURED_TRIPS, mergeFeaturedTrips } from "../../data/featuredTrips";
-import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
 import { WhatsAppIcon, ArrowRightIcon } from "../../components/icons";
 import { handleImageError, withFallbackImages } from "../../utils/imageFallback";
 import { syncProductsFromApi } from "../../api/getAll";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 import { CATALOG_HUBS, hubBySlug, inferHubSlug } from "../../data/catalogHubs";
+import { collectSellingPrices, genuineCompareAt, resolveTripGallery } from "../../utils/tripDisplay";
 
 const parseGallery = (value, fallback) => {
   try {
@@ -48,8 +48,10 @@ function buildTreks(rawItems = FEATURED_TRIPS) {
 
   return source
     .map((t) => {
-      const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
-      const gallery = withFallbackImages(parseGallery(t.imageGallery, fallbackGallery));
+      const resolved = resolveTripGallery(t);
+      const gallery = resolved.length
+        ? resolved
+        : withFallbackImages(parseGallery(t.imageGallery, [t.image].filter(Boolean)));
       const nextBatch = upcomingBatch(t);
       const hubSlug = t.hubSlug || inferHubSlug({ ...t, productType: t.productType || "trek" });
       return {
@@ -452,7 +454,8 @@ function Trek() {
         {/* ── TREK GRID ────────────────────────────── */}
         <div className="trek-grid" role="list" aria-label="Available treks">
           {visibleTreks.map((trek, index) => {
-            const discountPct = getDiscountPercent(trek.originalPrice, trek.price);
+            const compareAt = genuineCompareAt(trek.originalPrice, trek.price, collectSellingPrices(trek));
+            const discountPct = compareAt ? getDiscountPercent(compareAt, trek.price) : 0;
             return (
               <article
                 className="trek-card"
@@ -553,8 +556,8 @@ function Trek() {
                   </div>
 
                   <div className="trek-pricing">
-                    {trek.originalPrice > trek.price && (
-                      <span className="trek-original-price">₹{trek.originalPrice}</span>
+                    {compareAt && (
+                      <span className="trek-original-price">₹{compareAt}</span>
                     )}
                     <span className="trek-current-price" itemProp="offers" itemScope itemType="https://schema.org/Offer">
                       <span itemProp="price">₹{trek.price}</span>

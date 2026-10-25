@@ -1,16 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { rentalsList } from "../data/rentalsData";
 import { isHeritageEnabled } from "../data/featureFlags";
-import { ivDestinations as _ivDestinations } from "../data/industrialVisitsData";
 import EnquiryModal from "../components/EnquiryModal";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
-import { getAdminItems, normaliseItem, saveAdminItems } from "../data/adminStorage";
+import { getAdminItems, normaliseItem } from "../data/adminStorage";
 import BookingCTA from "../components/BookingCTA";
 import { WhatsAppIcon, ArrowRightIcon } from "../components/icons";
 import { handleImageError, withFallbackImages } from "../utils/imageFallback";
 import { stripPromptFields } from "../utils/contentSanitizer";
 import { syncProductsFromApi } from "../api/getAll";
+import { collectSellingPrices, genuineCompareAt, resolveTripGallery } from "../utils/tripDisplay";
 import { tripDetailPath } from "../data/publicTrips";
 import { FEATURED_TRIPS, mergeFeaturedTrips } from "../data/featuredTrips";
 
@@ -25,8 +24,10 @@ function parseGalleryHome(value, fallback) {
 }
 function buildActiveTreks(rawItems = FEATURED_TRIPS) {
   return mergeFeaturedTrips(rawItems).map((t) => {
-    const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
-    const gallery = withFallbackImages(parseGalleryHome(t.imageGallery, fallbackGallery));
+    const resolved = resolveTripGallery(t);
+    const gallery = resolved.length
+      ? resolved
+      : withFallbackImages(parseGalleryHome(t.imageGallery, [t.image].filter(Boolean)));
     return {
       ...stripPromptFields(normaliseItem(t)),
       slug: t.slug,
@@ -42,15 +43,14 @@ function buildActiveTreks(rawItems = FEATURED_TRIPS) {
 function HomeTrekCard({ trek }) {
   const [imgIdx, setImgIdx] = useState(0);
   const intervalRef = useRef(null);
-  const images = trek.gallery.slice(0, 3);
-  const discountPct =
-    trek.originalPrice > trek.price
-      ? Math.round(((trek.originalPrice - trek.price) / trek.originalPrice) * 100)
-      : 0;
+  const images = (trek.gallery || []).slice(0, 3);
+  const compareAt = genuineCompareAt(trek.originalPrice, trek.price, collectSellingPrices(trek));
+  const discountPct = compareAt ? Math.round(((compareAt - trek.price) / compareAt) * 100) : 0;
   const detailPath = tripDetailPath(trek);
   const rating = Number(trek.rating);
 
   const handleMouseEnter = () => {
+    if (images.length < 2) return;
     clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
       setImgIdx((prev) => (prev + 1) % images.length);
@@ -156,8 +156,8 @@ function HomeTrekCard({ trek }) {
         </div>
 
         <div className="trek-pricing">
-          {trek.originalPrice > trek.price && (
-            <span className="trek-original-price">₹{trek.originalPrice}</span>
+          {compareAt && (
+            <span className="trek-original-price">₹{compareAt}</span>
           )}
           <span className="trek-current-price">₹{trek.price}</span>
           <span className="trek-starting-text">per person</span>
@@ -519,6 +519,7 @@ function Home() {
   const gridRef = useRef(null);
   const [syncKey, setSyncKey] = useState(0);
   const [activeTreks, setActiveTreks] = useState(() => buildActiveTreks(FEATURED_TRIPS));
+  const [activeTours, setActiveTours] = useState([]);
   const [treksLoading, setTreksLoading] = useState(false);
 
   // Treks section is trek + camping so seasonal camping stays beside the forts.
@@ -540,6 +541,13 @@ function Home() {
     syncProductsFromApi("rental", "gt_rentals")
       .then((items) => { if (items) setSyncKey((k) => k + 1); })
       .catch(() => {});
+    syncProductsFromApi("tour", "gt_tours")
+      .then((items) => {
+        if (!cancelled) setActiveTours((items || []).filter((item) => item.active !== false));
+      })
+      .catch(() => {
+        if (!cancelled) setActiveTours([]);
+      });
 
     const onStorage = () => {
       applyTrips(getAdminItems("gt_treks"), getAdminItems("gt_camping"));
@@ -661,13 +669,12 @@ function Home() {
     [activeTreks]
   );
 
-  // Rentals — admin-first: only show active admin items; fall back to rentalsList if admin is empty
-  // Use syncKey to force re-render when data changes
+  // Rentals — only active catalog products. Hide the section when this list is empty.
   const tentRentalCards = useMemo(() => {
     const _adminRentalsRaw = getAdminItems("gt_rentals");
-    const _activeRentals = _adminRentalsRaw.length > 0
-      ? _adminRentalsRaw.filter((item) => item.active !== false).map(normaliseItem)
-      : rentalsList;
+    const _activeRentals = _adminRentalsRaw
+      .filter((item) => item.active !== false)
+      .map(normaliseItem);
     return _activeRentals
       .filter((item) => (item.category || "").toLowerCase() === "tents" && item.image)
       .slice(0, 8)
@@ -682,14 +689,12 @@ function Home() {
   }, [syncKey]);
 
   const _storedIV = getAdminItems("gt_iv");
-  const ivDestinations = _storedIV.length > 0
-    ? _storedIV.filter((d) => d.active !== false).map((d) => {
+  const ivDestinations = _storedIV.filter((d) => d.active !== false).map((d) => {
         let images = [];
         try { images = JSON.parse(d.imageGallery || "[]").filter(Boolean).map((url) => ({ src: url, caption: "" })); } catch { images = []; }
         const highlights = String(d.highlights || "").split("\n").map((s) => s.trim()).filter(Boolean);
         return { ...normaliseItem(d), images, highlights };
-      })
-    : _ivDestinations;
+      });
 
   return (
     <>
@@ -1066,7 +1071,7 @@ function Home() {
       </section>
 
       {/* ================= TOUR CATEGORIES ================= */}
-      <section className="py-5 bg-light">
+      {activeTours.length > 0 && <section className="py-5 bg-light">
         <div className="container">
           <div className="text-center mb-5">
             <span style={{ color: "#16a34a", fontWeight: 700, fontSize: "0.8rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>
@@ -1088,7 +1093,7 @@ function Home() {
             </Link>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* ================= POPULAR CAMPSITES ================= */}
       {campsiteCards.length > 0 && <section className="py-5">
@@ -1187,7 +1192,7 @@ function Home() {
       </section>}
 
       {/* ================= RENTALS ================= */}
-      <section className="py-5">
+      {tentRentalCards.length > 0 && <section className="py-5">
         <div className="container">
           <h2 className="text-center fw-bold">Adventure Rentals & Essentials</h2>
           <p className="text-center text-muted mb-5">Browse listed tent rentals ready for your next trek, campsite, or outdoor event.</p>
@@ -1238,10 +1243,10 @@ function Home() {
             <Link to="/rentals" className="btn btn-outline-success px-4">View All Rentals →</Link>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* ================= CORPORATE / BUDGET TOURS ================= */}
-      <section className="py-5" style={{ background: "linear-gradient(180deg,#f0fdf4 0%,#eff6ff 100%)" }}>
+      {ivDestinations.length > 0 && <section className="py-5" style={{ background: "linear-gradient(180deg,#f0fdf4 0%,#eff6ff 100%)" }}>
         <div className="container">
           <div className="text-center mb-4">
             <span style={{ background: "#dbeafe", color: "#1d4ed8", borderRadius: 20, padding: "4px 16px", fontSize: "0.75rem", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
@@ -1267,7 +1272,7 @@ function Home() {
             </Link>
           </div>
         </div>
-      </section>
+      </section>}
 
       {enquiryDest && (
         <EnquiryModal dest={enquiryDest} category="Industrial Visit" onClose={() => setEnquiryDest(null)} />
