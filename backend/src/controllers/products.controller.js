@@ -145,7 +145,7 @@ const CATALOG_BATCH_COLUMNS = [
   "price",
 ];
 
-const CATALOG_BATCH_FALLBACK_COLUMNS = ["product_id", "batch_date", "batch_label", "status", "price"];
+const CATALOG_BATCH_REQUIRED_COLUMNS = ["product_id", "batch_date"];
 
 function isStatementTimeout(error) {
   return /statement timeout/i.test(String(error?.message || ""));
@@ -211,15 +211,33 @@ function queryBatches(productIds, columns) {
 async function loadCatalogBatches(productIds) {
   if (!productIds.length) return [];
 
-  let result = await queryBatches(productIds, CATALOG_BATCH_COLUMNS);
-  if (result.error && isMissingColumnError(result.error)) {
-    result = await queryBatches(productIds, CATALOG_BATCH_FALLBACK_COLUMNS);
+  // price/available are not on every production product_batches table.
+  // Drop whichever optional column PostgREST says is missing and retry,
+  // instead of returning trips with no dates.
+  let columns = [...CATALOG_BATCH_COLUMNS];
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const result = await queryBatches(productIds, columns);
+    if (!result.error) return result.data || [];
+    if (!isMissingColumnError(result.error)) {
+      console.error("listCatalogTripItems: batch lookup failed", result.error.message);
+      return [];
+    }
+
+    const message = String(result.error.message || "");
+    const named = columns.filter(
+      (column) => !CATALOG_BATCH_REQUIRED_COLUMNS.includes(column) && message.includes(column)
+    );
+    const next = named.length
+      ? withoutNamedColumns(columns, named)
+      : columns.filter((column) => CATALOG_BATCH_REQUIRED_COLUMNS.includes(column) || column === "batch_label" || column === "status");
+    if (next.join(",") === columns.join(",")) {
+      console.error("listCatalogTripItems: batch lookup failed", result.error.message);
+      return [];
+    }
+    columns = next;
   }
-  if (result.error) {
-    console.error("listCatalogTripItems: batch lookup failed", result.error.message);
-    return [];
-  }
-  return result.data || [];
+
+  return [];
 }
 
 export function catalogItemFromLeanRow(row, batches = []) {

@@ -258,7 +258,7 @@ describe("GET /api/catalog/trips", () => {
     },
   ];
 
-  async function loadTrips(query, { timeoutOnImage = false, productRows = [lohagad, matheran] } = {}) {
+  async function loadTrips(query, { timeoutOnImage = false, productRows = [lohagad, matheran], missingBatchColumn = "" } = {}) {
     vi.resetModules();
     const calls = [];
 
@@ -284,7 +284,9 @@ describe("GET /api/catalog/trips", () => {
         then(onFulfilled, onRejected) {
           let result;
           if (table === "product_batches") {
-            result = { data: batches, error: null };
+            result = missingBatchColumn && selected.split(",").includes(missingBatchColumn)
+              ? { data: null, error: { message: `column product_batches.${missingBatchColumn} does not exist` } }
+              : { data: batches, error: null };
           } else if (timeoutOnImage && selected.includes("primary_image_url")) {
             result = { data: null, error: { message: "canceling statement due to statement timeout" } };
           } else {
@@ -363,6 +365,21 @@ describe("GET /api/catalog/trips", () => {
     expect(res._status).toBe(200);
     expect(res._body.data.map((item) => item.id)).toContain("b2100000-0000-0000-0000-000000000001");
     expect(JSON.stringify(res._body)).not.toContain("data:image");
+  });
+
+  it("still returns the next batch when product_batches has no price column", async () => {
+    const { res, calls } = await loadTrips({ hub: "pune-weekend" }, { missingBatchColumn: "price" });
+    const selects = calls.filter((call) => call.table === "product_batches" && call.op === "select").map((call) => call.value);
+
+    expect(selects[0].split(",")).toContain("price");
+    expect(selects[1].split(",")).not.toContain("price");
+    expect(selects[1].split(",")).toContain("batch_date");
+    expect(res._status).toBe(200);
+    expect(res._body.data[0].nextBatch).toMatchObject({
+      date: "2026-11-07",
+      departureCity: "Pune",
+      label: "Pune sunrise batch",
+    });
   });
 
   it("rejects an unknown hub before querying products", async () => {
