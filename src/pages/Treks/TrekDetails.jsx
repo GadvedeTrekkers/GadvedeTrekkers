@@ -8,6 +8,8 @@ import { getTrekDates } from "../../data/trekDatesStorage";
 import BookingCTA from "../../components/BookingCTA";
 import { buildShareWhatsAppUrl } from "../../config/bookingConfig";
 import { productService } from "../../services/product.service";
+import { cleanDisplayText, isPromptLike, stripPromptFields } from "../../utils/contentSanitizer";
+
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -15,6 +17,20 @@ const TABS = [
   { id: "itinerary", label: "Itinerary" },
   { id: "details", label: "Details & Cost" },
 ];
+
+/* Render long copy as separate readable paragraphs instead of one dense block. */
+function Paragraphs({ text, className = "td-para" }) {
+  const parts = String(text || "")
+    .split(/\n\s*\n|\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (!parts.length) return null;
+  return parts.map((p, i) => (
+    <p className={className} key={i}>
+      {p}
+    </p>
+  ));
+}
 
 const parseJsonValue = (value, fallback) => {
   try {
@@ -96,7 +112,7 @@ function TrekDetails() {
   const buildLocalTrek = (item) => {
     const fallbackGallery = [item.image, item.image, item.image].filter(Boolean);
     const gallery = parseJsonValue(item.imageGallery, fallbackGallery);
-    return { ...normaliseItem(item), image: gallery[0] || item.image, gallery };
+    return { ...stripPromptFields(normaliseItem(item)), image: gallery[0] || item.image, gallery };
   };
 
   const adminTrek = adminMatch ? buildLocalTrek(adminMatch) : null;
@@ -418,7 +434,7 @@ function TrekDetails() {
 
   const adminItineraries =
     adminTrek || previewTrek ? parseDeparturePlanItineraries(trek?.departurePlans) : {};
-  const overview =
+  const rawOverview =
     adminTrek || previewTrek
       ? {
           tagline: trek?.subtitle || "",
@@ -430,14 +446,25 @@ function TrekDetails() {
           ],
         }
       : staticRichTrek?.overview || { tagline: "", subtitle: "", intro: "", sections: [] };
-  const history =
+  const overview = {
+    ...rawOverview,
+    tagline: cleanDisplayText(rawOverview.tagline),
+    subtitle: cleanDisplayText(rawOverview.subtitle),
+    intro: cleanDisplayText(rawOverview.intro),
+    sections: (rawOverview.sections || [])
+      .map((section) => ({ ...section, body: cleanDisplayText(section.body) }))
+      .filter((section) => section.body),
+  };
+  const history = cleanDisplayText(
     (adminTrek || previewTrek) && trek?.detailedHistory
       ? trek.detailedHistory
-      : staticRichTrek?.history || "";
-  const highlights =
+      : staticRichTrek?.history || ""
+  );
+  const highlights = (
     (adminTrek || previewTrek) && trek?.highlights
       ? parseLineItems(trek.highlights).map((text) => ({ icon: "✨", text }))
-      : staticRichTrek?.highlights || [];
+      : staticRichTrek?.highlights || []
+  ).filter((h) => h?.text && !isPromptLike(h.text));
   const eventDetails =
     adminTrek || previewTrek
       ? {
@@ -517,7 +544,7 @@ function TrekDetails() {
           </button>
           <span className="td-kicker">{heroKicker}</span>
           <h1 className="td-heading">{trek.name}</h1>
-          <p className="td-subheading">{heroTagline}</p>
+          {heroTagline && <p className="td-subheading">{heroTagline}</p>}
           <div className="td-stats-bar">
             {[
               { icon: "📍", label: trek.location },
@@ -574,11 +601,17 @@ function TrekDetails() {
               <div className="td-overview-main">
                 <div className="td-card">
                   <h2 className="td-section-title">About {trek.name}</h2>
-                  <p className="td-para">{overview.intro}</p>
+                  {overview.intro ? (
+                    <Paragraphs text={overview.intro} />
+                  ) : (
+                    !overview.sections?.length && (
+                      <p className="td-para td-muted">Full trek description coming soon. Contact us for details.</p>
+                    )
+                  )}
                   {overview.sections?.map((section) => (
                     <div key={section.title}>
                       <h3 className="td-subsection-title">{section.title}</h3>
-                      <p className="td-para">{section.body}</p>
+                      <Paragraphs text={section.body} />
                     </div>
                   ))}
                 </div>
@@ -586,7 +619,7 @@ function TrekDetails() {
                 {history && (
                   <div className="td-card">
                     <h2 className="td-section-title">{staticRichTrek?.historyTitle || "Detailed History"}</h2>
-                    <p className="td-para">{history}</p>
+                    <Paragraphs text={history} />
                   </div>
                 )}
 
@@ -644,6 +677,7 @@ function TrekDetails() {
                   </div>
                 )}
 
+                {highlights.length > 0 && (
                 <div className="td-card td-highlights-card">
                   <h3 className="td-section-title">Trek Highlights</h3>
                   <ul className="td-highlights-list">
@@ -655,6 +689,7 @@ function TrekDetails() {
                     ))}
                   </ul>
                 </div>
+                )}
 
                 {discountCodes.length > 0 && (
                   <div className="td-card" style={{ marginTop: 16 }}>

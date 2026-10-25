@@ -10,7 +10,9 @@ import EnquiryModal from "../components/EnquiryModal";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import { getAdminItems, normaliseItem, saveAdminItems } from "../data/adminStorage";
 import BookingCTA from "../components/BookingCTA";
-import { WhatsAppIcon, ArrowRightIcon, DownloadIcon } from "../components/icons";
+import { WhatsAppIcon, ArrowRightIcon } from "../components/icons";
+import { handleImageError, withFallbackImages } from "../utils/imageFallback";
+import { stripPromptFields } from "../utils/contentSanitizer";
 import { syncProductsFromApi } from "../api/getAll";
 
 const ALLOW_STATIC_TREK_FALLBACK = import.meta.env.DEV;
@@ -49,96 +51,15 @@ function buildActiveTreks() {
     .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
     .map((t) => {
       const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
-      const gallery = parseGalleryHome(t.imageGallery, fallbackGallery);
+      const gallery = withFallbackImages(parseGalleryHome(t.imageGallery, fallbackGallery));
       return {
-        ...normaliseItem(t),
+        ...stripPromptFields(normaliseItem(t)),
         slug: t.slug || slugifyTrekName(t.name),
         image: gallery[0] || t.image,
         gallery,
         seasonalTag: t.seasonalTag || "",
       };
     });
-}
-
-// ─── Itinerary PDF download for home cards ────────────────────────────────────
-function downloadTrekPdf(trek) {
-  const parseLines = (v = "") => String(v).split("\n").map((s) => s.trim()).filter(Boolean);
-  const name = trek.name || "Trek";
-
-  const highlightItems = parseLines(trek.highlights).map((h) => `<li style="background:#f0fdf4;border:1px solid #d5f6e4;border-radius:6px;padding:7px 12px;font-size:.87rem">${h}</li>`).join("");
-  const incList = parseLines(trek.included).map((i) => `<li>✅ ${i}</li>`).join("");
-  const excList = parseLines(trek.notIncluded).map((i) => `<li>❌ ${i}</li>`).join("");
-  const carryList = parseLines(trek.thingsToCarry).map((i) => `<li style="background:#f6fbf8;border:1px solid #e3efe8;border-radius:6px;padding:6px 10px;font-size:.84rem">${i}</li>`).join("");
-  const about = trek.about || "";
-
-  // ── Build schedule HTML from departurePlans (JSON) or legacy itinerary (pipe-delimited) ──
-  let scheduleHtml = "";
-  try {
-    const plans = JSON.parse(trek.departurePlans || "{}");
-    const entries = Object.entries(plans).filter(([, p]) => p && String(p.itinerary || "").trim());
-    if (entries.length > 0) {
-      scheduleHtml = entries.map(([city, plan]) => {
-        const price = plan.price ? ` — ₹${plan.price}/person` : "";
-        const dayMap = {};
-        String(plan.itinerary || "").split("\n").map((l) => l.trim()).filter(Boolean).forEach((line) => {
-          const parts = line.split("|").map((p) => p.trim());
-          const day = parts[0] || "Day";
-          const time = parts[1] || "";
-          const desc = parts[2] || parts[1] || "";
-          if (!dayMap[day]) dayMap[day] = [];
-          dayMap[day].push({ time: parts.length >= 3 ? time : "", desc: parts.length >= 3 ? desc : (parts[1] || "") });
-        });
-        const daysHtml = Object.entries(dayMap).map(([day, events]) =>
-          `<div style="background:#d5f6e4;border-left:5px solid #0a8456;padding:8px 12px;font-weight:800;border-radius:6px;margin:10px 0 4px;font-size:.88rem">${day}</div>` +
-          events.map((ev) => `<div style="display:flex;gap:14px;padding:4px 2px;border-bottom:1px solid #eef4f0;font-size:.85rem"><span style="color:#0a6a47;font-weight:700;min-width:90px;flex-shrink:0">${ev.time}</span><span>${ev.desc}</span></div>`).join("")
-        ).join("");
-        return `<h3 style="color:#065f46;font-size:.9rem;margin-top:18px;margin-bottom:4px">📍 ${city}${price}</h3>${daysHtml}`;
-      }).join("<br>");
-    }
-  } catch {/* ignore */}
-
-  // Fallback to legacy pipe-delimited itinerary: City|Day N|Time|Activity
-  if (!scheduleHtml) {
-    const lines = parseLines(trek.itinerary);
-    if (lines.length > 0) {
-      const cityMap = {};
-      lines.forEach((line) => {
-        const parts = line.split("|").map((p) => p.trim());
-        if (parts.length < 2) return;
-        const city = parts[0];
-        const day = parts[1];
-        const time = parts.length >= 4 ? parts[2] : "";
-        const desc = parts.length >= 4 ? parts[3] : (parts[2] || "");
-        if (!cityMap[city]) cityMap[city] = {};
-        if (!cityMap[city][day]) cityMap[city][day] = [];
-        cityMap[city][day].push({ time, desc });
-      });
-      scheduleHtml = Object.entries(cityMap).map(([city, days]) => {
-        const daysHtml = Object.entries(days).map(([day, events]) =>
-          `<div style="background:#d5f6e4;border-left:5px solid #0a8456;padding:8px 12px;font-weight:800;border-radius:6px;margin:10px 0 4px;font-size:.88rem">${day}</div>` +
-          events.map((ev) => `<div style="display:flex;gap:14px;padding:4px 2px;border-bottom:1px solid #eef4f0;font-size:.85rem"><span style="color:#0a6a47;font-weight:700;min-width:90px;flex-shrink:0">${ev.time}</span><span>${ev.desc}</span></div>`).join("")
-        ).join("");
-        return `<h3 style="color:#065f46;font-size:.9rem;margin-top:18px;margin-bottom:4px">📍 ${city}</h3>${daysHtml}`;
-      }).join("<br>");
-    }
-  }
-
-  const css = `body{font-family:Arial,sans-serif;max-width:820px;margin:0 auto;padding:32px;color:#1a1a1a}h1{color:#0a6a47;font-size:1.9rem}h2{color:#0a6a47;font-size:.93rem;text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid #d5f6e4;padding-bottom:5px;margin-top:26px}hr{border:none;border-top:2px solid #d5f6e4;margin:18px 0}ul{padding-left:20px;line-height:2}.hl{display:grid;grid-template-columns:1fr 1fr;gap:6px;list-style:none;padding-left:0}.ig{display:grid;grid-template-columns:1fr 1fr;gap:0 32px}.cg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 16px;list-style:none;padding-left:0}@media print{body{padding:16px}}`;
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${name} — Trek Details</title><style>${css}</style></head><body>
-    <p style="color:#6b7280;font-size:.8rem;margin-bottom:4px">Gadvede Trekkers · gadvedetrekkers.com</p>
-    <h1>${name}</h1>
-    <p style="color:#4b5563;margin-top:4px">${[trek.difficulty, trek.duration, trek.altitude, trek.location].filter(Boolean).join(" &nbsp;·&nbsp; ")}</p>
-    <p style="color:#0a6a47;font-weight:700;font-size:1.05rem">From ₹${trek.price || ""} per person</p>
-    <hr>
-    ${about ? `<h2>About</h2><p style="line-height:1.75;color:#374151">${about}</p>` : ""}
-    ${highlightItems ? `<h2>Trek Highlights</h2><ul class="hl">${highlightItems}</ul>` : ""}
-    ${scheduleHtml ? `<hr><h2>Trek Schedule / Itinerary</h2>${scheduleHtml}` : ""}
-    ${(incList || excList) ? `<hr><h2>Inclusions &amp; Exclusions</h2><div class="ig"><div><h3 style="color:#065f46">Included</h3><ul>${incList}</ul></div><div><h3 style="color:#065f46">Not Included</h3><ul>${excList}</ul></div></div>` : ""}
-    ${carryList ? `<hr><h2>Things to Carry</h2><ul class="cg">${carryList}</ul>` : ""}
-    <hr><p style="color:#888;font-size:.78rem;margin-top:20px">Generated by Gadvede Trekkers · gadvedetrekkers.com · ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</p>
-    <script>window.onload=()=>{window.print()}</script></body></html>`;
-  const win = window.open("", "_blank");
-  if (win) { win.document.write(html); win.document.close(); }
 }
 
 // ─── HomeTrekCard ─────────────────────────────────────────────────────────────
@@ -149,7 +70,6 @@ function HomeTrekCard({ trek }) {
   const discountPct = Math.round(
     ((trek.originalPrice - trek.price) / trek.originalPrice) * 100
   );
-  const isPopular = trek.reviews >= 200;
 
   const handleMouseEnter = () => {
     clearInterval(intervalRef.current);
@@ -174,12 +94,9 @@ function HomeTrekCard({ trek }) {
       style={{ height: "100%" }}
     >
       <div className="trek-card-media">
-        <span className="trek-season-tag">{trek.seasonalTag}</span>
+        {trek.seasonalTag && <span className="trek-season-tag">{trek.seasonalTag}</span>}
         {discountPct > 0 && (
           <span className="trek-discount-badge">{discountPct}% OFF</span>
-        )}
-        {isPopular && (
-          <span className="trek-popular-badge">🔥 Popular</span>
         )}
         <div className="trek-gallery">
           {images.map((img, i) => (
@@ -194,6 +111,8 @@ function HomeTrekCard({ trek }) {
                 transition: "opacity 0.5s ease, transform 0.6s ease",
               }}
               loading="lazy"
+              decoding="async"
+              onError={handleImageError}
             />
           ))}
         </div>
@@ -252,20 +171,23 @@ function HomeTrekCard({ trek }) {
           >
             {trek.difficulty}
           </span>
-          <span className="trek-chip chip-neutral">⏱ {trek.duration}</span>
-          <span className="trek-chip chip-neutral">🏔 {trek.altitude}</span>
+          {trek.duration && <span className="trek-chip chip-neutral">⏱ {trek.duration}</span>}
         </div>
 
         <div className="trek-pricing">
-          <span className="trek-original-price">₹{trek.originalPrice}</span>
+          {trek.originalPrice > trek.price && (
+            <span className="trek-original-price">₹{trek.originalPrice}</span>
+          )}
           <span className="trek-current-price">₹{trek.price}</span>
           <span className="trek-starting-text">per person</span>
         </div>
 
-        <div className="trek-next-date">
-          <span className="trek-next-label">📅 Next</span>
-          <span>{trek.nextDate}</span>
-        </div>
+        {trek.nextDate && String(trek.nextDate).trim() && (
+          <div className="trek-next-date">
+            <span className="trek-next-label">📅 Next</span>
+            <span>{trek.nextDate}</span>
+          </div>
+        )}
 
         <div className="trek-card-actions">
           <BookingCTA trek={trek} className="trek-primary-btn">
@@ -274,20 +196,11 @@ function HomeTrekCard({ trek }) {
           </BookingCTA>
           <Link
             to={`/treks/${slugifyTrekName(trek.name)}`}
-            className="trek-secondary-btn"
+            className="trek-secondary-btn trek-details-link"
           >
-            Details
+            View Details
             <ArrowRightIcon />
           </Link>
-          <button
-            type="button"
-            className="trek-tertiary-btn"
-            title="Download Itinerary PDF"
-            onClick={(e) => { e.preventDefault(); downloadTrekPdf(trek); }}
-          >
-            <DownloadIcon />
-            Download Itinerary
-          </button>
         </div>
       </div>
     </article>
@@ -299,12 +212,12 @@ const TOUR_CATEGORIES = [
   {
     region: "himachal", label: "Himachal Tours", icon: "🏔️",
     subtitle: "Manali · Kasol · Spiti · Jibhi",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=800&q=80",
   },
   {
     region: "kashmir", label: "Kashmir & Leh Tours", icon: "🌷",
     subtitle: "Srinagar · Gulmarg · Pahalgam · Leh",
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1595815771614-ade9d652a65d?w=800&q=80",
   },
   {
     region: "northeast", label: "NorthEast Tours", icon: "🌿",
@@ -339,7 +252,7 @@ const TOUR_CATEGORIES = [
   {
     region: "karnataka", label: "Karnataka Tours", icon: "🏛️",
     subtitle: "Hampi · Gokarna · Murdeshwar",
-    image: "https://images.unsplash.com/photo-1548013146-72479768bada?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788?w=800&q=80",
   },
 ];
 
@@ -369,6 +282,8 @@ function TourCategoryCard({ cat }) {
         <img
           src={cat.image}
           alt={cat.label}
+          loading="lazy"
+          onError={handleImageError}
           style={{
             width: "100%", height: "100%", objectFit: "cover",
             transform: hovered ? "scale(1.1)" : "scale(1)",
@@ -437,6 +352,8 @@ function IVDestCard({ dest, idx, onEnquire }) {
             <img
               src={img.src}
               alt={img.caption}
+              loading="lazy"
+              onError={handleImageError}
               style={{
                 width: "100%", height: "100%", objectFit: "cover", display: "block",
                 transform: hovered ? "scale(1.08)" : "scale(1)",
@@ -1210,7 +1127,7 @@ function Home() {
                   e.currentTarget.style.transform = "translateY(0) scale(1)";
                 }}
               >
-                <img src={camp.img} className="card-img-top standard-img" alt={camp.name} />
+                <img src={camp.img} className="card-img-top standard-img" alt={camp.name} loading="lazy" onError={handleImageError} />
                 <div className="card-body d-flex flex-column">
                   <h5>{camp.name}</h5>
                   <p className="text-muted small mb-2">{camp.location}</p>
@@ -1253,7 +1170,7 @@ function Home() {
                 {heritage.map((item, i) => (
                   <div className="col-md-4" key={i}>
                     <div className="card border-0 shadow-sm h-100 text-center">
-                      <img src={item.img} className="card-img-top standard-img" alt={item.name} />
+                      <img src={item.img} className="card-img-top standard-img" alt={item.name} loading="lazy" onError={handleImageError} />
                       <div className="card-body d-flex flex-column">
                         <h5>{item.name}</h5>
                         <h6 className="fw-bold text-success">{item.price}</h6>
@@ -1309,7 +1226,7 @@ function Home() {
                   e.currentTarget.style.boxShadow = "0 6px 16px rgba(17, 24, 39, 0.12), 0 3px 8px rgba(0, 0, 0, 0.08)";
                 }}
               >
-                <img src={item.img} className="card-img-top standard-img" alt={item.name} />
+                <img src={item.img} className="card-img-top standard-img" alt={item.name} loading="lazy" onError={handleImageError} />
                 <div className="card-body d-flex flex-column">
                   <h5>{item.name}</h5>
                   <p className="text-muted small mb-2">{item.location}</p>

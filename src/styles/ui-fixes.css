@@ -1,0 +1,263 @@
+/* ==========================================================================
+   Public UI polish (loaded after Bootstrap so these rules win the cascade)
+   - Softer trek/product cards, consistent heights, single clear CTA
+   - Image skeleton/fallback backgrounds with fixed aspect ratios
+   - Readable buttons on dark heroes, readable long copy on trek detail
+   - Contact page
+   ========================================================================== */
+
+/* ── Trek / product cards ─────────────────────────────────────────────── */
+.trek-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid #e3ece7 !important;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(17, 24, 39, 0.06);
+}
+
+.trek-card:hover {
+  transform: translateY(-4px);
+  border-color: #cfe3d8 !important;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.1);
+}
+
+.trek-card::after {
+  display: none;
+}
+
+.trek-card-media {
+  aspect-ratio: 4 / 3;
+  flex-shrink: 0;
+  border-radius: 12px 12px 0 0;
+  /* skeleton shimmer shows until the image paints */
+  background: linear-gradient(90deg, #e6f2ec 25%, #d6eadf 50%, #e6f2ec 75%);
+  background-size: 800px 100%;
+  animation: gt-img-shimmer 1.4s infinite linear;
+}
+
+.trek-gallery-image {
+  background: transparent;
+}
+
+@keyframes gt-img-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trek-card-media { animation: none; }
+}
+
+.trek-card-body {
+  flex: 1 1 auto;
+  gap: 10px;
+  padding: 14px 14px 16px;
+}
+
+.trek-card-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.3em;
+}
+
+.trek-card-topline > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.trek-location {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trek-chip {
+  padding: 4px 9px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.trek-season-tag,
+.trek-discount-badge {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.trek-next-date {
+  align-self: flex-start;
+  padding: 5px 10px;
+  font-size: 0.82rem;
+  border-radius: 8px;
+}
+
+.trek-card-actions {
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.trek-card-actions .trek-primary-btn {
+  border-radius: 10px;
+  min-height: 44px;
+}
+
+/* Secondary action becomes a quiet text link so the primary CTA stands out */
+.trek-card-actions .trek-details-link {
+  min-height: 36px;
+  padding: 6px 12px;
+  background: transparent;
+  color: #146c43;
+  border: none;
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.trek-card-actions .trek-details-link:hover,
+.trek-card-actions .trek-details-link:active {
+  transform: none;
+  background: #eef7f2;
+  color: #0f5132;
+  box-shadow: none;
+}
+
+.trek-grid > .trek-card,
+.trek-grid > * {
+  height: 100%;
+}
+
+/* Generic image skeleton background for tiles that use inline <img> */
+.card-img-top.standard-img {
+  aspect-ratio: 4 / 3;
+  height: auto;
+  object-fit: cover;
+  background: #d9efe3;
+}
+
+/* ── Trek detail: dark hero buttons ───────────────────────────────────── */
+.td-hero .btn.td-itinerary-btn,
+.td-hero a.td-itinerary-btn {
+  color: #fff !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.7) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.td-hero .btn.td-itinerary-btn:hover,
+.td-hero a.td-itinerary-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #fff !important;
+}
+
+.td-hero .td-back-btn {
+  color: #fff;
+}
+
+.td-hero-overlay {
+  background: linear-gradient(180deg, rgba(5, 20, 12, 0.45) 0%, rgba(5, 20, 12, 0.88) 100%);
+}
+
+.td-hero {
+  background-color: #1f4d38;
+}
+
+/* ── Trek detail: readable long-form copy ─────────────────────────────── */
+.td-para {
+  max-width: 72ch;
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #2f4a3f;
+  margin-bottom: 14px;
+}
+
+.td-subsection-title {
+  margin-top: 22px;
+}
+
+.td-card {
+  border: 1px solid #e3ece7 !important;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(17, 24, 39, 0.05);
+}
+
+/* Reading cards shouldn't jump/scale under the cursor */
+.td-card:hover {
+  transform: none;
+  border-color: #d3e6db !important;
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.08);
+}
+
+.td-gallery-img {
+  background: #d9efe3;
+}
+
+/* ── Contact page ─────────────────────────────────────────────────────── */
+.gt-contact-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #e3ece7;
+  border-radius: 12px;
+  padding: 18px 18px;
+  box-shadow: 0 2px 10px rgba(17, 24, 39, 0.05);
+}
+
+.gt-contact-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #e8f5ee;
+  font-size: 1.25rem;
+}
+
+.gt-contact-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0c3224;
+  margin: 0 0 4px;
+}
+
+.gt-contact-link {
+  color: #146c43;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.gt-contact-link:hover {
+  color: #0f5132;
+  text-decoration: underline;
+}
+
+.gt-contact-meta {
+  margin: 4px 0 0;
+  color: #5e7a8a;
+  font-size: 0.85rem;
+}
+
+.gt-contact-meta a {
+  color: #146c43;
+}
+
+.gt-contact-form-card {
+  background: #fff;
+  border: 1px solid #e3ece7;
+  border-radius: 12px;
+  padding: 26px 24px;
+  box-shadow: 0 4px 18px rgba(17, 24, 39, 0.06);
+}
+
+.gt-contact-page .form-control:focus,
+.gt-contact-page .form-select:focus {
+  border-color: #198754;
+  box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.15);
+}

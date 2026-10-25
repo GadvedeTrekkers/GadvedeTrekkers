@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FALLBACK_IMAGE, handleImageError } from "../../utils/imageFallback";
 import { Link, useLocation } from "react-router-dom";
 import { normaliseItem } from "../../data/adminStorage";
 import { getPrimaryCampingImage, hydrateCampingStore, parseJsonValue } from "../../data/campingDetailsData";
@@ -166,7 +167,7 @@ export default function Camping() {
                   }}
                 >
                   <div style={{ position: "relative", overflow: "hidden" }}>
-                    <img src={site.image} alt={site.shortName || site.name} style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
+                    <img src={site.image || FALLBACK_IMAGE} alt={site.shortName || site.name} loading="lazy" onError={handleImageError} style={{ width: "100%", aspectRatio: "4 / 3", height: "auto", objectFit: "cover", display: "block", background: "#d9efe3" }} />
                     <span style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.55)", color: "#fff", padding: "3px 10px", borderRadius: 999, fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" }}>
                       {site.type}
                     </span>

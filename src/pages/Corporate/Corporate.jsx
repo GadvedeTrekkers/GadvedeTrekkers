@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { handleImageError } from "../../utils/imageFallback";
 import { Link } from "react-router-dom";
 import EnquiryModal from "../../components/EnquiryModal";
 
@@ -402,7 +403,7 @@ export default function Corporate() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 22, marginBottom: 28 }}>
           {monsoonDestinations.map((spot) => (
             <div key={spot.title} style={{ background: "#fff", borderRadius: 18, overflow: "hidden", border: "1px solid #e2e8f0", boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}>
-              <img src={spot.image} alt={spot.title} style={{ width: "100%", height: 210, objectFit: "cover", display: "block" }} />
+              <img src={spot.image} alt={spot.title} loading="lazy" onError={handleImageError} style={{ width: "100%", aspectRatio: "4 / 3", height: "auto", objectFit: "cover", display: "block", background: "#d9efe3" }} />
               <div style={{ padding: "18px 20px" }}>
                 <h4 style={{ fontWeight: 800, color: "#065f46", fontSize: "1rem", marginBottom: 8 }}>{spot.title}</h4>
                 <p style={{ color: "#374151", fontSize: "0.86rem", lineHeight: 1.7, marginBottom: 0 }}>{spot.blurb}</p>

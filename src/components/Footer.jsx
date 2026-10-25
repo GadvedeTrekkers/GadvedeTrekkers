@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import logo from "../assets/gadvedelogo.png";
+import { CONTACT, telHref, whatsappHref } from "../config/contact";
 // Footer updated: FAQ moved here from Header nav
 
 function Footer() {
@@ -76,20 +77,28 @@ function Footer() {
           <div className="col-md-2 mb-4">
             <h5 className="fw-bold mb-3">Our Office</h5>
             <p style={{ fontSize: "14px", lineHeight: "1.6" }}>
-              Gadvede Trekkers <br />
-              Pune, Maharashtra <br />
-              India
+              {CONTACT.addressLines.map((line) => (
+                <span key={line} className="d-block">{line}</span>
+              ))}
+            </p>
+            <p style={{ fontSize: "14px", lineHeight: "1.8" }} className="mb-0">
+              {CONTACT.phones.map((phone) => (
+                <a key={phone} href={telHref(phone)} className="footer-link d-block">📞 {phone}</a>
+              ))}
+              <a href={`mailto:${CONTACT.email}`} className="footer-link d-block">✉️ {CONTACT.email}</a>
             </p>
             <h5 className="fw-bold mb-2 mt-3">Follow Us</h5>
             <div className="d-flex gap-2 flex-wrap">
               {[
-                { label: "Instagram", href: "#" },
-                { label: "YouTube", href: "#" },
-                { label: "WhatsApp", href: "#" },
+                { label: "Instagram", href: CONTACT.social.instagram },
+                { label: "YouTube", href: CONTACT.social.youtube },
+                { label: "WhatsApp", href: whatsappHref("Hi Gadvede Trekkers!") },
               ].map((s) => (
                 <a
                   key={s.label}
                   href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="footer-link"
                   style={{ fontSize: 13, border: "1px solid rgba(255,255,255,0.3)", padding: "3px 10px", borderRadius: 999 }}
                 >

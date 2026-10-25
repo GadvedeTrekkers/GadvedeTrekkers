@@ -4,7 +4,8 @@ import { uniqueTreks, slugifyTrekName } from "../../data/treks";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
-import { WhatsAppIcon, ArrowRightIcon, DownloadIcon } from "../../components/icons";
+import { WhatsAppIcon, ArrowRightIcon } from "../../components/icons";
+import { handleImageError, withFallbackImages } from "../../utils/imageFallback";
 import { syncProductsFromApi } from "../../api/getAll";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 
@@ -32,13 +33,13 @@ function buildTreks(rawItems = getAdminItems("gt_treks")) {
     .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
     .map((t) => {
       const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
-      const gallery = parseGallery(t.imageGallery, fallbackGallery);
+      const gallery = withFallbackImages(parseGallery(t.imageGallery, fallbackGallery));
       return {
         ...normaliseItem(t),
         slug: t.slug || slugifyTrekName(t.name),
         image: gallery[0] || t.image,
         gallery,
-        seasonalTag: t.seasonalTag || "New Listing",
+        seasonalTag: t.seasonalTag || "",
         _sortOrder: Number(t.sortOrder ?? 999),
       };
     });
@@ -265,11 +266,13 @@ function Trek() {
             <span className="trek-kicker">Maharashtra Trekking Escapes</span>
             <h1 className="trek-heading">
               Best Treks In Maharashtra For{" "}
-              <span className="trek-heading-highlight">Monsoon</span>,{" "}
-              <span className="trek-heading-highlight trek-heading-highlight-alt">
-                Weekend
-              </span>
-              , And{" "}
+              <span className="text-nowrap">
+                <span className="trek-heading-highlight">Monsoon</span>,
+              </span>{" "}
+              <span className="text-nowrap">
+                <span className="trek-heading-highlight trek-heading-highlight-alt">Weekend</span>,
+              </span>{" "}
+              and{" "}
               <span className="trek-heading-highlight">Adventure</span> Lovers
             </h1>
             <p className="trek-subheading">
@@ -383,7 +386,6 @@ function Trek() {
         <div className="trek-grid" role="list" aria-label="Available treks">
           {visibleTreks.map((trek, index) => {
             const discountPct = getDiscountPercent(trek.originalPrice, trek.price);
-            const isPopular = trek.reviews >= 200;
             return (
               <article
                 className="trek-card"
@@ -395,19 +397,14 @@ function Trek() {
                 role="listitem"
               >
                 <div className="trek-card-media">
-                  {/* Season tag */}
-                  <span className="trek-season-tag">{trek.seasonalTag}</span>
+                  {/* Season tag (only when set) */}
+                  {trek.seasonalTag && <span className="trek-season-tag">{trek.seasonalTag}</span>}
 
                   {/* Discount badge */}
                   {discountPct > 0 && (
                     <span className="trek-discount-badge" aria-label={`${discountPct}% off`}>
                       {discountPct}% OFF
                     </span>
-                  )}
-
-                  {/* Popular badge */}
-                  {isPopular && (
-                    <span className="trek-popular-badge">🔥 Popular</span>
                   )}
 
                   <div className="trek-gallery">
@@ -418,6 +415,8 @@ function Trek() {
                         alt={`${trek.name} trek in ${trek.location} - view ${imageIndex + 1}`}
                         className="trek-gallery-image"
                         loading={index < 5 ? "eager" : "lazy"}
+                        decoding="async"
+                        onError={handleImageError}
                         itemProp="image"
                       />
                     ))}
@@ -482,12 +481,13 @@ function Trek() {
                     >
                       {trek.difficulty}
                     </span>
-                    <span className="trek-chip chip-neutral">⏱ {trek.duration}</span>
-                    <span className="trek-chip chip-neutral">🏔 {trek.altitude}</span>
+                    {trek.duration && <span className="trek-chip chip-neutral">⏱ {trek.duration}</span>}
                   </div>
 
                   <div className="trek-pricing">
-                    <span className="trek-original-price">₹{trek.originalPrice}</span>
+                    {trek.originalPrice > trek.price && (
+                      <span className="trek-original-price">₹{trek.originalPrice}</span>
+                    )}
                     <span className="trek-current-price" itemProp="offers" itemScope itemType="https://schema.org/Offer">
                       <span itemProp="price">₹{trek.price}</span>
                       <meta itemProp="priceCurrency" content="INR" />
@@ -495,21 +495,12 @@ function Trek() {
                     <span className="trek-starting-text">per person</span>
                   </div>
 
-                  <div className="trek-next-date">
-                    {isDateExpired(trek.nextDate) ? (
-                      <>
-                        <span className="trek-next-label">📅</span>
-                        <span style={{ color: "#94a3b8", fontStyle: "italic", fontSize: "0.85em" }}>
-                          Contact for next dates
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="trek-next-label">📅 Next</span>
-                        <span>{trek.nextDate}</span>
-                      </>
-                    )}
-                  </div>
+                  {trek.nextDate && String(trek.nextDate).trim() && !isDateExpired(trek.nextDate) && (
+                    <div className="trek-next-date">
+                      <span className="trek-next-label">📅 Next</span>
+                      <span>{trek.nextDate}</span>
+                    </div>
+                  )}
 
                   <div className="trek-card-actions">
                     <BookingCTA trek={trek} className="trek-primary-btn">
@@ -518,31 +509,11 @@ function Trek() {
                     </BookingCTA>
                     <Link
                       to={`/treks/${slugifyTrekName(trek.name)}`}
-                      className="trek-secondary-btn"
+                      className="trek-secondary-btn trek-details-link"
                     >
-                      Details
+                      View Details
                       <ArrowRightIcon />
                     </Link>
-                    <button
-                      type="button"
-                      disabled={!trek.itineraryPdfUrl}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (trek.itineraryPdfUrl) {
-                          const link = document.createElement('a');
-                          link.href = trek.itineraryPdfUrl;
-                          link.download = `${trek.name.replace(/[^a-z0-9]/gi, '-')}-itinerary.pdf`;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                        }
-                      }}
-                      className={`trek-tertiary-btn${trek.itineraryPdfUrl ? "" : " is-disabled"}`}
-                      title={trek.itineraryPdfUrl ? "Download Itinerary PDF" : "Itinerary coming soon"}
-                    >
-                      <DownloadIcon />
-                      Download Itinerary
-                    </button>
                   </div>
                 </div>
               </article>

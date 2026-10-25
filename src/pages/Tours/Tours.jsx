@@ -6,6 +6,7 @@ import { toursData as defaultToursData } from "../../data/toursData";
 import { parseJsonValue } from "../../data/manaliTourDetails";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
+import { FALLBACK_IMAGE, handleImageError } from "../../utils/imageFallback";
 
 const REGION_ORDER = [
   "himachal",
@@ -141,9 +142,11 @@ function Tours() {
               <div className="col-md-4" key={`${region}-${tour.name}-${index}`}>
                 <div className="card shadow-lg border-0 rounded-4 overflow-hidden h-100">
                   <img
-                    src={tour.image}
+                    src={tour.image || FALLBACK_IMAGE}
                     alt={tour.name}
-                    style={{ height: "220px", objectFit: "cover" }}
+                    loading="lazy"
+                    onError={handleImageError}
+                    style={{ width: "100%", aspectRatio: "4 / 3", height: "auto", objectFit: "cover", background: "#d9efe3" }}
                   />
 
                   <div className="card-body">

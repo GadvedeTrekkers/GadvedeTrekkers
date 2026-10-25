@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import logo from "../assets/gadvedelogo.png";
+import { CONTACT, telHref, whatsappHref } from "../config/contact";
 
 function Header() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -70,58 +71,39 @@ function Header() {
     <header ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 1030, transition: "all 0.3s ease" }}>
       {/* ── Top contact bar – desktop only ── */}
       <div
-        className={`d-none d-lg-block ${isScrolled ? "d-none" : ""}`}
-        style={{ 
-          backgroundColor: "#146c43", 
+        className={`gt-topbar d-none d-lg-block ${isScrolled ? "d-lg-none" : ""}`}
+        style={{
+          backgroundColor: "#146c43",
           borderBottom: "1px solid rgba(255,255,255,0.15)",
-          transition: "all 0.3s ease",
-          overflow: "hidden",
-          position: "relative",
           width: "100%",
-          height: "32px"
         }}
       >
-        {/* Scrolling text animation - single text continuous loop */}
         <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0,
-            display: "flex",
-            alignItems: "center",
-            overflow: "hidden",
-            width: "100%"
-          }}
+          className="container d-flex align-items-center justify-content-center flex-wrap gap-2"
+          style={{ minHeight: 34, padding: "6px 12px", fontSize: "0.85rem", lineHeight: 1.4, color: "#fff", fontWeight: 600 }}
         >
-          <div
-            style={{
-              display: "inline-block",
-              whiteSpace: "nowrap",
-              animation: "scrollTextLoop 30s linear infinite",
-              fontSize: "0.85rem",
-              color: "#fff",
-              fontWeight: 600,
-              lineHeight: "32px",
-              willChange: "transform"
-            }}
+          <span aria-hidden="true">📞</span>
+          <span>For More Details &amp; Registration – Call:</span>
+          {CONTACT.phones.map((phone, i) => (
+            <span key={phone} className="d-inline-flex align-items-center gap-2">
+              {i > 0 && <span aria-hidden="true" style={{ opacity: 0.6 }}>/</span>}
+              <a href={telHref(phone)} className="text-white text-decoration-none" style={{ whiteSpace: "nowrap" }}>
+                {phone}
+              </a>
+            </span>
+          ))}
+          <span aria-hidden="true" style={{ opacity: 0.6 }}>·</span>
+          <a
+            href={whatsappHref("Hi Gadvede Trekkers! I'd like more details.")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white text-decoration-none"
+            style={{ whiteSpace: "nowrap" }}
           >
-            📞 For More Details & Registration - Call: 9856112727 / 9856122727
-          </div>
+            WhatsApp us
+          </a>
         </div>
       </div>
-
-      <style>{`
-        @keyframes scrollTextLoop {
-          0% {
-            transform: translateX(100vw);
-          }
-          100% {
-            transform: translateX(-100%);
-          }
-        }
-      `}</style>
 
     <nav
          className="navbar navbar-expand-lg navbar-dark shadow-sm"
@@ -161,11 +143,12 @@ function Header() {
 
         {/* Mobile phone number – shown between logo and hamburger */}
         <a
-          href="tel:9856112727"
+          href={telHref(CONTACT.phones[0])}
           className="d-lg-none text-white text-decoration-none ms-auto me-2"
-          style={{ fontSize: "0.72rem", whiteSpace: "nowrap" }}
+          style={{ fontSize: "0.78rem", whiteSpace: "nowrap", lineHeight: 1.4, padding: "4px 0" }}
+          aria-label={`Call ${CONTACT.phones[0]}`}
         >
-          📞 9856112727
+          📞 {CONTACT.phones[0]}
         </a>
 
         <button
