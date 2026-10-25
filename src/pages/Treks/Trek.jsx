@@ -2,7 +2,8 @@ import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { slugifyTrekName } from "../../data/treks";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
-import { selectPublicTrips, tripDetailPath } from "../../data/publicTrips";
+import { tripDetailPath } from "../../data/publicTrips";
+import { FEATURED_TRIPS, mergeFeaturedTrips } from "../../data/featuredTrips";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
 import { WhatsAppIcon, ArrowRightIcon } from "../../components/icons";
@@ -42,8 +43,8 @@ function parseGalleryBatches(value) {
   }
 }
 
-function buildTreks(rawItems = []) {
-  const source = selectPublicTrips(rawItems);
+function buildTreks(rawItems = FEATURED_TRIPS) {
+  const source = mergeFeaturedTrips(rawItems);
 
   return source
     .map((t) => {
@@ -107,8 +108,8 @@ function Trek() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [activeSort, setActiveSort] = useState("recommended");
   const [searchQuery, setSearchQuery] = useState("");
-  const [treks, setTreks] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [treks, setTreks] = useState(() => buildTreks(FEATURED_TRIPS));
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;

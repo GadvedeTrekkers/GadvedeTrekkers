@@ -35,10 +35,8 @@ export const kalsubaiEventDetails = {
 };
 
 export const kalsubaiPricing = {
-  withoutTransport: { label: "Without Transport (Self Drive to Bari)", price: 799 },
-  kasara: { label: "By Train — Kasara to Kasara", price: 1099 },
-  mumbai: { label: "By Bus — Mumbai to Mumbai", price: 1499 },
-  pune: { label: "From Pune (with transport)", price: 1399 },
+  pune: { label: "Pune departure", price: 1400 },
+  kasara: { label: "Kasara departure", price: 1400 },
 };
 
 export const kalsubaiWhyJoin = [

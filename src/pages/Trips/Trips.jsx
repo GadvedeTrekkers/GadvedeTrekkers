@@ -1,26 +1,12 @@
-import { Link, useParams } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { catalogApi } from "../../api/catalog.api";
 import BookingCTA from "../../components/BookingCTA";
-import { CATALOG_HUBS, hubBySlug, inferHubSlug, toPublicTripCard } from "../../data/catalogHubs";
-import { isPublicTripSlug, selectPublicTrips } from "../../data/publicTrips";
+import { toPublicTripCard } from "../../data/catalogHubs";
+import { mergeFeaturedTrips } from "../../data/featuredTrips";
+import { selectPublicTrips, tripDetailPath } from "../../data/publicTrips";
 import { productService } from "../../services/product.service";
 import { handleImageError } from "../../utils/imageFallback";
-
-const KIND_LABEL = {
-  city: "City hub",
-  region: "Region",
-  experience: "Experience",
-  seasonal: "Seasonal",
-};
-
-function detailPath(trip) {
-  const slug = trip.slug || "";
-  if (isPublicTripSlug(slug)) return `/treks/${slug}`;
-  if (trip.productType === "camping") return `/camping/${slug}`;
-  if (trip.productType === "tour") return `/tours/${slug}`;
-  return `/treks/${slug}`;
-}
 
 function formatBatch(batch) {
   if (!batch?.date) return "";
@@ -31,197 +17,102 @@ function formatBatch(batch) {
   return [batch.departureCity, batch.label, label].filter(Boolean).join(" · ");
 }
 
-async function loadTripCards(hubSlug) {
+async function loadTripCards() {
   try {
-    const remote = await catalogApi.trips(hubSlug ? { hub: hubSlug } : {});
+    const remote = await catalogApi.trips();
     if (Array.isArray(remote) && remote.length > 0) return selectPublicTrips(remote);
   } catch {
     /* fall through to the per-type catalog sync */
   }
 
-  const [treks, tours, camps] = await Promise.all([
+  const [treks, camps] = await Promise.all([
     productService.sync("trek", "gt_treks").catch(() => null),
-    productService.sync("tour", "gt_tours").catch(() => null),
     productService.sync("camping", "gt_camping").catch(() => null),
   ]);
 
   return selectPublicTrips(
-    [...(treks || []), ...(tours || []), ...(camps || [])]
+    [...(treks || []), ...(camps || [])]
       .filter((item) => item && item.active !== false)
       .map((item) => toPublicTripCard({ ...item, productType: item.productType || item.product_type }))
-  ).filter((trip) => (hubSlug ? inferHubSlug(trip) === hubSlug : true));
+  );
 }
 
 export default function Trips() {
-  const { hubSlug } = useParams();
-  const activeHub = hubBySlug(hubSlug);
-  const [trips, setTrips] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [trips, setTrips] = useState(() => mergeFeaturedTrips([]));
 
   useEffect(() => {
-    document.title = activeHub
-      ? `${activeHub.name} trips | Gadvede Trekkers`
-      : "Trips | Gadvede Trekkers";
-  }, [activeHub]);
-
-  useEffect(() => {
+    document.title = "Trips | Gadvede Trekkers";
     let cancelled = false;
-    setLoading(true);
-    loadTripCards(activeHub ? activeHub.slug : "")
+    loadTripCards()
       .then((cards) => {
-        if (!cancelled) setTrips(cards);
+        if (!cancelled) setTrips(mergeFeaturedTrips(cards));
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [activeHub]);
-
-  const grouped = useMemo(() => {
-    if (activeHub) return [{ hub: activeHub, trips }];
-    const groupedHubs = CATALOG_HUBS.map((hub) => ({
-      hub,
-      trips: trips.filter((trip) => inferHubSlug(trip) === hub.slug),
-    })).filter((group) => group.trips.length > 0);
-    const placed = new Set(groupedHubs.flatMap((group) => group.trips.map((trip) => trip.slug)));
-    const unplaced = trips.filter((trip) => !placed.has(trip.slug));
-    if (unplaced.length) {
-      groupedHubs.unshift({
-        hub: {
-          slug: "treks",
-          name: "Treks",
-          kind: "experience",
-          description: "Weekend treks and seasonal camping you can book now.",
-        },
-        trips: unplaced,
-      });
-    }
-    return groupedHubs;
-  }, [activeHub, trips]);
-
-  if (hubSlug && !activeHub) {
-    return (
-      <section className="container py-5">
-        <h1 className="h3">That trip hub is not on Gadvede Trekkers.</h1>
-        <Link to="/trips" className="btn btn-success mt-3">Browse trip hubs</Link>
-      </section>
-    );
-  }
+  }, []);
 
   return (
     <section className="container py-4 py-md-5">
       <p className="mb-2" style={{ fontSize: "0.8rem" }}>
         <Link to="/" className="text-success text-decoration-none">Home</Link>
         {" / "}
-        <Link to="/trips" className="text-success text-decoration-none">Trips</Link>
-        {activeHub ? ` / ${activeHub.name}` : ""}
+        <span>Trips</span>
       </p>
-      <h1 className="fw-bold mb-2">{activeHub ? activeHub.name : "Gadvede trip hubs"}</h1>
+      <h1 className="fw-bold mb-2">Open trips</h1>
       <p className="text-muted mb-4" style={{ maxWidth: 720 }}>
-        {activeHub
-          ? activeHub.description
-          : "Browse Gadvede Trekkers trips by city, region, camping, backpacking, and seasonal batches. Cards on this page come from the shared catalog."}
+        Vasota, Harishchandragad, Kalsubai, and New Year beach camping. Each card has the fee, the departure city, and a WhatsApp booking link.
       </p>
 
-      <div className="d-flex flex-wrap gap-2 mb-4" role="navigation" aria-label="Trip hubs">
-        <Link
-          to="/trips"
-          className={`btn btn-sm ${activeHub ? "btn-outline-success" : "btn-success"}`}
-        >
-          All hubs
-        </Link>
-        {CATALOG_HUBS.filter((hub) => trips.some((trip) => inferHubSlug(trip) === hub.slug)).map((hub) => (
-          <Link
-            key={hub.slug}
-            to={`/trips/${hub.slug}`}
-            className={`btn btn-sm ${activeHub?.slug === hub.slug ? "btn-success" : "btn-outline-success"}`}
-          >
-            {hub.name}
-          </Link>
-        ))}
-      </div>
-
-      {loading && <p className="text-muted">Loading trips…</p>}
-
-      {!loading && trips.length === 0 && (
-        <p className="text-muted">No public trips are open right now.</p>
-      )}
-
-      {!loading && grouped.map(({ hub, trips: hubTrips }) => (
-        <section key={hub.slug} className="mb-5" aria-labelledby={`hub-${hub.slug}`}>
-          {!activeHub && (
-            <div className="d-flex justify-content-between align-items-end gap-3 mb-3">
-              <div>
-                <div className="text-success fw-semibold" style={{ fontSize: "0.75rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                  {KIND_LABEL[hub.kind] || "Hub"}
-                </div>
-                <h2 id={`hub-${hub.slug}`} className="h4 fw-bold mb-1">{hub.name}</h2>
-                <p className="text-muted mb-0">{hub.description}</p>
-              </div>
-              {hubBySlug(hub.slug) && (
-                <Link to={`/trips/${hub.slug}`} className="btn btn-outline-success btn-sm">Open hub</Link>
-              )}
-            </div>
-          )}
-
-          {hubTrips.length > 0 && (
-            <div className="row g-3">
-              {hubTrips.map((trip) => {
-                const image = trip.image;
-                const batchLabel = formatBatch(trip.nextBatch);
-                return (
-                  <div className="col-md-6 col-lg-4" key={trip.id || trip.slug}>
-                    <article className="card h-100 border-0 shadow-sm">
-                      <img
-                        src={image}
-                        alt={trip.name}
-                        onError={handleImageError}
-                        style={{ height: 180, objectFit: "cover" }}
-                      />
-                      <div className="card-body d-flex flex-column">
-                        <div className="d-flex gap-2 flex-wrap mb-2">
-                          {trip.category && <span className="badge text-bg-success">{trip.category}</span>}
-                          {trip.difficulty && <span className="badge text-bg-light border">{trip.difficulty}</span>}
-                        </div>
-                        <h3 className="h5 fw-bold">{trip.name}</h3>
-                        <p className="text-muted mb-1">{trip.destination || trip.location}</p>
-                        <p className="mb-1">{trip.duration}</p>
-                        {trip.price != null && trip.price !== "" && (
-                          <p className="fw-bold mb-1">₹{Number(trip.price).toLocaleString("en-IN")} <span className="fw-normal text-muted">per person</span></p>
-                        )}
-                        {batchLabel && <p className="small text-success mb-3">Next batch: {batchLabel}</p>}
-                        <div className="d-flex flex-wrap gap-2 mt-auto">
-                          <Link
-                            to={detailPath(trip)}
-                            className="btn btn-success flex-grow-1"
-                            style={{ minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-                          >
-                            View trip
-                          </Link>
-                          <BookingCTA
-                            trek={{
-                              name: trip.name,
-                              price: trip.nextBatch?.price ?? trip.price,
-                              location: trip.nextBatch?.departureCity || trip.destination || trip.location,
-                              productType: trip.productType,
-                            }}
-                            selectedDate={batchLabel || null}
-                            label="Book Now"
-                            className="btn btn-outline-success flex-grow-1"
-                            style={{ minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-                          />
-                        </div>
-                      </div>
-                    </article>
+      <div className="row g-3">
+        {trips.map((trip) => {
+          const batchLabel = formatBatch(trip.nextBatch);
+          return (
+            <div className="col-md-6 col-lg-3" key={trip.slug}>
+              <article className="card h-100 border-0 shadow-sm">
+                <img
+                  src={trip.image}
+                  alt={trip.name}
+                  onError={handleImageError}
+                  style={{ height: 180, objectFit: "cover" }}
+                />
+                <div className="card-body d-flex flex-column">
+                  {trip.difficulty && <span className="badge text-bg-light border align-self-start mb-2">{trip.difficulty}</span>}
+                  <h2 className="h5 fw-bold">{trip.name}</h2>
+                  <p className="text-muted mb-1">{trip.destination || trip.location}</p>
+                  <p className="mb-1">{trip.duration}</p>
+                  {trip.price != null && trip.price !== "" && (
+                    <p className="fw-bold mb-1">₹{Number(trip.price).toLocaleString("en-IN")} <span className="fw-normal text-muted">onwards</span></p>
+                  )}
+                  {batchLabel && <p className="small text-success mb-3">Next batch: {batchLabel}</p>}
+                  <div className="d-flex flex-wrap gap-2 mt-auto">
+                    <Link
+                      to={tripDetailPath(trip)}
+                      className="btn btn-success flex-grow-1"
+                      style={{ minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      View trip
+                    </Link>
+                    <BookingCTA
+                      trek={{
+                        name: trip.name,
+                        price: trip.nextBatch?.price ?? trip.price,
+                        location: trip.nextBatch?.departureCity || trip.destination || trip.location,
+                        productType: trip.productType,
+                      }}
+                      selectedDate={batchLabel || null}
+                      label="Book Now"
+                      className="btn btn-outline-success flex-grow-1"
+                      style={{ minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                    />
                   </div>
-                );
-              })}
+                </div>
+              </article>
             </div>
-          )}
-        </section>
-      ))}
+          );
+        })}
+      </div>
     </section>
   );
 }

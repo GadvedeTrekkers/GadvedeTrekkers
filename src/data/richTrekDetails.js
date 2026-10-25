@@ -9,6 +9,32 @@ import {
   kalsubaiBookingSteps,
 } from "./kalsubaiDetails";
 import {
+  vasotaOverview,
+  vasotaHistory,
+  vasotaHighlights,
+  vasotaEventDetails,
+  vasotaPricing,
+  vasotaWhyJoin,
+  vasotaItineraries,
+  vasotaInclusions,
+  vasotaExclusions,
+  vasotaThingsToCarry,
+  vasotaBookingSteps,
+} from "./vasotaDetails";
+import {
+  nyeBeachOverview,
+  nyeBeachHistory,
+  nyeBeachHighlights,
+  nyeBeachEventDetails,
+  nyeBeachPricing,
+  nyeBeachWhyJoin,
+  nyeBeachItineraries,
+  nyeBeachInclusions,
+  nyeBeachExclusions,
+  nyeBeachThingsToCarry,
+  nyeBeachBookingSteps,
+} from "./nyeBeachDetails";
+import {
   harishchandragadOverview,
   harishchandragadHistory,
   harishchandragadHighlights,
@@ -590,5 +616,76 @@ export const richTrekDetails = {
     thingsToCarry: commonCarryItems,
     discountCodes: [{ code: "LOYALTY50", desc: "Old customers enjoy flat 50 off" }],
   },
+  "Vasota Fort Trek": {
+    heroKicker: "🌲 Koyna forest fort",
+    meta: {
+      title: "Vasota Fort Trek | Pune ₹1800 | Mumbai ₹3200 | Gadvede Trekkers",
+      description:
+        "Vasota Fort Trek with Gadvede Trekkers. Boat across Shivsagar, forest walk, and a night at Bamnoli. Pune ₹1,800. Mumbai ₹3,200.",
+      keywords: "Vasota fort trek, Vasota from Pune, Vasota from Mumbai, Bamnoli camp, Shivsagar boat",
+    },
+    overview: {
+      tagline: vasotaOverview.tagline,
+      subtitle: vasotaOverview.subtitle,
+      intro: vasotaOverview.intro,
+      sections: [],
+    },
+    history: vasotaHistory,
+    historyTitle: "The fort and the boat crossing",
+    highlights: vasotaHighlights,
+    eventDetails: vasotaEventDetails,
+    pricing: vasotaPricing,
+    whyJoin: vasotaWhyJoin,
+    itineraries: vasotaItineraries,
+    bookingSteps: vasotaBookingSteps,
+    inclusions: vasotaInclusions,
+    exclusions: vasotaExclusions,
+    thingsToCarry: vasotaThingsToCarry,
+  },
+  "New Year Beach Side Camping": {
+    heroKicker: "🌙 30 December night to 1 January",
+    meta: {
+      title: "New Year Beach Side Camping | Gadvede Trekkers",
+      description:
+        "Gadvede New Year beach camp. Leave 30 December night, return 1 January. Tent Pune ₹2,800 / Mumbai ₹3,000. 4-share room Pune ₹3,500 / Mumbai ₹3,700.",
+      keywords: "New Year beach camping Pune, New Year camping Mumbai, Gadvede beach camp",
+    },
+    overview: {
+      tagline: nyeBeachOverview.tagline,
+      subtitle: nyeBeachOverview.subtitle,
+      intro: nyeBeachOverview.intro,
+      sections: [],
+    },
+    history: nyeBeachHistory,
+    historyTitle: "What this batch is",
+    highlights: nyeBeachHighlights,
+    eventDetails: nyeBeachEventDetails,
+    pricing: nyeBeachPricing,
+    whyJoin: nyeBeachWhyJoin,
+    itineraries: nyeBeachItineraries,
+    bookingSteps: nyeBeachBookingSteps,
+    inclusions: nyeBeachInclusions,
+    exclusions: nyeBeachExclusions,
+    thingsToCarry: nyeBeachThingsToCarry,
+  },
+};
+
+const RICH_NAME_ALIASES = {
+  "Kalsubai Peak Trek": "Kalsubai Trek",
+  "Kalsubai": "Kalsubai Trek",
+};
+
+export function richTrekFor({ name, slug } = {}) {
+  if (slug && richTrekBySlug[slug]) return richTrekBySlug[slug];
+  if (name && richTrekDetails[name]) return richTrekDetails[name];
+  const alias = RICH_NAME_ALIASES[name];
+  return (alias && richTrekDetails[alias]) || null;
+}
+
+export const richTrekBySlug = {
+  "vasota-fort-trek": richTrekDetails["Vasota Fort Trek"],
+  "harishchandragad-trek": richTrekDetails["Harishchandragad Trek"],
+  "kalsubai-peak-trek": richTrekDetails["Kalsubai Trek"],
+  "new-year-beach-side-camping": richTrekDetails["New Year Beach Side Camping"],
 };
 

@@ -3,7 +3,8 @@ import { useEffect, useState, useMemo } from "react";
 import { findTrekBySlug, slugifyTrekName } from "../../data/treks";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
-import { richTrekDetails } from "../../data/richTrekDetails";
+import { richTrekDetails, richTrekFor } from "../../data/richTrekDetails";
+import { FEATURED_TRIPS } from "../../data/featuredTrips";
 import { getTrekDates } from "../../data/trekDatesStorage";
 import BookingCTA from "../../components/BookingCTA";
 import { buildShareWhatsAppUrl } from "../../config/bookingConfig";
@@ -167,8 +168,20 @@ function TrekDetails() {
 
   const adminTrek = adminMatch ? buildLocalTrek(adminMatch) : null;
   const previewTrek = previewItem && previewSlug === id ? buildLocalTrek(previewItem) : null;
-  const trek = previewTrek || remoteTrek || adminTrek || (id ? findTrekBySlug(id) : null);
-  const staticRichTrek = trek?.name ? richTrekDetails[trek.name] || null : null;
+  const featuredTrek = FEATURED_TRIPS.find((item) => item.slug === id);
+  const fallbackTrek = featuredTrek
+    ? {
+        ...featuredTrek,
+        image: featuredTrek.image,
+        gallery: [featuredTrek.image],
+        altitude: "",
+        rating: 0,
+        reviews: 0,
+        originalPrice: 0,
+      }
+    : null;
+  const trek = previewTrek || remoteTrek || adminTrek || (id ? findTrekBySlug(id) : null) || fallbackTrek;
+  const staticRichTrek = richTrekFor({ name: trek?.name, slug: id || trek?.slug }) || (trek?.name ? richTrekDetails[trek.name] : null);
   const catalogTrek = remoteTrek || previewTrek || adminTrek || null;
   const isRich = !!(staticRichTrek || catalogTrek);
   const adminItineraryKeys =
@@ -543,20 +556,23 @@ function TrekDetails() {
       return [[city, { label: `${city} Departure`, price: Number(plan.price) || trek?.price || 0 }]];
     })
   );
-  const pricing = Object.keys(catalogPricing).length
-    ? catalogPricing
-    : staticRichTrek?.pricing && Object.keys(staticRichTrek.pricing).length
-      ? staticRichTrek.pricing
+  const pricing = staticRichTrek?.pricing && Object.keys(staticRichTrek.pricing).length
+    ? staticRichTrek.pricing
+    : Object.keys(catalogPricing).length
+      ? catalogPricing
       : trek?.price
         ? { Fees: { label: "Fees", price: Number(trek.price) || trek.price } }
         : {};
   const whyJoin = staticRichTrek?.whyJoin || [];
   const apiItinerary = itineraryFromExtra(trek?.extraContent?.itinerary);
+  const staticItineraries = staticRichTrek?.itineraries || {};
   const itineraries = apiItinerary
     ? { itinerary: apiItinerary }
-    : Object.keys(adminItineraries).length
-      ? adminItineraries
-      : staticRichTrek?.itineraries || {};
+    : Object.keys(staticItineraries).length
+      ? staticItineraries
+      : Object.keys(adminItineraries).length
+        ? adminItineraries
+        : {};
   const itineraryKeys = Object.keys(itineraries);
   const itinerary =
     itineraryKeys.length > 0

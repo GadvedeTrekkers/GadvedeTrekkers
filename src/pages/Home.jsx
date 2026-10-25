@@ -11,7 +11,8 @@ import { WhatsAppIcon, ArrowRightIcon } from "../components/icons";
 import { handleImageError, withFallbackImages } from "../utils/imageFallback";
 import { stripPromptFields } from "../utils/contentSanitizer";
 import { syncProductsFromApi } from "../api/getAll";
-import { selectPublicTrips, tripDetailPath } from "../data/publicTrips";
+import { tripDetailPath } from "../data/publicTrips";
+import { FEATURED_TRIPS, mergeFeaturedTrips } from "../data/featuredTrips";
 
 // ─── Active treks (respects Live/Off status from admin panel) ─────────────────
 function parseGalleryHome(value, fallback) {
@@ -22,8 +23,8 @@ function parseGalleryHome(value, fallback) {
     return fallback;
   }
 }
-function buildActiveTreks(rawItems = []) {
-  return selectPublicTrips(rawItems).map((t) => {
+function buildActiveTreks(rawItems = FEATURED_TRIPS) {
+  return mergeFeaturedTrips(rawItems).map((t) => {
     const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
     const gallery = withFallbackImages(parseGalleryHome(t.imageGallery, fallbackGallery));
     return {
@@ -517,8 +518,8 @@ function Home() {
   const [enquiryDest, setEnquiryDest] = useState(null);
   const gridRef = useRef(null);
   const [syncKey, setSyncKey] = useState(0);
-  const [activeTreks, setActiveTreks] = useState([]);
-  const [treksLoading, setTreksLoading] = useState(true);
+  const [activeTreks, setActiveTreks] = useState(() => buildActiveTreks(FEATURED_TRIPS));
+  const [treksLoading, setTreksLoading] = useState(false);
 
   // Treks section is trek + camping so seasonal camping stays beside the forts.
   useEffect(() => {

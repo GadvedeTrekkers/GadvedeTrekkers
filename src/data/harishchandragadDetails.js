@@ -35,8 +35,8 @@ export const harishchandragadEventDetails = {
 };
 
 export const harishchandragadPricing = {
-  kasara: { label: "By Train — Kasara to Kasara (Mumbai Participants)", price: 2299 },
-  pune:   { label: "From Pune — Pune to Pune (Private Non-AC Vehicle)", price: 2299 },
+  pune: { label: "Pune departure", price: 1400 },
+  kasara: { label: "Kasara departure", price: 1400 },
 };
 
 export const harishchandragadWhyJoin = [
