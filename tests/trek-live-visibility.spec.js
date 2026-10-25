@@ -47,6 +47,7 @@ async function blockTrekCacheWrites(page) {
 function buildTrek({
   id,
   name,
+  slug,
   location,
   difficulty,
   duration,
@@ -56,10 +57,12 @@ function buildTrek({
   nextDate,
   active,
   sortOrder,
+  productType = "trek",
 }) {
   return {
     id,
-    slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    productType,
+    slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
     name,
     location,
     difficulty,
@@ -85,13 +88,14 @@ async function installTrekApiMock(page, tracker) {
   const initialProducts = [
     buildTrek({
       id: "trek-1",
-      name: "Rajmachi Trek",
-      location: "Lonavala",
-      difficulty: "Easy",
-      duration: "1 Day",
-      altitude: "820m",
-      price: 1599,
-      originalPrice: 1800,
+      name: "Vasota Fort Trek",
+      slug: "vasota-fort-trek",
+      location: "Koyna, Maharashtra",
+      difficulty: "Medium",
+      duration: "2 Days",
+      altitude: "1170m",
+      price: 1800,
+      originalPrice: 2200,
       nextDate: "12 Jun 2026",
       active: true,
       sortOrder: 1,
@@ -99,6 +103,7 @@ async function installTrekApiMock(page, tracker) {
     buildTrek({
       id: "trek-2",
       name: "Harishchandragad Trek",
+      slug: "harishchandragad-trek",
       location: "Ahmednagar, Maharashtra",
       difficulty: "Medium",
       duration: "1 Night 1 Day",
@@ -111,21 +116,24 @@ async function installTrekApiMock(page, tracker) {
     }),
     buildTrek({
       id: "trek-3",
-      name: "Andharban Forest Trail",
-      location: "Pimpri, Pune",
-      difficulty: "Easy",
+      name: "Kalsubai Peak Trek",
+      slug: "kalsubai-peak-trek",
+      location: "Akole, Ahmednagar",
+      difficulty: "Medium",
       duration: "1 Day",
-      altitude: "2500 ft",
-      price: 1498,
+      altitude: "5400 ft",
+      price: 1400,
       originalPrice: 1799,
       nextDate: "20 Jun 2026",
-      active: true,
+      active: false,
       sortOrder: 3,
     }),
     buildTrek({
       id: "trek-4",
-      name: "Kalsubai Peak Trek",
-      location: "Akole, Ahmednagar",
+      name: "New Year Beach Side Camping",
+      slug: "new-year-beach-side-camping",
+      productType: "camping",
+      location: "Beach",
       difficulty: "Medium",
       duration: "1 Day",
       altitude: "5400 ft",
@@ -179,10 +187,11 @@ async function installTrekApiMock(page, tracker) {
     if (method === "GET" && url.pathname === "/api/products") {
       tracker.publicListRequests.push(url.toString());
       const type = url.searchParams.get("type");
-      const liveProducts =
-        type === "trek"
-          ? state.products.filter((product) => product.active !== false)
-          : [];
+      const liveProducts = state.products.filter((product) => {
+        if (product.active === false) return false;
+        const productType = product.productType || "trek";
+        return type ? productType === type : true;
+      });
 
       tracker.publicListResponses.push(liveProducts.map((item) => ({ id: item.id, active: item.active })));
 
@@ -258,13 +267,13 @@ test.describe("trek live visibility across devices", () => {
     expect(tracker.upsertRequests[0]).toMatchObject({
       storageKey: "gt_treks",
       item: expect.objectContaining({
-        id: "trek-4",
+        id: "trek-3",
         name: "Kalsubai Peak Trek",
         active: true,
       }),
     });
     expect(tracker.upsertResponses[0]).toMatchObject({
-      id: "trek-4",
+      id: "trek-3",
       active: true,
     });
   });
@@ -284,20 +293,21 @@ test.describe("trek live visibility across devices", () => {
     await expectPublicTreksVisible(
       page,
       [
-        "Rajmachi Trek",
+        "Vasota Fort Trek",
         "Harishchandragad Trek",
-        "Andharban Forest Trail",
         "Kalsubai Peak Trek",
+        "New Year Beach Side Camping",
       ],
       4
     );
 
     expect(tracker.publicListRequests.some((url) => url.includes("/api/products?type=trek"))).toBe(true);
+    expect(tracker.publicListRequests.some((url) => url.includes("/api/products?type=camping"))).toBe(true);
     expect(
       tracker.publicListResponses.some(
         (response) =>
           Array.isArray(response) &&
-          response.length === 4 &&
+          response.length === 3 &&
           response.every((item) => item.active === true)
       )
     ).toBe(true);
@@ -321,10 +331,10 @@ test.describe("trek live visibility across devices", () => {
     await expectPublicTreksVisible(
       page,
       [
-        "Rajmachi Trek",
+        "Vasota Fort Trek",
         "Harishchandragad Trek",
-        "Andharban Forest Trail",
         "Kalsubai Peak Trek",
+        "New Year Beach Side Camping",
       ],
       4
     );

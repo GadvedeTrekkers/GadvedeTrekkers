@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import HistoricTicket from "../../components/HistoricTicket";
+import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 
 function BookingSuccess() {
   const location = useLocation();
@@ -14,9 +15,9 @@ function BookingSuccess() {
           <div className="booking-success-card text-center">
             <h1>No Booking Found</h1>
             <p>Your booking summary is not available right now.</p>
-            <Link to="/book" className="btn booking-primary-btn">
-              Go to Booking Page
-            </Link>
+            <a href={buildBookingWhatsAppUrl({ name: "a Gadvede trek" })} target="_blank" rel="noopener noreferrer" className="btn booking-primary-btn">
+              Book on WhatsApp
+            </a>
           </div>
         </div>
       </section>

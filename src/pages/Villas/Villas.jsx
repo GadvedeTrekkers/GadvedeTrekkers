@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAdminItems } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
+import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 
 export const villasList = [
   {
@@ -249,8 +250,6 @@ function VillaDetail({ villa, onClose }) {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState(2);
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -261,11 +260,14 @@ function VillaDetail({ villa, onClose }) {
     ? Math.max(0, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000))
     : 1;
   const totalPrice = villa.price * nights;
-
-  const handleBooking = (e) => {
-    e.preventDefault();
-    setBookingSubmitted(true);
-  };
+  const bookingUrl = buildBookingWhatsAppUrl({
+    name: villa.name,
+    location: villa.location,
+    price: totalPrice,
+    productType: "villa",
+    guests,
+    note: checkIn && checkOut ? `Stay: ${nights} night${nights === 1 ? "" : "s"}` : "",
+  }, checkIn && checkOut ? `${checkIn} to ${checkOut}` : null);
 
   return (
     <div
@@ -480,30 +482,12 @@ function VillaDetail({ villa, onClose }) {
               Select dates to check availability and prices
             </p>
 
-            {bookingSubmitted ? (
-              <div style={{ textAlign: "center", padding: "24px 0" }}>
-                <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>✅</div>
-                <h5 style={{ fontWeight: 700, color: "#065f46", marginBottom: 8 }}>Booking Request Received!</h5>
-                <p style={{ fontSize: "0.88rem", color: "#374151" }}>
-                  We'll contact you on WhatsApp within 30 minutes to confirm your reservation.
-                </p>
-                <a
-                  href="https://wa.me/919856112727"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 8,
-                    background: "#25d366", color: "#fff",
-                    padding: "10px 22px", borderRadius: 8,
-                    fontWeight: 700, fontSize: "0.88rem",
-                    textDecoration: "none", marginTop: 12,
-                  }}
-                >
-                  Chat on WhatsApp →
-                </a>
-              </div>
-            ) : (
-              <form onSubmit={handleBooking}>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  window.location.assign(bookingUrl);
+                }}
+              >
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                   <div>
                     <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>
@@ -515,7 +499,6 @@ function VillaDetail({ villa, onClose }) {
                       value={checkIn}
                       min={new Date().toISOString().split("T")[0]}
                       onChange={(e) => setCheckIn(e.target.value)}
-                      required
                     />
                   </div>
                   <div>
@@ -528,7 +511,6 @@ function VillaDetail({ villa, onClose }) {
                       value={checkOut}
                       min={checkIn || new Date().toISOString().split("T")[0]}
                       onChange={(e) => setCheckOut(e.target.value)}
-                      required
                     />
                   </div>
                 </div>
@@ -559,22 +541,23 @@ function VillaDetail({ villa, onClose }) {
                   </div>
                 </div>
 
-                <button
-                  type="submit"
+                <a
+                  href={bookingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
-                    width: "100%", background: "#059669", color: "#fff",
-                    border: "none", borderRadius: 10, padding: "13px",
-                    fontWeight: 700, fontSize: "0.95rem", cursor: "pointer",
-                    marginBottom: 8,
+                    display: "block", width: "100%", background: "#059669", color: "#fff",
+                    borderRadius: 10, padding: "13px",
+                    fontWeight: 700, fontSize: "0.95rem", textAlign: "center",
+                    textDecoration: "none", marginBottom: 8, minHeight: 44,
                   }}
                 >
-                  Reserve Now
-                </button>
+                  Book Now
+                </a>
                 <p style={{ fontSize: "0.75rem", color: "#6b7280", textAlign: "center", margin: 0 }}>
-                  You won't be charged yet · We'll confirm via WhatsApp
+                  Opens WhatsApp with your dates. You won't be charged on this page.
                 </p>
               </form>
-            )}
           </div>
 
           {/* WhatsApp quick contact */}

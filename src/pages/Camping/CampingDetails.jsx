@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { normaliseItem } from "../../data/adminStorage";
+import { getAdminItems, normaliseItem } from "../../data/adminStorage";
+import { publicTripPhoto } from "../../data/publicTrips";
 import {
   getPrimaryCampingImage,
-  hydrateCampingStore,
   parseFaqItems,
   parseItineraryItems,
   parseJsonValue,
@@ -11,6 +11,7 @@ import {
   parseOfferItems,
   parsePipeItems,
 } from "../../data/campingDetailsData";
+import BookingCTA from "../../components/BookingCTA";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import { productService } from "../../services/product.service";
 
@@ -32,12 +33,27 @@ function slugify(value = "") {
 }
 
 function resolveCampingEntry(id) {
-  const items = hydrateCampingStore().map((item) => ({
+  const stored = [...getAdminItems("gt_camping"), ...getAdminItems("gt_treks")].map((item) => ({
     ...item,
     slug: item.slug || slugify(item.shortName || item.name),
   }));
 
-  return items.find((item) => item.id === id || item.slug === id);
+  return stored.find((item) => item.id === id || item.slug === id);
+}
+
+function feeOptions(item = {}) {
+  const plans = parseJsonValue(item.departurePlans, {});
+  const fromPlans = Object.entries(plans)
+    .map(([city, plan]) => ({ label: city, price: plan?.price }))
+    .filter((row) => row.price != null && row.price !== "");
+  if (fromPlans.length) return fromPlans;
+
+  return parseJsonValue(item.trekDateBatches, [])
+    .filter((batch) => batch?.price != null && batch.price !== "")
+    .map((batch) => ({
+      label: [batch.departureCity, batch.label].filter(Boolean).join(" · ") || "Batch",
+      price: batch.price,
+    }));
 }
 
 function normalizeCampingEntry(item) {
@@ -62,6 +78,7 @@ function normalizeCampingEntry(item) {
     included: parseLineItems(item.included),
     notIncluded: parseLineItems(item.notIncluded),
     thingsToCarry: parseLineItems(item.thingsToCarry),
+    fees: feeOptions(item),
     offers: parseOfferItems(item.offers),
     faqs: parseFaqItems(item.faqs),
     cancellationPolicy: parseLineItems(item.cancellationPolicy),
@@ -79,6 +96,7 @@ function campingFromCatalog(item) {
     ...item,
     shortName: item.shortName || item.name,
     type: item.type || "Camp",
+    image: item.image || publicTripPhoto(item.slug),
     overview: item.overview || item.description || item.about || "",
     description: item.description || item.subtitle || "",
     nextDates: item.nextDates || nextDates,
@@ -92,7 +110,7 @@ export default function CampingDetails() {
   const [remoteCamp, setRemoteCamp] = useState(null);
 
   useEffect(() => {
-    if (!id || id === "preview" || resolveCampingEntry(id)) {
+    if (!id || id === "preview") {
       setRemoteCamp(null);
       return;
     }
@@ -100,7 +118,7 @@ export default function CampingDetails() {
     productService
       .getBySlug(id)
       .then((item) => {
-        if (!cancelled && item?.productType === "camping") {
+        if (!cancelled && item && (item.productType === "camping" || item.slug === id)) {
           setRemoteCamp(campingFromCatalog(item));
         }
       })
@@ -120,7 +138,7 @@ export default function CampingDetails() {
       }
     }
 
-    return normalizeCampingEntry(resolveCampingEntry(id)) || remoteCamp;
+    return remoteCamp || normalizeCampingEntry(resolveCampingEntry(id));
   }, [id, remoteCamp]);
 
   useEffect(() => {
@@ -229,6 +247,20 @@ export default function CampingDetails() {
                 </div>
               ) : null}
             </section>
+
+            {camp.fees?.length > 0 && (
+              <section style={{ background: "#fff", borderRadius: 18, padding: "24px 28px", border: "1px solid #e5e7eb", marginBottom: 24 }}>
+                <h3 style={{ fontWeight: 800, color: "#1f2937", marginBottom: 14, fontSize: "1.08rem" }}>Fees</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                  {camp.fees.map((fee) => (
+                    <div key={`${fee.label}-${fee.price}`} style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 14, padding: "14px 16px" }}>
+                      <div style={{ fontSize: "0.82rem", color: "#065f46", fontWeight: 700 }}>{fee.label}</div>
+                      <div style={{ fontSize: "1.25rem", fontWeight: 900, color: "#059669" }}>₹{Number(fee.price).toLocaleString("en-IN")}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <section style={{ background: "#fff", borderRadius: 18, padding: "24px 28px", border: "1px solid #e5e7eb", marginBottom: 24 }}>
               <h3 style={{ fontWeight: 800, color: "#1f2937", marginBottom: 14, fontSize: "1.08rem" }}>About This Campsite</h3>
@@ -433,12 +465,18 @@ export default function CampingDetails() {
               ) : null}
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <Link
-                  to={`/booking?category=camping&event=${encodeURIComponent(camp.name)}`}
-                  style={{ display: "block", background: "#059669", color: "#fff", borderRadius: 10, padding: "12px 14px", fontWeight: 800, fontSize: "0.95rem", textDecoration: "none", textAlign: "center" }}
-                >
-                  Book Now
-                </Link>
+                <BookingCTA
+                  trek={{
+                    name: camp.shortName || camp.name,
+                    price: camp.price,
+                    location: camp.location,
+                    productType: "camping",
+                    nextDate: camp.nextDates?.[0] || "",
+                  }}
+                  label="Book Now"
+                  block
+                  style={{ background: "#059669", color: "#fff", borderRadius: 10, padding: "12px 14px", fontWeight: 800, fontSize: "0.95rem", textDecoration: "none", minHeight: 44 }}
+                />
                 <a
                   href={whatsappUrl}
                   target="_blank"

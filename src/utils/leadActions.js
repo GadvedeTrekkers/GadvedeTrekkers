@@ -79,7 +79,17 @@ export function buildSalesFollowUpWhatsAppMessage({
 export function openSmsWithMessage(phone, message = DEFAULT_SALES_SMS) {
   const encoded = encodeURIComponent(message);
   const href = `sms:${phone}?body=${encoded}`;
-  window.open(href, "_self");
+  window.location.assign(href);
+}
+
+/**
+ * Open a wa.me chat in the current tab.
+ * location.assign stays allowed on iOS Safari after async work.
+ * window.open is often blocked once a lead save has yielded.
+ */
+export function openWhatsAppUrl(url) {
+  if (typeof window === "undefined" || !url) return;
+  window.location.assign(url);
 }
 
 export function createWhatsAppInquiryUrl({
@@ -109,46 +119,49 @@ export async function handleWhatsAppLead({
   preferredDate,
   openWhatsApp = true,
 }) {
-  const payload = {
-    packageName,
-    location,
-    category,
-    source,
-    customerName: customerName || "",
-    customerPhone: customerPhone || "",
-    customerEmail: customerEmail || "",
-    pax: pax || "",
-    preferredDate: preferredDate || "",
-    pageUrl: window.location.href,
-    timestamp: new Date().toISOString(),
-    deviceType: getDeviceType(),
-    ...collectUtmParams(),
-  };
-
-  const enquiry = saveEnquiry({
-    eventName: packageName,
-    category,
-    name: customerName,
-    phone: customerPhone,
-    email: customerEmail,
-    pax,
-    date: preferredDate || "Flexible",
-    source,
-    pageUrl: payload.pageUrl,
-  });
-  const apiResult = {
-    ok: true,
-    source: "saveEnquiry",
-  };
-
-  if (window.dataLayer?.push) {
-    window.dataLayer.push({
-      event: "whatsapp_lead_created",
+  let enquiry = null;
+  let saveError = null;
+  try {
+    const payload = {
       packageName,
       location,
       category,
       source,
+      customerName: customerName || "",
+      customerPhone: customerPhone || "",
+      customerEmail: customerEmail || "",
+      pax: pax || "",
+      preferredDate: preferredDate || "",
+      pageUrl: window.location.href,
+      timestamp: new Date().toISOString(),
+      deviceType: getDeviceType(),
+      ...collectUtmParams(),
+    };
+
+    enquiry = saveEnquiry({
+      eventName: packageName,
+      category,
+      name: customerName,
+      phone: customerPhone,
+      email: customerEmail,
+      pax,
+      date: preferredDate || "Flexible",
+      source,
+      pageUrl: payload.pageUrl,
     });
+
+    if (window.dataLayer?.push) {
+      window.dataLayer.push({
+        event: "whatsapp_lead_created",
+        packageName,
+        location,
+        category,
+        source,
+      });
+    }
+  } catch (error) {
+    saveError = error;
+    console.warn("WhatsApp lead save failed; opening WhatsApp anyway", error);
   }
 
   if (openWhatsApp) {
@@ -162,14 +175,16 @@ export async function handleWhatsAppLead({
       pax,
       preferredDate,
     });
-    const encodedMessage = encodeURIComponent(message);
-    const waUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-    window.open(waUrl, "_blank", "noopener,noreferrer");
+    const phone = phoneNumber || DEFAULT_WHATSAPP_NUMBER;
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    openWhatsAppUrl(waUrl);
   }
 
   return {
-    ok: true,
+    ok: !saveError,
     enquiry,
-    apiResult,
+    apiResult: saveError
+      ? { ok: false, source: "saveEnquiry", error: saveError?.message || "save failed" }
+      : { ok: true, source: "saveEnquiry" },
   };
 }

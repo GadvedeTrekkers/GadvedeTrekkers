@@ -10,6 +10,7 @@ import {
   slugify,
 } from "../utils/productMapper.js";
 import { inferHubSlug, isCatalogHubSlug, publicCardImage } from "../../../shared/catalogHubs.js";
+import { publicTripPhoto } from "../../../shared/publicTrips.js";
 
 const PRODUCT_OPTIONAL_COLUMNS = ["hub_slug", "destination", "category", "media"];
 const BATCH_OPTIONAL_COLUMNS = ["end_date", "departure_city"];
@@ -60,13 +61,12 @@ async function enrichProduct(productRow) {
     .eq("product_id", productRow.id)
     .order("batch_date", { ascending: true });
 
-  const departureQuery =
-    productRow.product_type === "trek"
-      ? supabasePublic
-          .from("product_departure_plans")
-          .select("departure_origin, price, pickup_points, itinerary_text")
-          .eq("product_id", productRow.id)
-      : Promise.resolve({ data: [] });
+  const departureQuery = ["trek", "camping"].includes(productRow.product_type)
+    ? supabasePublic
+        .from("product_departure_plans")
+        .select("departure_origin, price, pickup_points, itinerary_text")
+        .eq("product_id", productRow.id)
+    : Promise.resolve({ data: [] });
 
   const [{ data: batches }, { data: departures }] = await Promise.all([batchQuery, departureQuery]);
   const batchJson = JSON.stringify((batches || []).map(batchItemFromRow));
@@ -242,7 +242,7 @@ async function loadCatalogBatches(productIds) {
 
 export function catalogItemFromLeanRow(row, batches = []) {
   const batchJson = JSON.stringify((batches || []).map(batchItemFromRow));
-  const image = publicCardImage(row.primary_image_url);
+  const image = publicCardImage(row.primary_image_url) || publicTripPhoto(row.slug);
   return {
     id: row.id,
     slug: row.slug,

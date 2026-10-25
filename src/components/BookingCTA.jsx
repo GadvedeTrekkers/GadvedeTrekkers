@@ -1,19 +1,19 @@
 /**
- * BookingCTA — unified Call-To-Action component for all booking buttons.
+ * BookingCTA — unified Call-To-Action for public booking buttons.
  *
- * Renders the correct element based on BOOKING_MODE from bookingConfig.js.
- * To change the booking method site-wide, edit BOOKING_MODE in that one file.
+ * Always renders a real wa.me link. iOS and Android both follow <a href>,
+ * including target="_blank". This component does not route to /book,
+ * /booking, or a payment page.
  *
  * Props:
- *   trek          {object}  Trek/tour object (required)
- *   selectedDate  {string}  Pre-fill date in message (optional, ISO YYYY-MM-DD or display string)
+ *   trek          {object}  Trek/tour/camp object (required)
+ *   selectedDate  {string}  Pre-fill date in message (optional)
  *   label         {string}  Override button text (optional)
  *   className     {string}  CSS class(es)
  *   style         {object}  Inline styles
  *   block         {bool}    Render as display:block full-width (default false)
  */
 
-import { Link } from "react-router-dom";
 import {
   BOOKING_MODE,
   CTA_LABELS,
@@ -35,54 +35,9 @@ export default function BookingCTA({
     ? { display: "block", textAlign: "center", ...style }
     : style;
 
-  /* ── WHATSAPP mode ─────────────────────────────────────────── */
-  if (BOOKING_MODE === "WHATSAPP") {
-    const href = buildBookingWhatsAppUrl(trek, selectedDate);
-    const text = label ?? CTA_LABELS.WHATSAPP;
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={className}
-        style={resolvedStyle}
-        aria-label={`Book ${trek.name} via WhatsApp`}
-      >
-        {children ?? text}
-      </a>
-    );
-  }
-
-  /* ── DIRECT_BOOKING mode ───────────────────────────────────── */
-  if (BOOKING_MODE === "DIRECT_BOOKING") {
-    const text = label ?? CTA_LABELS.DIRECT_BOOKING;
-    return (
-      <Link to="/book" state={{ trek }} className={className} style={resolvedStyle}>
-        {children ?? text}
-      </Link>
-    );
-  }
-
-  /* ── PAYMENT_GATEWAY mode (future) ────────────────────────── */
-  if (BOOKING_MODE === "PAYMENT_GATEWAY") {
-    const text = label ?? CTA_LABELS.PAYMENT_GATEWAY;
-    return (
-      <button
-        type="button"
-        className={className}
-        style={resolvedStyle}
-        onClick={() => {
-          /* TODO: trigger payment gateway checkout */
-          console.warn("Payment gateway not yet implemented.");
-        }}
-      >
-        {children ?? text}
-      </button>
-    );
-  }
-
-  /* ── Fallback (unknown mode) — default to WhatsApp ─────────── */
   const href = buildBookingWhatsAppUrl(trek, selectedDate);
+  const text = label ?? (BOOKING_MODE === "WHATSAPP" ? CTA_LABELS.WHATSAPP : "Book Now");
+
   return (
     <a
       href={href}
@@ -90,8 +45,9 @@ export default function BookingCTA({
       rel="noopener noreferrer"
       className={className}
       style={resolvedStyle}
+      aria-label={`Book ${trek.name} on WhatsApp`}
     >
-      {children ?? (label ?? "Book Now")}
+      {children ?? text}
     </a>
   );
 }

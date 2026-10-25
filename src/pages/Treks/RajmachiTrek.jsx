@@ -418,11 +418,11 @@ export default function RajmachiTrek() {
               <h3 className="td-section-title">How to Book?</h3>
               <ol className="td-booking-steps">
                 {[
-                  "Click 'Book Now' and select your departure date.",
-                  "Choose ticket type & quantity; apply coupon code if any.",
-                  "Fill in personal details and proceed to payment.",
-                  "Pay via UPI / Debit / Credit Card / Net Banking.",
-                  "Receive booking confirmation via email.",
+                  "Tap Book on WhatsApp. The chat includes the trek, date, and fee.",
+                  "Send the message and mention travellers or a coupon.",
+                  "We confirm your seat in the same WhatsApp chat.",
+                  "Pay only after the team confirms on WhatsApp.",
+                  "Booking confirmation comes back on WhatsApp.",
                   "WhatsApp group link sent 8 hours before departure.",
                   "Trek leader details shared in the WhatsApp group.",
                   "Board your train to Lonavala from Mumbai or Pune.",

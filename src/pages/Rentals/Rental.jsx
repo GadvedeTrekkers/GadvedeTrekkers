@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
+import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 
 /* ─── Rental catalogue ─── */
 const rentalItems = [
@@ -330,15 +331,19 @@ export default function Rental() {
                     <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#374151" }}>₹{item.deposit?.toLocaleString("en-IN")}</span>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <Link
-                      to={`/rentals/${item.id}`}
-                      state={{ item }}
-                      style={{ background: "#059669", color: "#fff", padding: "8px 20px", borderRadius: 10, fontWeight: 700, fontSize: "0.83rem", textDecoration: "none", flex: 1, textAlign: "center" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#047857")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "#059669")}
+                    <a
+                      href={buildBookingWhatsAppUrl({
+                        name: item.name,
+                        location: item.location,
+                        price: item.pricePerDay || item.pricingTiers?.[0]?.rentPerDay,
+                        productType: "rental",
+                      })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ background: "#059669", color: "#fff", padding: "8px 20px", borderRadius: 10, fontWeight: 700, fontSize: "0.83rem", textDecoration: "none", flex: 1, textAlign: "center", minHeight: 44 }}
                     >
-                      Rent Now
-                    </Link>
+                      Book Now
+                    </a>
                     <Link
                       to={`/rentals/${item.id}`}
                       state={{ item }}

@@ -46,6 +46,56 @@ const parseLineItems = (value = "") =>
     .map((item) => item.trim())
     .filter(Boolean);
 
+function toLines(value) {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => {
+      if (typeof entry === "string") return entry.trim() ? [entry.trim()] : [];
+      if (entry && typeof entry === "object") {
+        const text = entry.text || entry.title || entry.name || entry.item || "";
+        return String(text).trim() ? [String(text).trim()] : [];
+      }
+      return [];
+    });
+  }
+  return parseLineItems(value);
+}
+
+function itineraryFromExtra(itinerary) {
+  const daysSource = Array.isArray(itinerary)
+    ? itinerary
+    : Array.isArray(itinerary?.days)
+      ? itinerary.days
+      : null;
+  if (!daysSource?.length) return null;
+
+  const days = daysSource
+    .map((day, index) => {
+      const items = Array.isArray(day?.items) ? day.items : Array.isArray(day?.events) ? day.events : [];
+      return {
+        title: day?.title || `Day ${day?.day || index + 1}`,
+        events: items
+          .map((item) => {
+            if (typeof item === "string") return { time: "", desc: item };
+            return {
+              time: item?.time || "",
+              desc: item?.desc || item?.description || item?.text || "",
+            };
+          })
+          .filter((event) => event.desc),
+      };
+    })
+    .filter((day) => day.title || day.events.length);
+
+  if (!days.length) return null;
+  return {
+    label: "Itinerary",
+    sublabel: "Trip plan",
+    icon: "🗓️",
+    note: "",
+    days,
+  };
+}
+
 const parseDiscountItems = (value = "") =>
   parseLineItems(value).map((line) => {
     const [code, desc] = line.split("|");
@@ -119,9 +169,10 @@ function TrekDetails() {
   const previewTrek = previewItem && previewSlug === id ? buildLocalTrek(previewItem) : null;
   const trek = previewTrek || remoteTrek || adminTrek || (id ? findTrekBySlug(id) : null);
   const staticRichTrek = trek?.name ? richTrekDetails[trek.name] || null : null;
-  const isRich = !!(staticRichTrek || adminTrek || previewTrek);
+  const catalogTrek = remoteTrek || previewTrek || adminTrek || null;
+  const isRich = !!(staticRichTrek || catalogTrek);
   const adminItineraryKeys =
-    adminTrek || previewTrek ? Object.keys(parseDeparturePlanItineraries(trek?.departurePlans)) : [];
+    catalogTrek ? Object.keys(parseDeparturePlanItineraries(trek?.departurePlans)) : [];
   const staticItineraryKeys = Object.keys(staticRichTrek?.itineraries || {});
   const defaultItineraryKey = adminItineraryKeys[0] || staticItineraryKeys[0] || "kasara";
 
@@ -433,16 +484,17 @@ function TrekDetails() {
   }
 
   const adminItineraries =
-    adminTrek || previewTrek ? parseDeparturePlanItineraries(trek?.departurePlans) : {};
+    catalogTrek ? parseDeparturePlanItineraries(trek?.departurePlans) : {};
   const rawOverview =
-    adminTrek || previewTrek
+    catalogTrek
       ? {
-          tagline: trek?.subtitle || "",
-          subtitle: trek?.subtitle || "",
-          intro: trek?.about || "",
+          tagline: trek?.shortDescription || trek?.subtitle || "",
+          subtitle: trek?.shortDescription || trek?.subtitle || "",
+          intro: trek?.description || trek?.about || trek?.overview || staticRichTrek?.overview?.intro || "",
           sections: [
             ...(trek?.history ? [{ title: "History & Significance", body: trek.history }] : []),
             ...(trek?.mainAttractions ? [{ title: "Main Attractions", body: trek.mainAttractions }] : []),
+            ...(!trek?.history && !trek?.mainAttractions ? staticRichTrek?.overview?.sections || [] : []),
           ],
         }
       : staticRichTrek?.overview || { tagline: "", subtitle: "", intro: "", sections: [] };
@@ -456,17 +508,18 @@ function TrekDetails() {
       .filter((section) => section.body),
   };
   const history = cleanDisplayText(
-    (adminTrek || previewTrek) && trek?.detailedHistory
+    (catalogTrek) && trek?.detailedHistory
       ? trek.detailedHistory
       : staticRichTrek?.history || ""
   );
+  const apiHighlightLines = toLines(trek?.highlights);
   const highlights = (
-    (adminTrek || previewTrek) && trek?.highlights
-      ? parseLineItems(trek.highlights).map((text) => ({ icon: "✨", text }))
+    apiHighlightLines.length
+      ? apiHighlightLines.map((text) => ({ icon: "✨", text }))
       : staticRichTrek?.highlights || []
   ).filter((h) => h?.text && !isPromptLike(h.text));
   const eventDetails =
-    adminTrek || previewTrek
+    catalogTrek
       ? {
           difficulty: trek?.difficulty || "",
           endurance: trek?.enduranceLevel || trek?.difficulty || "",
@@ -484,37 +537,46 @@ function TrekDetails() {
           trailType: trek?.trailType || "",
         }
       : staticRichTrek?.eventDetails || {};
-  const pricing =
-    adminTrek || previewTrek
-      ? Object.fromEntries(
-          Object.entries(parseJsonValue(trek?.departurePlans, {})).map(([city, plan]) => [
-            city,
-            { label: `${city} Departure`, price: Number(plan?.price) || trek?.price || 0 },
-          ])
-        )
-      : staticRichTrek?.pricing || {};
+  const catalogPricing = Object.fromEntries(
+    Object.entries(parseJsonValue(catalogTrek ? trek?.departurePlans : {}, {})).flatMap(([city, plan]) => {
+      if (plan?.price == null || plan.price === "") return [];
+      return [[city, { label: `${city} Departure`, price: Number(plan.price) || trek?.price || 0 }]];
+    })
+  );
+  const pricing = Object.keys(catalogPricing).length
+    ? catalogPricing
+    : staticRichTrek?.pricing && Object.keys(staticRichTrek.pricing).length
+      ? staticRichTrek.pricing
+      : trek?.price
+        ? { Fees: { label: "Fees", price: Number(trek.price) || trek.price } }
+        : {};
   const whyJoin = staticRichTrek?.whyJoin || [];
-  const itineraries = adminTrek || previewTrek ? adminItineraries : staticRichTrek?.itineraries || {};
-  const itineraryKeys = adminTrek || previewTrek ? Object.keys(adminItineraries) : Object.keys(itineraries);
+  const apiItinerary = itineraryFromExtra(trek?.extraContent?.itinerary);
+  const itineraries = apiItinerary
+    ? { itinerary: apiItinerary }
+    : Object.keys(adminItineraries).length
+      ? adminItineraries
+      : staticRichTrek?.itineraries || {};
+  const itineraryKeys = Object.keys(itineraries);
   const itinerary =
     itineraryKeys.length > 0
       ? itineraries[activeItinerary] ?? itineraries[itineraryKeys[0]]
       : { note: "Itinerary will appear once route details are added.", days: [] };
   const bookingSteps = staticRichTrek?.bookingSteps || [];
-  const includedItems =
-    adminTrek || previewTrek
-      ? parseLineItems(trek?.included).map((item) => `✅ ${item}`)
-      : (staticRichTrek?.inclusions || []).map((item) => `✅ ${item}`);
-  const excludedItems =
-    adminTrek || previewTrek
-      ? parseLineItems(trek?.notIncluded).map((item) => `❌ ${item}`)
-      : (staticRichTrek?.exclusions || []).map((item) => `❌ ${item}`);
-  const carryItems =
-    adminTrek || previewTrek ? parseLineItems(trek?.thingsToCarry) : staticRichTrek?.thingsToCarry || [];
+  const catalogIncluded = toLines(trek?.includedItems?.length ? trek.includedItems : trek?.included);
+  const catalogExcluded = toLines(trek?.excludedItems?.length ? trek.excludedItems : trek?.notIncluded);
+  const catalogCarry = toLines(trek?.thingsToCarry);
+  const includedItems = (catalogIncluded.length ? catalogIncluded : staticRichTrek?.inclusions || []).map((item) =>
+    String(item).startsWith("✅") ? item : `✅ ${item}`
+  );
+  const excludedItems = (catalogExcluded.length ? catalogExcluded : staticRichTrek?.exclusions || []).map((item) =>
+    String(item).startsWith("❌") ? item : `❌ ${item}`
+  );
+  const carryItems = catalogCarry.length ? catalogCarry : staticRichTrek?.thingsToCarry || [];
   const placesToVisit =
-    adminTrek || previewTrek ? parsePlaces(trek?.placesToVisit) : staticRichTrek?.placesToVisit || [];
+    catalogTrek ? parsePlaces(trek?.placesToVisit) : staticRichTrek?.placesToVisit || [];
   const discountCodes =
-    adminTrek || previewTrek
+    catalogTrek
       ? trek?.discountEnabled === false
         ? []
         : parseDiscountItems(trek?.discountCodes)
@@ -659,17 +721,12 @@ function TrekDetails() {
                               <span className="td-date-text">{displayDate}</span>
                               {d.label && <span className="td-date-badge">{d.label}</span>}
                             </div>
-                            <Link
-                              to={
-                                referralCode
-                                  ? `/book?trekName=${encodeURIComponent(trek.name)}&ref=${encodeURIComponent(referralCode)}`
-                                  : `/book?trekName=${encodeURIComponent(trek.name)}`
-                              }
-                              state={{ trek }}
+                            <BookingCTA
+                              trek={referralCode ? { ...trek, referralCode } : trek}
+                              selectedDate={displayDate}
                               className="td-date-book-btn"
-                            >
-                              Book
-                            </Link>
+                              label="Book"
+                            />
                           </div>
                         );
                       })}

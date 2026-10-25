@@ -1,7 +1,8 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
-import { uniqueTreks, slugifyTrekName } from "../../data/treks";
+import { slugifyTrekName } from "../../data/treks";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
+import { selectPublicTrips, tripDetailPath } from "../../data/publicTrips";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
 import { WhatsAppIcon, ArrowRightIcon } from "../../components/icons";
@@ -9,8 +10,6 @@ import { handleImageError, withFallbackImages } from "../../utils/imageFallback"
 import { syncProductsFromApi } from "../../api/getAll";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 import { CATALOG_HUBS, hubBySlug, inferHubSlug } from "../../data/catalogHubs";
-
-const ALLOW_STATIC_TREK_FALLBACK = import.meta.env.DEV;
 
 const parseGallery = (value, fallback) => {
   try {
@@ -43,17 +42,10 @@ function parseGalleryBatches(value) {
   }
 }
 
-function buildTreks(rawItems = getAdminItems("gt_treks")) {
-  const source =
-    rawItems.length > 0
-      ? rawItems
-      : ALLOW_STATIC_TREK_FALLBACK
-      ? uniqueTreks
-      : [];
+function buildTreks(rawItems = []) {
+  const source = selectPublicTrips(rawItems);
 
   return source
-    .filter((t) => t.active !== false)
-    .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
     .map((t) => {
       const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
       const gallery = withFallbackImages(parseGallery(t.imageGallery, fallbackGallery));
@@ -115,24 +107,29 @@ function Trek() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [activeSort, setActiveSort] = useState("recommended");
   const [searchQuery, setSearchQuery] = useState("");
-  const [treks, setTreks] = useState(() => buildTreks());
-  const [isLoading, setIsLoading] = useState(() => buildTreks().length === 0);
+  const [treks, setTreks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const syncLocal = () => setTreks(buildTreks());
+    let cancelled = false;
+    const apply = (treksItems, campItems) => {
+      if (!cancelled) setTreks(buildTreks([...(treksItems || []), ...(campItems || [])]));
+    };
+    const syncLocal = () => apply(getAdminItems("gt_treks"), getAdminItems("gt_camping"));
 
-    syncProductsFromApi("trek", "gt_treks")
-      .then((items) => {
-        if (!items) return;
-        const mapped = buildTreks(items);
-        if (mapped.length > 0) setTreks(mapped);
-      })
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
+    Promise.all([
+      syncProductsFromApi("trek", "gt_treks").catch(() => []),
+      syncProductsFromApi("camping", "gt_camping").catch(() => []),
+    ])
+      .then(([trekItems, campItems]) => apply(trekItems, campItems))
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
 
     window.addEventListener("storage", syncLocal);
     window.addEventListener("gt:storage-updated", syncLocal);
     return () => {
+      cancelled = true;
       window.removeEventListener("storage", syncLocal);
       window.removeEventListener("gt:storage-updated", syncLocal);
     };
@@ -384,7 +381,7 @@ function Trek() {
           >
             All treks
           </button>
-          {CATALOG_HUBS.map((hub) => (
+          {CATALOG_HUBS.filter((hub) => treks.some((trek) => trek.hubSlug === hub.slug)).map((hub) => (
             <button
               key={hub.slug}
               type="button"
@@ -508,7 +505,7 @@ function Trek() {
                       label="Book on WhatsApp"
                     />
                     <Link
-                      to={`/treks/${trek.slug || slugifyTrekName(trek.name)}`}
+                      to={tripDetailPath(trek)}
                       className="trek-overlay-btn trek-overlay-details"
                       tabIndex="-1"
                       aria-hidden="true"
@@ -581,7 +578,7 @@ function Trek() {
                       Book on WhatsApp
                     </BookingCTA>
                     <Link
-                      to={`/treks/${trek.slug || slugifyTrekName(trek.name)}`}
+                      to={tripDetailPath(trek)}
                       className="trek-secondary-btn trek-details-link"
                     >
                       View Details

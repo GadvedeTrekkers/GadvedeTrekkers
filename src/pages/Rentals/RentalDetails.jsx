@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
+import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 
 const RENTAL_PREVIEW_KEY = "gt_rental_preview";
 
@@ -282,7 +283,6 @@ const rentalRules = [
 export default function RentalDetails() {
   const { id } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const previewItem = id === "preview"
     ? (() => {
@@ -313,7 +313,6 @@ export default function RentalDetails() {
   const [endDate, setEndDate] = useState("");
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState("about");
-  const [booked, setBooked] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -348,13 +347,14 @@ export default function RentalDetails() {
   })[0];
   const totalCost = days ? tier.rentPerDay * days * qty : null;
 
-  const handleBook = () => {
-    if (id === "preview") {
-      return;
-    }
-    if (!startDate || !endDate) return;
-    setBooked(true);
-  };
+  const rentalBookingUrl = buildBookingWhatsAppUrl({
+    name: item.name,
+    location: item.location,
+    price: totalCost || item.pricePerDay || item.pricingTiers?.[0]?.rentPerDay,
+    productType: "rental",
+    guests: qty,
+    note: totalCost ? `Estimate: ₹${totalCost.toLocaleString("en-IN")} for ${days} day${days > 1 ? "s" : ""}` : "",
+  }, startDate && endDate ? `${startDate} to ${endDate}` : null);
 
   return (
     <div style={{ background: "#f9fafb", minHeight: "100vh" }}>
@@ -483,24 +483,19 @@ export default function RentalDetails() {
                 </div>
               )}
 
-              {booked ? (
-                <div style={{ background: "#d1fae5", border: "1px solid #6ee7b7", borderRadius: 10, padding: "14px 16px", textAlign: "center", color: "#065f46", fontWeight: 700 }}>
-                  ✅ Booking Request Sent! We'll confirm within 2 hours.
-                </div>
-              ) : (
-                <button
-                  onClick={handleBook}
-                  disabled={!startDate || !endDate}
-                  style={{
-                    width: "100%", background: startDate && endDate ? "#059669" : "#d1d5db",
-                    color: "#fff", padding: "12px", borderRadius: 10, border: "none",
-                    fontWeight: 700, fontSize: "0.95rem", cursor: startDate && endDate ? "pointer" : "not-allowed",
-                    transition: "background 0.2s",
-                  }}
-                >
-                  🏕 Block Now — No Payment Required
-                </button>
-              )}
+              <a
+                href={rentalBookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "block", width: "100%", background: "#059669",
+                  color: "#fff", padding: "12px", borderRadius: 10,
+                  fontWeight: 700, fontSize: "0.95rem", textAlign: "center",
+                  textDecoration: "none", minHeight: 44,
+                }}
+              >
+                Book Now
+              </a>
             </div>
 
             {/* Deposit info */}

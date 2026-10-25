@@ -1,3 +1,5 @@
+import { publicTripPhoto } from "../../../shared/publicTrips.js";
+
 const PRODUCT_KEY_TO_TYPE = {
   gt_treks: "trek",
   gt_tours: "tour",
@@ -35,6 +37,56 @@ function splitLines(value) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function textList(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry || "").trim()).filter(Boolean).join("\n");
+  }
+  if (value == null) return "";
+  return String(value);
+}
+
+function firstText(...values) {
+  for (const value of values) {
+    const text = textList(value).trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+function asItemList(value) {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => {
+      if (typeof entry === "string") return entry.trim() ? [entry.trim()] : [];
+      if (entry && typeof entry === "object") {
+        const text = entry.text || entry.title || entry.name || entry.item || "";
+        return String(text).trim() ? [String(text).trim()] : [];
+      }
+      return [];
+    });
+  }
+  if (typeof value === "string" && value.trim()) {
+    return value.split("\n").map((line) => line.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function firstList(...values) {
+  for (const value of values) {
+    const list = asItemList(value);
+    if (list.length) return list;
+  }
+  return [];
+}
+
+function publicImage(row, rawItem, mediaUrls) {
+  const stored = row.primary_image_url ?? rawItem.image ?? mediaUrls[0] ?? "";
+  if (typeof stored === "string") {
+    const url = stored.trim();
+    if (url && !/^data:/i.test(url) && url.length <= 4000) return url;
+  }
+  return publicTripPhoto(row.slug);
 }
 
 function safeNumber(value) {
@@ -133,10 +185,18 @@ export function productRowFromItem(storageKey, item) {
 }
 
 export function productItemFromRow(row) {
-  const rawItem = row?.extra_content?.rawItem || {};
+  const extra = row?.extra_content && typeof row.extra_content === "object" ? row.extra_content : {};
+  const rawItem = extra.rawItem && typeof extra.rawItem === "object" ? extra.rawItem : {};
   const media = Array.isArray(row.media) && row.media.length ? row.media : rawItem.media || [];
   const mediaUrls = (Array.isArray(media) ? media : []).map((entry) => entry?.url).filter(Boolean);
   const gallery = Array.isArray(row.gallery) && row.gallery.length ? row.gallery : mediaUrls;
+  const includedItems = firstList(row.included_items, rawItem.includedItems, rawItem.included);
+  const excludedItems = firstList(row.excluded_items, rawItem.excludedItems, rawItem.notIncluded);
+  const thingsToCarry = firstList(row.things_to_carry, rawItem.thingsToCarry);
+  const highlights = firstList(row.highlights, rawItem.highlights);
+  const itinerary = extra.itinerary ?? rawItem.itinerary ?? null;
+  const shortDescription = firstText(row.short_description, rawItem.shortDescription, rawItem.subtitle);
+
   return {
     ...rawItem,
     id: row.id,
@@ -155,12 +215,22 @@ export function productItemFromRow(row) {
     altitude: row.altitude_label ?? rawItem.altitude ?? "",
     difficulty: row.difficulty ?? rawItem.difficulty ?? "",
     enduranceLevel: row.endurance_level ?? rawItem.enduranceLevel ?? "",
-    subtitle: row.short_description ?? rawItem.subtitle ?? "",
-    description: row.description ?? rawItem.description ?? "",
+    shortDescription,
+    subtitle: shortDescription,
+    description: firstText(row.description, rawItem.description, rawItem.about, rawItem.overview),
+    about: firstText(rawItem.about, row.description, rawItem.description, rawItem.overview),
+    overview: firstText(rawItem.overview, row.description, rawItem.description),
+    includedItems,
+    excludedItems,
+    thingsToCarry,
+    included: includedItems.join("\n"),
+    notIncluded: excludedItems.join("\n"),
+    highlights,
+    extraContent: { itinerary },
     history: row.history ?? rawItem.history ?? "",
     mainAttractions: row.main_attractions ?? rawItem.mainAttractions ?? "",
     detailedHistory: row.detailed_history ?? rawItem.detailedHistory ?? "",
-    image: row.primary_image_url ?? rawItem.image ?? mediaUrls[0] ?? "",
+    image: publicImage(row, rawItem, mediaUrls),
     imageGallery: JSON.stringify(gallery),
     active: row.is_active,
     sortOrder: row.sort_order,

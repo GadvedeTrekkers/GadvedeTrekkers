@@ -8,7 +8,8 @@
  * Components call bookingService.book(product, options) and know nothing else.
  *
  * Current channel: WHATSAPP
- * Planned channels: DIRECT_BOOKING, PAYMENT_GATEWAY
+ * Public booking always opens WhatsApp. In-site booking and payment
+ * checkout are not the customer path.
  */
 
 import {
@@ -16,7 +17,6 @@ import {
   BOOKING_WHATSAPP_NUMBER,
 } from "../config/bookingConfig";
 import { handleWhatsAppLead } from "../utils/leadActions";
-import { paymentService } from "./payment.service";
 
 export const bookingService = {
   /**
@@ -36,10 +36,9 @@ export const bookingService = {
         return this._viaWhatsApp(product, options);
 
       case "DIRECT_BOOKING":
-        return this._viaDirect(product, options);
-
       case "PAYMENT_GATEWAY":
-        return this._viaPayment(product, options);
+        console.warn(`bookingService: ${BOOKING_MODE} is not the public booking path. Opening WhatsApp.`);
+        return this._viaWhatsApp(product, options);
 
       default:
         console.warn(`bookingService: unknown BOOKING_MODE "${BOOKING_MODE}", falling back to WhatsApp`);
@@ -61,30 +60,9 @@ export const bookingService = {
       customerPhone: options.customerPhone,
       customerEmail: options.customerEmail,
       pax:           options.pax,
-      preferredDate: options.preferredDate,
+      preferredDate: options.preferredDate || options.selectedDate || product.nextDate || "",
     });
   },
 
-  async _viaDirect(product, options) {
-    // TODO: when BOOKING_MODE = "DIRECT_BOOKING"
-    // Navigate to /book with product pre-filled via React Router state.
-    // This will be wired up when the booking form page is built.
-    throw new Error(
-      `bookingService: DIRECT_BOOKING mode is not yet implemented. ` +
-      `Set BOOKING_MODE = "WHATSAPP" in bookingConfig.js to continue.`
-    );
-  },
-
-  async _viaPayment(product, options) {
-    // Delegates entirely to paymentService.
-    // paymentService knows which gateway to use (Razorpay / Stripe / PayU).
-    return paymentService.initiate(product.price, {
-      productId:    product.id,
-      productName:  product.name,
-      productType:  product.category || product.type,
-      customerName: options.customerName,
-      customerPhone: options.customerPhone,
-      selectedDate:  options.selectedDate ?? product.nextDate,
-    });
-  },
 };
+

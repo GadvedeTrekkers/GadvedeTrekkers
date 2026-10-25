@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
 import { createWhatsAppInquiryUrl, handleWhatsAppLead } from "../../utils/leadActions";
-import { BOOKING_WHATSAPP_NUMBER } from "../../config/bookingConfig";
+import { BOOKING_WHATSAPP_NUMBER, buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -24,67 +24,56 @@ function StarRating({ rating }) {
   );
 }
 
-/* ─── Book Now button ────────────────────────────────────────────────────────
-   Three states: idle → loading → done → idle
-   - Saves an enquiry to the CRM before opening WhatsApp (lead capture).
-   - Uses BOOKING_WHATSAPP_NUMBER (booking intent, separate from inquiry).
-   - touch-target height ≥ 44 px for mobile accessibility.               */
+/* ─── Book Now link ──────────────────────────────────────────────────────────
+   Real wa.me anchor so iOS and Android both open WhatsApp.
+   The click also saves a CRM lead. Navigation does not wait on that save,
+   and a failed save does not cancel the link.                            */
 
 function BookNowButton({ item }) {
-  const [status, setStatus] = useState("idle"); // "idle" | "loading" | "done"
-
-  const handleClick = useCallback(async () => {
-    if (status !== "idle") return;     // guard double-tap on mobile
-    setStatus("loading");
-
-    try {
-      await handleWhatsAppLead({
-        phoneNumber: BOOKING_WHATSAPP_NUMBER,
-        packageName: item.name,
-        location:    item.location,
-        category:    "Heritage Walk",
-        source:      "Heritage Listing",
-      });
-    } catch {
-      /* network / storage error — WhatsApp still opens via window.open */
-    }
-
-    setStatus("done");
-    setTimeout(() => setStatus("idle"), 2500);
-  }, [item, status]);
-
-  const label =
-    status === "loading" ? "Opening…"   :
-    status === "done"    ? "✓ Opened!"  :
-    "Book Now";
-
-  const isLoading = status === "loading";
+  const href = buildBookingWhatsAppUrl({
+    name: item.name,
+    price: item.price,
+    location: item.location,
+    nextDate: item.nextDate,
+    productType: "heritage",
+  });
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isLoading}
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       aria-label={`Book ${item.name} on WhatsApp`}
+      onClick={() => {
+        handleWhatsAppLead({
+          phoneNumber: BOOKING_WHATSAPP_NUMBER,
+          packageName: item.name,
+          location: item.location,
+          category: "Heritage Walk",
+          source: "Heritage Listing",
+          preferredDate: item.nextDate,
+          openWhatsApp: false,
+        }).catch(() => {});
+      }}
       style={{
-        flex:           1,
-        minHeight:      44,            /* WCAG touch target */
-        background:     status === "done" ? "#15803d" : "#198754",
-        border:         "none",
-        borderRadius:   8,
-        color:          "#fff",
-        fontWeight:     700,
-        fontSize:       "0.85rem",
-        letterSpacing:  "0.01em",
-        cursor:         isLoading ? "wait" : "pointer",
-        opacity:        isLoading ? 0.75  : 1,
-        transition:     "background 0.2s, opacity 0.2s",
-        whiteSpace:     "nowrap",
-        padding:        "0 12px",
+        flex: 1,
+        minHeight: 44,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#198754",
+        borderRadius: 8,
+        color: "#fff",
+        fontWeight: 700,
+        fontSize: "0.85rem",
+        letterSpacing: "0.01em",
+        textDecoration: "none",
+        whiteSpace: "nowrap",
+        padding: "0 12px",
       }}
     >
-      {label}
-    </button>
+      Book Now
+    </a>
   );
 }
 

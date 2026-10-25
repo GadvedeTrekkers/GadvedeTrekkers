@@ -4,6 +4,7 @@ import { getTourDates } from "../../data/tourDatesStorage";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
+import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { toursList } from "../../data/toursData";
 import { ADDITIONAL_TOUR_SEEDS } from "../../data/additionalTourDetails";
 import { productService } from "../../services/product.service";
@@ -438,7 +439,7 @@ function TourDetails() {
                         </div>
                         {d.whatsappGroupLink
                           ? <a href={d.whatsappGroupLink} target="_blank" rel="noopener noreferrer" style={{ background: "#25d366", color: "#fff", borderRadius: 8, padding: "6px 16px", fontWeight: 700, fontSize: "0.82rem", textDecoration: "none" }}>Join WhatsApp</a>
-                          : <a href={`https://wa.me/919856112727?text=I want to book ${tour.name} on ${displayDate}`} target="_blank" rel="noopener noreferrer" style={{ background: "#059669", color: "#fff", borderRadius: 8, padding: "6px 16px", fontWeight: 700, fontSize: "0.82rem", textDecoration: "none" }}>Book Now</a>
+                          : <a href={buildBookingWhatsAppUrl({ name: tour.name, price: tour.price, location: tour.location || tour.region, productType: "tour" }, displayDate)} target="_blank" rel="noopener noreferrer" style={{ background: "#059669", color: "#fff", borderRadius: 8, padding: "6px 16px", fontWeight: 700, fontSize: "0.82rem", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Book Now</a>
                         }
                       </div>
                     );

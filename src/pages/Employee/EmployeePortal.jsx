@@ -20,6 +20,7 @@ import { getAllVendors } from "../../data/vendorStorage";
 import { ENQUIRY_STATUS, ENQUIRY_TAGS, getEnquiries, setEnquiryStatus, setEnquiryTags } from "../../data/enquiryStorage";
 import { getLocalLeaderTrekEvents, loadLeaderTrekEvents } from "../../services/leaderEvents.service";
 import { buildSalesFollowUpWhatsAppMessage, DEFAULT_SALES_SMS, openSmsWithMessage } from "../../utils/leadActions";
+import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import {
   compareEventsAscending,
   compareEventsDescending,
@@ -27,8 +28,6 @@ import {
   isEventPast,
   isEventUpcomingOrUndated,
 } from "../../utils/eventDate";
-
-const BASE_URL = window.location.origin;
 
 function fmt(n) { return `₹${Number(n || 0).toLocaleString("en-IN")}`; }
 
@@ -230,7 +229,10 @@ export default function EmployeePortal() {
   const assignedEnquiries = useMemo(() => getEnquiriesForUser(session, emp), [session, emp, tick]);
 
   const referralCode = cred?.referralCode || session.referralCode || "";
-  const referralLink = `${BASE_URL}/book?ref=${referralCode}`;
+  const referralLink = buildBookingWhatsAppUrl({
+    name: "a Gadvede trek",
+    referralCode,
+  });
   const avgRating = ratings.length ? (ratings.reduce((s, r) => s + Number(r.rating || 0), 0) / ratings.length).toFixed(1) : null;
 
   const logout = () => { clearEmployeeSession(); navigate("/employee-login"); };
@@ -634,7 +636,14 @@ export default function EmployeePortal() {
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(255px,1fr))", gap: 12 }}>
                         {treks.map(trek => {
                           const count = getTrekBookingCount(trek.id, trek.name);
-                          const trekRefLink = `${BASE_URL}/book?trekName=${encodeURIComponent(trek.name)}&ref=${encodeURIComponent(referralCode)}`;
+                          const trekRefLink = buildBookingWhatsAppUrl({
+                            name: trek.name,
+                            price: trek.price,
+                            location: trek.location,
+                            nextDate: trek.nextDate,
+                            productType: "trek",
+                            referralCode,
+                          });
                           return (
                             <motion.div key={trek.id || trek.name} whileHover={{ y: -4 }} style={{ ...S.card(14), padding: 0, overflow: "hidden" }}>
                               {trek.image && <img src={trek.image} alt={trek.name} style={{ width: "100%", height: 120, objectFit: "cover" }} />}

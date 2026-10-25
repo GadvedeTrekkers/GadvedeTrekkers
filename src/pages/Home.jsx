@@ -1,8 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { uniqueTreks, slugifyTrekName } from "../data/treks";
-import { campingList } from "../data/campingData";
-import { getPrimaryCampingImage } from "../data/campingDetailsData";
 import { rentalsList } from "../data/rentalsData";
 import { isHeritageEnabled } from "../data/featureFlags";
 import { ivDestinations as _ivDestinations } from "../data/industrialVisitsData";
@@ -14,21 +11,7 @@ import { WhatsAppIcon, ArrowRightIcon } from "../components/icons";
 import { handleImageError, withFallbackImages } from "../utils/imageFallback";
 import { stripPromptFields } from "../utils/contentSanitizer";
 import { syncProductsFromApi } from "../api/getAll";
-import { CATALOG_HUBS } from "../data/catalogHubs";
-
-const ALLOW_STATIC_TREK_FALLBACK = import.meta.env.DEV;
-
-const CAMPING_ROUTE_BY_NAME = {
-  "Alibaug Camping | Music | Barbecue | Bonfire": "alibaug-camping",
-  "Pawna Lake Camping 2026": "pawna-lake-camping",
-  "Igatpuri Secret Camping and Water Sports": "igatpuri-camping",
-  "Bhandardara Lake Camping": "bhandardara-camping",
-  "Stargazing Camping Dehene Asangaon": "stargazing-camping",
-  "Panshet Dam Camping | Camping near Pune": "panshet-camping",
-  "Kalsubai Camping from Kasara": "kalsubai-camping",
-  "Revdanda Beach Camping": "revdanda-camping",
-  "Rajmachi Camping | Treks and Trails India": "rajmachi-camping",
-};
+import { selectPublicTrips, tripDetailPath } from "../data/publicTrips";
 
 // ─── Active treks (respects Live/Off status from admin panel) ─────────────────
 function parseGalleryHome(value, fallback) {
@@ -39,28 +22,19 @@ function parseGalleryHome(value, fallback) {
     return fallback;
   }
 }
-function buildActiveTreks() {
-  const stored = getAdminItems("gt_treks");
-  const source =
-    stored.length > 0
-      ? stored
-      : ALLOW_STATIC_TREK_FALLBACK
-      ? uniqueTreks
-      : [];
-  return source
-    .filter((t) => t.active !== false)
-    .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
-    .map((t) => {
-      const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
-      const gallery = withFallbackImages(parseGalleryHome(t.imageGallery, fallbackGallery));
-      return {
-        ...stripPromptFields(normaliseItem(t)),
-        slug: t.slug || slugifyTrekName(t.name),
-        image: gallery[0] || t.image,
-        gallery,
-        seasonalTag: t.seasonalTag || "",
-      };
-    });
+function buildActiveTreks(rawItems = []) {
+  return selectPublicTrips(rawItems).map((t) => {
+    const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
+    const gallery = withFallbackImages(parseGalleryHome(t.imageGallery, fallbackGallery));
+    return {
+      ...stripPromptFields(normaliseItem(t)),
+      slug: t.slug,
+      image: gallery[0] || t.image,
+      gallery,
+      seasonalTag: t.seasonalTag || "",
+      productType: t.productType || t.product_type || "trek",
+    };
+  });
 }
 
 // ─── HomeTrekCard ─────────────────────────────────────────────────────────────
@@ -68,9 +42,12 @@ function HomeTrekCard({ trek }) {
   const [imgIdx, setImgIdx] = useState(0);
   const intervalRef = useRef(null);
   const images = trek.gallery.slice(0, 3);
-  const discountPct = Math.round(
-    ((trek.originalPrice - trek.price) / trek.originalPrice) * 100
-  );
+  const discountPct =
+    trek.originalPrice > trek.price
+      ? Math.round(((trek.originalPrice - trek.price) / trek.originalPrice) * 100)
+      : 0;
+  const detailPath = tripDetailPath(trek);
+  const rating = Number(trek.rating);
 
   const handleMouseEnter = () => {
     clearInterval(intervalRef.current);
@@ -137,7 +114,7 @@ function HomeTrekCard({ trek }) {
             label="Book on WhatsApp"
           />
           <Link
-            to={`/treks/${slugifyTrekName(trek.name)}`}
+            to={detailPath}
             className="trek-overlay-btn trek-overlay-details"
             tabIndex="-1"
             aria-hidden="true"
@@ -153,11 +130,13 @@ function HomeTrekCard({ trek }) {
             <h2 className="trek-card-title">{trek.name}</h2>
             <p className="trek-location">📍 {trek.location}</p>
           </div>
-          <div className="trek-rating">
-            <span className="trek-rating-star" aria-hidden="true">★</span>
-            <span>{trek.rating.toFixed(1)}</span>
-            <span className="trek-rating-count">({trek.reviews})</span>
-          </div>
+          {rating > 0 && (
+            <div className="trek-rating">
+              <span className="trek-rating-star" aria-hidden="true">★</span>
+              <span>{rating.toFixed(1)}</span>
+              <span className="trek-rating-count">({trek.reviews || 0})</span>
+            </div>
+          )}
         </div>
 
         <div className="trek-chip-row">
@@ -196,7 +175,7 @@ function HomeTrekCard({ trek }) {
             Book on WhatsApp
           </BookingCTA>
           <Link
-            to={`/treks/${slugifyTrekName(trek.name)}`}
+            to={detailPath}
             className="trek-secondary-btn trek-details-link"
           >
             View Details
@@ -538,29 +517,37 @@ function Home() {
   const [enquiryDest, setEnquiryDest] = useState(null);
   const gridRef = useRef(null);
   const [syncKey, setSyncKey] = useState(0);
-  const [activeTreks, setActiveTreks] = useState(() => buildActiveTreks());
-  const [treksLoading, setTreksLoading] = useState(() => buildActiveTreks().length === 0);
+  const [activeTreks, setActiveTreks] = useState([]);
+  const [treksLoading, setTreksLoading] = useState(true);
 
-  // Sync all categories from backend so Live/Off status is cross-device
+  // Treks section is trek + camping so seasonal camping stays beside the forts.
   useEffect(() => {
-    syncProductsFromApi("trek", "gt_treks")
-      .then((items) => { if (items) setActiveTreks(buildActiveTreks()); })
-      .catch(() => {})
-      .finally(() => setTreksLoading(false));
-    syncProductsFromApi("camping", "gt_camping")
-      .then((items) => { if (items) setSyncKey((k) => k + 1); })
-      .catch(() => {});
+    let cancelled = false;
+    const applyTrips = (treks, camps) => {
+      if (!cancelled) setActiveTreks(buildActiveTreks([...(treks || []), ...(camps || [])]));
+    };
+
+    Promise.all([
+      syncProductsFromApi("trek", "gt_treks").catch(() => []),
+      syncProductsFromApi("camping", "gt_camping").catch(() => []),
+    ])
+      .then(([treks, camps]) => applyTrips(treks, camps))
+      .finally(() => {
+        if (!cancelled) setTreksLoading(false);
+      });
+
     syncProductsFromApi("rental", "gt_rentals")
       .then((items) => { if (items) setSyncKey((k) => k + 1); })
       .catch(() => {});
 
     const onStorage = () => {
-      setActiveTreks(buildActiveTreks());
+      applyTrips(getAdminItems("gt_treks"), getAdminItems("gt_camping"));
       setSyncKey((k) => k + 1);
     };
     window.addEventListener("storage", onStorage);
     window.addEventListener("gt:storage-updated", onStorage);
     return () => {
+      cancelled = true;
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("gt:storage-updated", onStorage);
     };
@@ -657,22 +644,21 @@ function Home() {
     },
   ];
 
-  // Camping — admin-first: only show active admin items; fall back to campingList if admin is empty
-  // Use syncKey to force re-render when data changes
-  const campsiteCards = useMemo(() => {
-    const _adminCampsRaw = getAdminItems("gt_camping");
-    const _activeCamps = _adminCampsRaw.length > 0
-      ? _adminCampsRaw.filter((c) => c.active !== false).map(normaliseItem)
-      : campingList;
-    
-    return _activeCamps.slice(0, 8).map((camp) => ({
-      id: camp.slug || CAMPING_ROUTE_BY_NAME[camp.name] || null,
-      name: camp.shortName || camp.name,
-      price: `Starting ₹${camp.price}`,
-      img: getPrimaryCampingImage(camp),
-      location: camp.location,
-    }));
-  }, [syncKey]);
+  const campsiteCards = useMemo(
+    () =>
+      activeTreks
+        .filter((camp) => camp.productType === "camping" || camp.slug === "new-year-beach-side-camping")
+        .map((camp) => ({
+          id: camp.slug,
+          name: camp.shortName || camp.name,
+          price: `Starting ₹${camp.price}`,
+          img: camp.image,
+          location: camp.location || camp.destination,
+          productType: camp.productType,
+          slug: camp.slug,
+        })),
+    [activeTreks]
+  );
 
   // Rentals — admin-first: only show active admin items; fall back to rentalsList if admin is empty
   // Use syncKey to force re-render when data changes
@@ -1078,34 +1064,6 @@ function Home() {
         </div>
       </section>
 
-      <section className="py-5">
-        <div className="container">
-          <div className="text-center mb-4">
-            <span style={{ color: "#16a34a", fontWeight: 700, fontSize: "0.8rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>
-              Gadvede Trekkers
-            </span>
-            <h2 className="fw-bold mt-1 mb-2">Browse trips by hub</h2>
-            <p className="text-muted mx-auto" style={{ maxWidth: 640 }}>
-              City weekends, mountain regions, camping, backpacking, and New Year batches from one catalog.
-            </p>
-          </div>
-          <div className="row g-3">
-            {CATALOG_HUBS.map((hub) => (
-              <div className="col-6 col-md-4 col-lg-4" key={hub.slug}>
-                <Link
-                  to={`/trips/${hub.slug}`}
-                  className="d-block h-100 text-decoration-none text-dark border rounded-4 p-3"
-                  style={{ background: "#f8fffe" }}
-                >
-                  <div className="fw-bold">{hub.name}</div>
-                  <div className="text-muted small mt-1">{hub.description}</div>
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ================= TOUR CATEGORIES ================= */}
       <section className="py-5 bg-light">
         <div className="container">
@@ -1132,7 +1090,7 @@ function Home() {
       </section>
 
       {/* ================= POPULAR CAMPSITES ================= */}
-      <section className="py-5">
+      {campsiteCards.length > 0 && <section className="py-5">
         <div className="container">
           <h2 className="text-center fw-bold">Explore Campsites</h2>
           <p className="text-center text-muted mb-5">Discover beach, lake, mountain, and forest camping getaways.</p>
@@ -1166,7 +1124,7 @@ function Home() {
                       <WhatsAppIcon />
                       Book on WhatsApp
                     </BookingCTA>
-                    <Link to={`/camping/${camp.id || "alibaug-camping"}`} className="trek-secondary-btn">
+                    <Link to={tripDetailPath(camp)} className="trek-secondary-btn">
                       Details
                       <ArrowRightIcon />
                     </Link>
@@ -1180,7 +1138,7 @@ function Home() {
             <Link to="/camping" className="btn btn-outline-success px-4">View All Campsites →</Link>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* ================= HERITAGE WALKS ================= */}
       {isHeritageEnabled() && <section className="py-5">

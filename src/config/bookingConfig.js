@@ -4,13 +4,13 @@
    Change BOOKING_MODE to instantly switch booking behaviour
    across the entire site — no other code changes needed.
 
-   Supported modes:
-     "WHATSAPP"        → All CTAs open WhatsApp (current mode)
-     "DIRECT_BOOKING"  → All CTAs route to /book form (future)
-     "PAYMENT_GATEWAY" → Triggers inline payment checkout (future)
+   Public Book Now buttons always open WhatsApp. They do not
+   route to /book, /booking, or a payment page.
+
+   BOOKING_MODE stays "WHATSAPP".
    ─────────────────────────────────────────────────────────────── */
 
-export const BOOKING_MODE = "WHATSAPP"; // ← change this one line to switch
+export const BOOKING_MODE = "WHATSAPP"; // public booking channel — keep WhatsApp
 
 /* WhatsApp number used exclusively for BOOKING (separate from general inquiry) */
 export const BOOKING_WHATSAPP_NUMBER = "918605866155";
@@ -37,23 +37,46 @@ export const CTA_LABELS = {
      💰 Price: ₹{price}
      Please confirm availability.
    ─────────────────────────────────────────────────────────────── */
-export function buildBookingWhatsAppUrl(trek, selectedDate = null) {
-  const trekName = trek?.name || "Trek";
-  const price    = trek?.price ? `₹${trek.price}` : "TBD";
-  const date     = selectedDate || trek?.nextDate || "Flexible";
+function bookingKindLabel(item = {}) {
+  const type = String(item.productType || item.category || item.type || "").toLowerCase();
+  if (type.includes("camp")) return "Camp";
+  if (type.includes("tour")) return "Tour";
+  if (type.includes("heritage")) return "Heritage walk";
+  if (type.includes("villa")) return "Villa";
+  if (type.includes("rental") || type.includes("gear")) return "Rental";
+  if (type.includes("trek") || !type) return "Trek";
+  return "Trip";
+}
 
-  const message = [
+function formatFees(value) {
+  if (value == null || value === "") return "";
+  const raw = String(value).trim();
+  if (!raw || raw.toUpperCase() === "TBD") return "";
+  return raw.startsWith("₹") ? raw : `₹${raw}`;
+}
+
+export function buildBookingWhatsAppUrl(trek, selectedDate = null) {
+  const name = trek?.name || trek?.shortName || "Trek";
+  const kind = bookingKindLabel(trek);
+  const date = selectedDate || trek?.nextDate || trek?.date || "";
+  const city = trek?.departureCity || trek?.location || trek?.destination || "";
+  const fees = formatFees(trek?.fees ?? trek?.price);
+
+  const lines = [
     "Hi 👋",
     "I want to book:",
     "",
-    `📍 Trek: ${trekName}`,
-    `📅 Date: ${date}`,
-    `💰 Price: ${price}`,
-    "",
-    "Please confirm availability.",
-  ].join("\n");
+    `📍 ${kind}: ${name}`,
+  ];
+  if (date) lines.push(`📅 Date: ${date}`);
+  if (city) lines.push(`🏙 City: ${city}`);
+  if (fees) lines.push(`💰 Fees: ${fees}`);
+  if (trek?.guests) lines.push(`👥 Guests: ${trek.guests}`);
+  if (trek?.note) lines.push(String(trek.note));
+  if (trek?.referralCode) lines.push(`🎁 Referral: ${trek.referralCode}`);
+  lines.push("", "Please confirm availability.");
 
-  return `https://wa.me/${BOOKING_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${BOOKING_WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
 }
 
 /* ─── Build referral share WhatsApp URL ─────────────────────────

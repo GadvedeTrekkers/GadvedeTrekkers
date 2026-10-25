@@ -56,8 +56,10 @@ function Contact() {
       .filter(Boolean)
       .join("\n");
 
+    setWaMessage(message);
+    setSubmitted(true);
+    setSubmitting(true);
     try {
-      setSubmitting(true);
       await enquiryService.create({
         eventName: `Contact Page – ${form.interest}`,
         category: form.interest,
@@ -70,13 +72,11 @@ function Contact() {
         source: "Website – Contact Page",
         pageUrl: typeof window !== "undefined" ? window.location.href : "",
       });
-      setWaMessage(message);
-      setSubmitted(true);
-      window.open(whatsappHref(message), "_blank", "noopener,noreferrer");
     } catch (err) {
-      setErrors({ form: err?.message || "Something went wrong. Please call or WhatsApp us directly." });
+      console.warn("Contact enquiry save failed; opening WhatsApp anyway", err);
     } finally {
       setSubmitting(false);
+      window.location.assign(whatsappHref(message));
     }
   };
 

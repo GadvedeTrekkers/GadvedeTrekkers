@@ -262,7 +262,7 @@ const faqs = [
   },
   {
     q: "How to register for the Harihar Fort Trek from Mumbai?",
-    a: "Mumbai to Harihar Fort (Nirgudpada) is approximately 190 km — about 5 hours. You can click 'Book Now' to register. The Kasara train route (₹1,099) is most popular from Mumbai. After booking, GPS location and WhatsApp group details are shared.",
+    a: "Mumbai to Harihar Fort (Nirgudpada) is approximately 190 km — about 5 hours. Tap Book on WhatsApp to register. The Kasara train route (₹1,099) is most popular from Mumbai. After booking, GPS location and WhatsApp group details are shared.",
   },
   {
     q: "Which is the nearest railway station to Harihar Fort?",

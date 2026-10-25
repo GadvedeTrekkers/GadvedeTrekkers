@@ -155,12 +155,12 @@ export const kalsubaiItineraries = {
 };
 
 export const kalsubaiBookingSteps = [
-  'Click the "Book Now" button',
-  "Select your departure date and batch",
-  "Select ticket type and quantity (apply coupon if any)",
-  "Fill personal details and proceed",
-  "Select payment type (UPI / Card / Net Banking) and pay",
-  "Receive booking confirmation via email",
+  'Tap "Book on WhatsApp"',
+  "WhatsApp opens with the trek name, date, and fee filled in",
+  "Send the message and mention travellers or a coupon if you have one",
+  "We confirm your seat in the same chat",
+  "Pay only after the team confirms on WhatsApp",
+  "Booking confirmation comes back on WhatsApp",
   "WhatsApp group link sent 8 hours before departure",
   "Trek leader details shared on the WhatsApp group",
 ];

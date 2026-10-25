@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 
 const gallery = [
   "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=900&q=80",
@@ -225,7 +226,6 @@ export default function VelasTurtleFestival() {
   const [openFaq, setOpenFaq]           = useState(null);
   const [transport, setTransport]       = useState("without");
   const [guests, setGuests]             = useState(1);
-  const [booked, setBooked]             = useState(false);
   const [activeRoute, setActiveRoute]   = useState("mumbai");
   const itinerary = ITINERARIES[activeRoute];
 
@@ -473,18 +473,21 @@ export default function VelasTurtleFestival() {
                 </div>
               </div>
 
-              {booked ? (
-                <div style={{ textAlign: "center", background: "#d1fae5", borderRadius: 10, padding: "16px 12px" }}>
-                  <div style={{ fontSize: "1.5rem", marginBottom: 6 }}>🎉</div>
-                  <div style={{ fontWeight: 700, color: "#065f46", fontSize: "0.95rem" }}>Booking Confirmed!</div>
-                  <div style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: 4 }}>We'll contact you via WhatsApp shortly.</div>
-                </div>
-              ) : (
-                <button onClick={() => setBooked(true)}
-                  style={{ width: "100%", background: "#059669", color: "#fff", border: "none", borderRadius: 12, padding: "14px 0", fontWeight: 800, fontSize: "1rem", cursor: "pointer", marginBottom: 10 }}>
-                  Book Now
-                </button>
-              )}
+              <a
+                href={buildBookingWhatsAppUrl({
+                  name: "Velas Turtle Festival 2026",
+                  location: "Velas, Ratnagiri",
+                  price: total,
+                  productType: "tour",
+                  guests,
+                  note: transport === "without" ? "Transport: without transport" : "Transport: with transport",
+                }, "27 Mar, 03 Apr, 10 Apr")}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: "block", width: "100%", background: "#059669", color: "#fff", borderRadius: 12, padding: "14px 0", fontWeight: 800, fontSize: "1rem", textDecoration: "none", textAlign: "center", marginBottom: 10, minHeight: 44 }}
+              >
+                Book Now
+              </a>
 
               <a href="https://wa.me/919856112727?text=Hi%2C+I%27m+interested+in+Velas+Turtle+Festival+2026"
                 target="_blank" rel="noopener noreferrer"

@@ -373,11 +373,11 @@ export default function SandhanValley() {
               <h3 className="td-section-title">How to Book?</h3>
               <ol className="td-booking-steps">
                 {[
-                  "Click 'Book Now' — booking closes every Thursday 5 PM.",
-                  "Choose ticket quantity; apply EARLY75 coupon if eligible.",
-                  "Fill in personal details and proceed to payment.",
-                  "Pay via UPI / Debit / Credit Card / Net Banking.",
-                  "Receive booking confirmation via email.",
+                  "Tap Book on WhatsApp — booking closes every Thursday 5 PM.",
+                  "Send the message and mention EARLY75 if you are eligible.",
+                  "We confirm your seat in the same WhatsApp chat.",
+                  "Pay only after the team confirms on WhatsApp.",
+                  "Booking confirmation comes back on WhatsApp.",
                   "WhatsApp group link sent 8 hours before departure.",
                   "Board CSMT–Kasara Fast Local at 10:50 PM on Friday.",
                   "Trek leader meets group at Kasara Station (1:30 AM).",

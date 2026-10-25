@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { FALLBACK_IMAGE, handleImageError } from "../../utils/imageFallback";
 import { Link, useLocation } from "react-router-dom";
-import { normaliseItem } from "../../data/adminStorage";
-import { getPrimaryCampingImage, hydrateCampingStore, parseJsonValue } from "../../data/campingDetailsData";
+import { getAdminItems, normaliseItem } from "../../data/adminStorage";
+import { getPrimaryCampingImage, parseJsonValue } from "../../data/campingDetailsData";
+import { selectPublicTrips } from "../../data/publicTrips";
 import { syncProductsFromApi } from "../../api/getAll";
+import BookingCTA from "../../components/BookingCTA";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 
 const TYPE_FILTERS = ["All", "Beach", "Lake", "Forest", "Mountain", "Hill", "Farm"];
@@ -24,13 +26,7 @@ export default function Camping() {
   const location = useLocation();
   const [activeFilter, setActiveFilter] = useState("All");
   const [activeSort, setActiveSort] = useState("popular");
-  const [campingItems, setCampingItems] = useState(() =>
-    hydrateCampingStore().map((item) => ({
-      ...normaliseItem(item),
-      image: getPrimaryCampingImage(item),
-      nextDates: parseDates(item.nextDates),
-    }))
-  );
+  const [campingItems, setCampingItems] = useState([]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -48,14 +44,22 @@ export default function Camping() {
           nextDates: parseDates(item.nextDates),
         }));
 
-    const sync = () => setCampingItems(buildItems(hydrateCampingStore()));
+    const publicCamps = (camps, treks) =>
+      selectPublicTrips([...(camps || []), ...(treks || [])]).filter(
+        (item) => item.productType === "camping" || item.slug === "new-year-beach-side-camping"
+      );
 
-    // Sync from backend API so admin changes reflect on all devices
-    syncProductsFromApi("camping", "gt_camping")
-      .then((items) => { if (items) setCampingItems(buildItems(items)); })
+    const sync = () =>
+      setCampingItems(
+        buildItems(publicCamps(getAdminItems("gt_camping"), getAdminItems("gt_treks")))
+      );
+
+    Promise.all([
+      syncProductsFromApi("camping", "gt_camping").catch(() => []),
+      syncProductsFromApi("trek", "gt_treks").catch(() => []),
+    ])
+      .then(([camps, treks]) => setCampingItems(buildItems(publicCamps(camps, treks))))
       .catch(() => {});
-
-    sync();
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
   }, []);
@@ -234,12 +238,17 @@ export default function Camping() {
                       </div>
 
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <Link
-                          to={`/camping/${slug}`}
-                          style={{ background: "#059669", color: "#fff", padding: "8px 20px", borderRadius: 10, fontWeight: 700, fontSize: "0.83rem", textDecoration: "none", flex: 1, textAlign: "center" }}
-                        >
-                          Book Now
-                        </Link>
+                        <BookingCTA
+                          trek={{
+                            name: site.shortName || site.name,
+                            price: site.price,
+                            location: site.location,
+                            productType: "camping",
+                            nextDate: nextDates[0] || "",
+                          }}
+                          label="Book Now"
+                          style={{ background: "#059669", color: "#fff", padding: "8px 20px", borderRadius: 10, fontWeight: 700, fontSize: "0.83rem", textDecoration: "none", flex: 1, textAlign: "center", minHeight: 44 }}
+                        />
                         <Link
                           to={`/camping/${slug}`}
                           style={{ background: "#fff", color: "#059669", padding: "8px 20px", borderRadius: 10, fontWeight: 700, fontSize: "0.83rem", textDecoration: "none", border: "1px solid #059669", flex: 1, textAlign: "center" }}

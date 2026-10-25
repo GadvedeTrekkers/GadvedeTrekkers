@@ -1,9 +1,11 @@
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { catalogApi } from "../../api/catalog.api";
+import BookingCTA from "../../components/BookingCTA";
 import { CATALOG_HUBS, hubBySlug, inferHubSlug, toPublicTripCard } from "../../data/catalogHubs";
+import { isPublicTripSlug, selectPublicTrips } from "../../data/publicTrips";
 import { productService } from "../../services/product.service";
-import { handleImageError, withFallbackImages } from "../../utils/imageFallback";
+import { handleImageError } from "../../utils/imageFallback";
 
 const KIND_LABEL = {
   city: "City hub",
@@ -14,6 +16,7 @@ const KIND_LABEL = {
 
 function detailPath(trip) {
   const slug = trip.slug || "";
+  if (isPublicTripSlug(slug)) return `/treks/${slug}`;
   if (trip.productType === "camping") return `/camping/${slug}`;
   if (trip.productType === "tour") return `/tours/${slug}`;
   return `/treks/${slug}`;
@@ -31,7 +34,7 @@ function formatBatch(batch) {
 async function loadTripCards(hubSlug) {
   try {
     const remote = await catalogApi.trips(hubSlug ? { hub: hubSlug } : {});
-    if (Array.isArray(remote) && remote.length > 0) return remote;
+    if (Array.isArray(remote) && remote.length > 0) return selectPublicTrips(remote);
   } catch {
     /* fall through to the per-type catalog sync */
   }
@@ -42,10 +45,11 @@ async function loadTripCards(hubSlug) {
     productService.sync("camping", "gt_camping").catch(() => null),
   ]);
 
-  return [...(treks || []), ...(tours || []), ...(camps || [])]
-    .filter((item) => item && item.active !== false)
-    .map((item) => toPublicTripCard({ ...item, productType: item.productType || item.product_type }))
-    .filter((trip) => (hubSlug ? inferHubSlug(trip) === hubSlug : true));
+  return selectPublicTrips(
+    [...(treks || []), ...(tours || []), ...(camps || [])]
+      .filter((item) => item && item.active !== false)
+      .map((item) => toPublicTripCard({ ...item, productType: item.productType || item.product_type }))
+  ).filter((trip) => (hubSlug ? inferHubSlug(trip) === hubSlug : true));
 }
 
 export default function Trips() {
@@ -77,10 +81,24 @@ export default function Trips() {
 
   const grouped = useMemo(() => {
     if (activeHub) return [{ hub: activeHub, trips }];
-    return CATALOG_HUBS.map((hub) => ({
+    const groupedHubs = CATALOG_HUBS.map((hub) => ({
       hub,
       trips: trips.filter((trip) => inferHubSlug(trip) === hub.slug),
-    }));
+    })).filter((group) => group.trips.length > 0);
+    const placed = new Set(groupedHubs.flatMap((group) => group.trips.map((trip) => trip.slug)));
+    const unplaced = trips.filter((trip) => !placed.has(trip.slug));
+    if (unplaced.length) {
+      groupedHubs.unshift({
+        hub: {
+          slug: "treks",
+          name: "Treks",
+          kind: "experience",
+          description: "Weekend treks and seasonal camping you can book now.",
+        },
+        trips: unplaced,
+      });
+    }
+    return groupedHubs;
   }, [activeHub, trips]);
 
   if (hubSlug && !activeHub) {
@@ -114,7 +132,7 @@ export default function Trips() {
         >
           All hubs
         </Link>
-        {CATALOG_HUBS.map((hub) => (
+        {CATALOG_HUBS.filter((hub) => trips.some((trip) => inferHubSlug(trip) === hub.slug)).map((hub) => (
           <Link
             key={hub.slug}
             to={`/trips/${hub.slug}`}
@@ -127,6 +145,10 @@ export default function Trips() {
 
       {loading && <p className="text-muted">Loading trips…</p>}
 
+      {!loading && trips.length === 0 && (
+        <p className="text-muted">No public trips are open right now.</p>
+      )}
+
       {!loading && grouped.map(({ hub, trips: hubTrips }) => (
         <section key={hub.slug} className="mb-5" aria-labelledby={`hub-${hub.slug}`}>
           {!activeHub && (
@@ -138,18 +160,16 @@ export default function Trips() {
                 <h2 id={`hub-${hub.slug}`} className="h4 fw-bold mb-1">{hub.name}</h2>
                 <p className="text-muted mb-0">{hub.description}</p>
               </div>
-              <Link to={`/trips/${hub.slug}`} className="btn btn-outline-success btn-sm">Open hub</Link>
+              {hubBySlug(hub.slug) && (
+                <Link to={`/trips/${hub.slug}`} className="btn btn-outline-success btn-sm">Open hub</Link>
+              )}
             </div>
           )}
 
-          {hubTrips.length === 0 ? (
-            <div className="border rounded-3 p-4 bg-light text-muted">
-              No public trips in {hub.name} yet. Add one in Admin → Treks, Tours, or Camping and choose this hub.
-            </div>
-          ) : (
+          {hubTrips.length > 0 && (
             <div className="row g-3">
               {hubTrips.map((trip) => {
-                const image = withFallbackImages([trip.image])[0];
+                const image = trip.image;
                 const batchLabel = formatBatch(trip.nextBatch);
                 return (
                   <div className="col-md-6 col-lg-4" key={trip.id || trip.slug}>
@@ -172,7 +192,27 @@ export default function Trips() {
                           <p className="fw-bold mb-1">₹{Number(trip.price).toLocaleString("en-IN")} <span className="fw-normal text-muted">per person</span></p>
                         )}
                         {batchLabel && <p className="small text-success mb-3">Next batch: {batchLabel}</p>}
-                        <Link to={detailPath(trip)} className="btn btn-success mt-auto">View trip</Link>
+                        <div className="d-flex flex-wrap gap-2 mt-auto">
+                          <Link
+                            to={detailPath(trip)}
+                            className="btn btn-success flex-grow-1"
+                            style={{ minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                          >
+                            View trip
+                          </Link>
+                          <BookingCTA
+                            trek={{
+                              name: trip.name,
+                              price: trip.nextBatch?.price ?? trip.price,
+                              location: trip.nextBatch?.departureCity || trip.destination || trip.location,
+                              productType: trip.productType,
+                            }}
+                            selectedDate={batchLabel || null}
+                            label="Book Now"
+                            className="btn btn-outline-success flex-grow-1"
+                            style={{ minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                          />
+                        </div>
                       </div>
                     </article>
                   </div>
