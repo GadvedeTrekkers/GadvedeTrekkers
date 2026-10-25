@@ -1,11 +1,38 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ivDestinations as _ivDestinations } from "../../data/industrialVisitsData";
-import { getAdminItems, normaliseItem } from "../../data/adminStorage";
+import { ivDestinations as seedDestinations, parseIvItinerary } from "../../data/industrialVisitsData";
+import { getAdminItems } from "../../data/adminStorage";
 import EnquiryModal from "../../components/EnquiryModal";
 import { syncProductsFromApi } from "../../api/getAll";
 
-const _parseLines = (v) => String(v || "").split("\n").map((s) => s.trim()).filter(Boolean);
+const _parseLines = (v) => {
+  if (Array.isArray(v)) return v.map((item) => String(item || "").trim()).filter(Boolean);
+  return String(v || "").split("\n").map((s) => s.trim()).filter(Boolean);
+};
+
+function findSeed(item) {
+  const slug = String(item.slug || "").toLowerCase();
+  const id = String(item.id || "").toLowerCase();
+  const title = String(item.title || item.name || "").toLowerCase();
+  return seedDestinations.find((seed) => {
+    const seedId = String(seed.id || "").toLowerCase();
+    const seedTitle = String(seed.title || "").toLowerCase();
+    return seedId === slug || seedId === id || (title && seedTitle === title);
+  });
+}
+
+function parsePricingSlabs(value, seedSlabs) {
+  if (Array.isArray(value) && value.length && typeof value[0] === "object") return value;
+  const slabs = _parseLines(value).map((line) => {
+    const [students, price, note] = String(line).split("|");
+    return {
+      students: students?.trim() || "",
+      pricePerHead: price?.trim() ? Number(price.trim()) : null,
+      note: note?.trim() || "",
+    };
+  }).filter((slab) => slab.students);
+  return slabs.length ? slabs : (seedSlabs || []);
+}
 
 function buildDestinations() {
   const stored = getAdminItems("gt_iv");
@@ -14,35 +41,39 @@ function buildDestinations() {
     .filter((d) => d.active !== false)
     .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
     .map((d) => {
-      let gallery;
-      try { gallery = JSON.parse(d.imageGallery || "[]").filter(Boolean); } catch { gallery = []; }
-      const images = gallery.map((src, i) => ({ src, caption: `Image ${i + 1}` }));
+      const seed = findSeed(d);
+      let gallery = [];
+      try {
+        const parsed = JSON.parse(d.imageGallery || "[]");
+        gallery = Array.isArray(parsed) ? parsed : [];
+      } catch { gallery = []; }
+      const images = gallery
+        .map((entry, i) => {
+          if (typeof entry === "string" && entry) {
+            return { src: entry, caption: seed?.images?.[i]?.caption || `Image ${i + 1}` };
+          }
+          if (entry?.src) return { src: entry.src, caption: entry.caption || `Image ${i + 1}` };
+          return null;
+        })
+        .filter(Boolean);
 
-      const pricingSlabs = _parseLines(d.pricingSlabs).map((line) => {
-        const [students, price, note] = line.split("|");
-        return { students: students?.trim() || "", pricePerHead: price?.trim() ? Number(price.trim()) : null, note: note?.trim() || "" };
-      });
-
-      const itinerary = [];
-      _parseLines(d.itinerary).forEach((line) => {
-        const [dayKey, time, ...rest] = line.split("|");
-        const desc = rest.join("|");
-        const existing = itinerary.find((x) => x.day === dayKey?.trim());
-        const item = time?.trim() ? `${time.trim()} — ${desc}` : desc;
-        if (existing) existing.items.push(item);
-        else itinerary.push({ day: dayKey?.trim() || "Day", title: dayKey?.trim() || "", items: [item] });
-      });
+      const parsedItinerary = parseIvItinerary(d.itinerary);
 
       return {
         ...d,
-        id: d.id || String(d.title || "").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-        images: images.length ? images : [],
-        highlights: Array.isArray(d.highlights) ? d.highlights : _parseLines(d.highlights),
-        industries: Array.isArray(d.industries) ? d.industries : _parseLines(d.industries),
-        includes: Array.isArray(d.includes) ? d.includes : _parseLines(d.includes),
-        excludes: Array.isArray(d.excludes) ? d.excludes : _parseLines(d.excludes),
-        pricingSlabs,
-        itinerary,
+        id: d.slug || d.id || String(d.title || d.name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        title: d.title || d.name || seed?.title || "",
+        subtitle: d.subtitle || seed?.subtitle || "",
+        duration: d.duration || seed?.duration || "",
+        bestFor: d.bestFor || seed?.bestFor || "",
+        icon: d.icon || seed?.icon || "🎓",
+        images: images.length ? images : (seed?.images || []),
+        highlights: _parseLines(d.highlights).length ? _parseLines(d.highlights) : (seed?.highlights || []),
+        industries: _parseLines(d.industries).length ? _parseLines(d.industries) : (seed?.industries || []),
+        includes: _parseLines(d.includes).length ? _parseLines(d.includes) : (seed?.includes || []),
+        excludes: _parseLines(d.excludes).length ? _parseLines(d.excludes) : (seed?.excludes || []),
+        pricingSlabs: parsePricingSlabs(d.pricingSlabs, seed?.pricingSlabs),
+        itinerary: parsedItinerary.length ? parsedItinerary : (seed?.itinerary || []),
       };
     });
 }
@@ -57,21 +88,20 @@ const whyChoose = [
   { icon: "📜", title: "Official Visit Certificates", desc: "Students receive official visit letters and certificates that can be attached to their academic portfolios and placement documents." },
 ];
 
-const blogIdeas = [
-  { title: "Top 10 Industrial Visit Places in India for Students", icon: "🏭" },
-  { title: "Best Educational Tours for Engineering Colleges", icon: "⚙️" },
-  { title: "Why Industrial Visits Are Important for Students", icon: "🎓" },
-  { title: "Affordable College Trip Packages in India", icon: "💰" },
-];
+function defaultOpenIds(list) {
+  if (list.length === 1 && list[0]?.itinerary?.length) return new Set([list[0].id]);
+  return new Set();
+}
 
 export default function IndustrialVisits() {
   const [activeDestination, setActiveDestination] = useState(null);
-  const [expandedItinerary, setExpandedItinerary] = useState(new Set());
+  const [manualExpanded, setManualExpanded] = useState(null);
   const [destinations, setDestinations] = useState(() => buildDestinations());
+  const expandedItinerary = manualExpanded ?? defaultOpenIds(destinations);
 
   const toggleItinerary = (id) =>
-    setExpandedItinerary((prev) => {
-      const next = new Set(prev);
+    setManualExpanded((prev) => {
+      const next = new Set(prev ?? defaultOpenIds(destinations));
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
@@ -314,7 +344,7 @@ export default function IndustrialVisits() {
                             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
                               <thead>
                                 <tr style={{ background: "#dcfce7" }}>
-                                  <th style={{ padding: "8px 14px", textAlign: "left", color: "#166534", fontWeight: 700, borderBottom: "2px solid #bbf7d0" }}>Group Size</th>
+                                  <th style={{ padding: "8px 14px", textAlign: "left", color: "#166534", fontWeight: 700, borderBottom: "2px solid #bbf7d0" }}>Package</th>
                                   <th style={{ padding: "8px 14px", textAlign: "center", color: "#166534", fontWeight: 700, borderBottom: "2px solid #bbf7d0" }}>Price / Student</th>
                                   <th style={{ padding: "8px 14px", textAlign: "left", color: "#166534", fontWeight: 700, borderBottom: "2px solid #bbf7d0" }}>Note</th>
                                 </tr>
@@ -322,7 +352,7 @@ export default function IndustrialVisits() {
                               <tbody>
                                 {dest.pricingSlabs.map((slab, si) => (
                                   <tr key={si} style={{ borderBottom: "1px solid #d1fae5", background: si % 2 === 0 ? "#fff" : "#f0fdf4" }}>
-                                    <td style={{ padding: "9px 14px", fontWeight: 700, color: "#0f172a" }}>👥 {slab.students} Students</td>
+                                    <td style={{ padding: "9px 14px", fontWeight: 700, color: "#0f172a" }}>{slab.students}</td>
                                     <td style={{ padding: "9px 14px", textAlign: "center" }}>
                                       {slab.pricePerHead
                                         ? <span style={{ fontSize: "1.1rem", fontWeight: 900, color: "#064e3b" }}>₹{slab.pricePerHead.toLocaleString("en-IN")}</span>
@@ -374,7 +404,7 @@ export default function IndustrialVisits() {
                   )}
 
                   {/* Day-wise itinerary */}
-                  {dest.itinerary ? (
+                  {dest.itinerary?.length ? (
                     <div>
                       <div style={{ fontWeight: 700, color: "#1e3a5f", fontSize: "0.88rem", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>
                         🗓 Day-wise Itinerary — {dest.duration}

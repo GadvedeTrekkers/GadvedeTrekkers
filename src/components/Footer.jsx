@@ -45,7 +45,7 @@ function Footer() {
               <li><Link className="footer-link" to="/corporate/trek">Corporate Trek</Link></li>
               <li><Link className="footer-link" to="/corporate/camping">Corporate Camping</Link></li>
               <li><Link className="footer-link" to="/corporate/team-building">Team Building</Link></li>
-              <li><Link className="footer-link" to="/corporate">College Industrial Visits</Link></li>
+              <li><Link className="footer-link" to="/industrial-visits">College Industrial Visits</Link></li>
             </ul>
           </div>
 

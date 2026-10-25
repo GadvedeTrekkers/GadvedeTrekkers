@@ -374,9 +374,15 @@ function IVDestCard({ dest, idx, onEnquire }) {
         {/* Best For badge */}
         <div style={{ marginBottom: 10 }}>
           <span style={{ background: "#f0fdf4", color: "#065f46", border: "1px solid #bbf7d0", borderRadius: 20, padding: "3px 10px", fontSize: "0.7rem", fontWeight: 600 }}>
-            🎓 {dest.bestFor.split("&")[0].trim()}
+            🎓 {(dest.bestFor || "Student groups").split("&")[0].trim()}
           </span>
         </div>
+
+        {dest.priceLabel ? (
+          <div style={{ fontSize: "0.78rem", fontWeight: 800, color: "#064e3b", marginBottom: 8, lineHeight: 1.4 }}>
+            {dest.priceLabel}
+          </div>
+        ) : null}
 
         {/* Highlights */}
         <ul style={{ listStyle: "none", padding: 0, margin: "0 0 14px", flex: 1 }}>
@@ -568,6 +574,9 @@ function Home() {
       .catch(() => {
         if (!cancelled) setActiveTours([]);
       });
+    syncProductsFromApi("industrial", "gt_iv")
+      .then((items) => { if (items) setSyncKey((k) => k + 1); })
+      .catch(() => {});
 
     const onStorage = () => {
       applyTrips(getAdminItems("gt_treks"), getAdminItems("gt_camping"));
@@ -651,7 +660,7 @@ function Home() {
       icon: "🎒",
       title: "School / College / Industrial Visits",
       desc: "We conduct school trips, college tours, and industrial visits with safe, engaging, and well-planned experiences.",
-      link: "/corporate",
+      link: "/industrial-visits",
     },
     ...(isHeritageEnabled() ? [{
       icon: "🏛️",
@@ -708,13 +717,40 @@ function Home() {
       }));
   }, [syncKey]);
 
-  const _storedIV = getAdminItems("gt_iv");
-  const ivDestinations = _storedIV.filter((d) => d.active !== false).map((d) => {
+  const ivDestinations = useMemo(() => {
+    const stored = getAdminItems("gt_iv");
+    return stored
+      .filter((d) => d.active !== false)
+      .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
+      .map((d) => {
         let images = [];
-        try { images = JSON.parse(d.imageGallery || "[]").filter(Boolean).map((url) => ({ src: url, caption: "" })); } catch { images = []; }
-        const highlights = String(d.highlights || "").split("\n").map((s) => s.trim()).filter(Boolean);
-        return { ...normaliseItem(d), images, highlights };
+        try {
+          const gallery = JSON.parse(d.imageGallery || "[]");
+          images = (Array.isArray(gallery) ? gallery : [])
+            .filter(Boolean)
+            .map((url) => (typeof url === "string" ? { src: url, caption: "" } : { src: url.src, caption: url.caption || "" }))
+            .filter((img) => img.src);
+        } catch { images = []; }
+        const highlights = Array.isArray(d.highlights)
+          ? d.highlights.filter(Boolean)
+          : String(d.highlights || "").split("\n").map((s) => s.trim()).filter(Boolean);
+        const priced = String(d.pricingSlabs || "")
+          .split("\n")
+          .map((line) => line.split("|"))
+          .filter((parts) => parts[0] && parts[1] && Number(parts[1]));
+        const priceLabel = priced.length
+          ? priced.slice(0, 2).map(([name, price]) => `${name.trim()} ₹${Number(price).toLocaleString("en-IN")}`).join(" · ")
+          : (Number(d.price) > 0 ? `From ₹${Number(d.price).toLocaleString("en-IN")}` : "");
+        return {
+          ...normaliseItem(d),
+          title: d.title || d.name,
+          bestFor: d.bestFor || "Student groups",
+          images,
+          highlights,
+          priceLabel,
+        };
       });
+  }, [syncKey]);
 
   return (
     <>
@@ -1274,8 +1310,8 @@ function Home() {
             <span style={{ background: "#dbeafe", color: "#1d4ed8", borderRadius: 20, padding: "4px 16px", fontSize: "0.75rem", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
               🎓 School & College Packages
             </span>
-            <h2 className="fw-bold mt-2 mb-1">Budget Tours for Schools &amp; Corporate Groups</h2>
-            <p className="text-muted mb-0">Safe, affordable &amp; customizable PAN-India tours.</p>
+            <h2 className="fw-bold mt-2 mb-1">College Industrial Visits</h2>
+            <p className="text-muted mb-0">Safe, affordable student group trips with a full day-by-day itinerary.</p>
           </div>
 
           <div style={{ marginBottom: 32 }}>

@@ -1,5 +1,5 @@
 import ManagePage from "./ManagePage";
-import { ivDestinations } from "../data/industrialVisitsData";
+import { itineraryToPipe, ivDestinations } from "../data/industrialVisitsData";
 
 const INDUSTRY_OPTIONS = [
   "Heritage & Cultural Tourism", "Adventure & Eco-Tourism", "Hospitality",
@@ -63,24 +63,21 @@ Output only the list items, no bullets or numbering.`,
     placeholder: "Meals during travel\nAdventure activities (paid)\nEntry fees at monuments\nPersonal expenses",
   },
   {
-    key: "itinerary", label: "Day-wise Itinerary (Day|Time|Activity, one per line)", type: "textarea", col: 12,
-    placeholder: "Day 1|09:00 AM|Assemble at Pune Railway Station\nDay 1|11:25 PM|Board train to Delhi",
-    helpText: "FORMAT: Day Number|Time|Activity description — one activity per line\nExample:\nDay 1|09:00 AM|Assemble at Pune Railway Station\nDay 2|06:00 AM|Arrive Delhi — hotel check-in\nDay 2|10:00 AM|India Gate sightseeing",
+    key: "itinerary", label: "Day-wise Itinerary (Day|Title|Activity, one per line)", type: "textarea", col: 12,
+    placeholder: "Day 1|Pune → Delhi by train|Depart Pune by pre-booked train\nDay 1||Overnight journey towards Delhi",
+    helpText: "FORMAT: Day N|Day title|Activity on the first line of each day. More activities for that day: Day N||Activity",
     aiPrompt: (form) => `Write a day-by-day itinerary for a college tour to: "${form.title || "[Destination]"}" — ${form.duration || "[Duration]"}.
 
 FORMAT (one activity per line):
-Day N|Time|Activity description
+Day N|Day title|First activity
+Day N||Next activity
 
 Example:
-Day 1|09:00 AM|Assemble at Pune Railway Station
-Day 1|11:25 PM|Board overnight train to Delhi
-Day 2|06:00 AM|Arrive New Delhi — hotel check-in & freshen up
-Day 2|09:00 AM|Breakfast at hotel
-Day 2|10:00 AM|India Gate, Rajpath sightseeing
-Day 2|01:00 PM|Lunch at local restaurant
-Day 2|03:00 PM|Qutub Minar, Lotus Temple visit
+Day 1|Pune → Delhi by train|Depart Pune by pre-booked train
+Day 1||Overnight journey towards Delhi
+Day 1||Meals: none (train journey)
 
-Write a complete realistic itinerary for all ${form.duration || "days"} covering the destinations: ${form.title || "[Destination]"}. Include transport, meals, sightseeing, industry visits, and overnight stays. Output only the lines in the exact format — no headings, no extra text.`,
+Write a complete realistic itinerary covering: ${form.title || "[Destination]"}. Include transport, meals, sightseeing, and overnight stays. Output only the lines in the exact format — no headings, no extra text.`,
   },
 ];
 
@@ -107,11 +104,7 @@ const SEED = ivDestinations.map((d, index) => ({
     .join("\n"),
   includes: (d.includes || []).join("\n"),
   excludes: (d.excludes || []).join("\n"),
-  itinerary: (d.itinerary || [])
-    .flatMap((day) =>
-      (day.items || []).map((item) => `${day.day}||${item}`)
-    )
-    .join("\n"),
+  itinerary: itineraryToPipe(d.itinerary || []),
   active: true,
 }));
 
