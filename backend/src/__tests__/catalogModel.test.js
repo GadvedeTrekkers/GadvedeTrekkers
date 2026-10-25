@@ -98,6 +98,27 @@ describe("catalog trip mapping", () => {
     expect(inferHubSlug({ productType: "tour", region: "kerala" })).toBe("kerala-south");
     expect(inferHubSlug({ hubSlug: "seasonal-nye", region: "pune" })).toBe("seasonal-nye");
   });
+
+  it("keeps a normal cover URL and drops inline image blobs from the public card", () => {
+    const blob = `data:image/jpeg;base64,${"A".repeat(5000)}`;
+    const card = toPublicTripCard({
+      ...trip,
+      id: "b2100000-0000-0000-0000-000000000001",
+      image: blob,
+      media: [
+        { url: blob, alt: "Lohagad Dawn Ridge", kind: "image" },
+        { url: "https://example.com/lohagad.jpg", alt: "Lohagad Dawn Ridge", kind: "image" },
+      ],
+    });
+
+    expect(card.id).toBe("b2100000-0000-0000-0000-000000000001");
+    expect(card.image).toBe("https://example.com/lohagad.jpg");
+    expect(card.media).toEqual([
+      { url: "https://example.com/lohagad.jpg", alt: "Lohagad Dawn Ridge", kind: "image" },
+    ]);
+    expect(JSON.stringify(card)).not.toContain("data:image");
+    expect(JSON.stringify(card).length).toBeLessThan(2000);
+  });
 });
 
 describe("admin upsert accepts a trip and its batch", () => {
@@ -187,6 +208,169 @@ describe("admin upsert accepts a trip and its batch", () => {
     expect(batchInsert).toHaveBeenCalled();
     const inserted = batchInsert.mock.calls[0][0];
     expect(inserted[0].departure_city).toBe("Pune");
+  });
+});
+
+describe("GET /api/catalog/trips", () => {
+  const lohagad = {
+    id: "b2100000-0000-0000-0000-000000000001",
+    slug: "lohagad-dawn-ridge",
+    name: "Lohagad Dawn Ridge",
+    product_type: "trek",
+    region: "pune",
+    location: "Lonavala, Maharashtra",
+    hub_slug: "pune-weekend",
+    destination: "Lonavala, Maharashtra",
+    category: "Pune Weekend",
+    difficulty: "Easy",
+    duration_label: "1 Day",
+    base_price: 899,
+    primary_image_url: `data:image/jpeg;base64,${"B".repeat(8000)}`,
+    sort_order: 41,
+    created_at: "2026-01-01T00:00:00Z",
+  };
+  const matheran = {
+    id: "b2100000-0000-0000-0000-000000000002",
+    slug: "matheran-forest-walk",
+    name: "Matheran Forest Walk",
+    product_type: "trek",
+    region: "mumbai",
+    location: "Matheran, Maharashtra",
+    hub_slug: "mumbai-weekend",
+    destination: "Matheran, Maharashtra",
+    category: "Mumbai Weekend",
+    difficulty: "Easy",
+    duration_label: "1 Day",
+    base_price: 999,
+    primary_image_url: "https://example.com/matheran.jpg",
+    sort_order: 42,
+    created_at: "2026-01-02T00:00:00Z",
+  };
+  const batches = [
+    {
+      product_id: lohagad.id,
+      batch_date: "2026-11-07",
+      end_date: "2026-11-07",
+      batch_label: "Pune sunrise batch",
+      departure_city: "Pune",
+      status: "OPEN",
+      price: 899,
+    },
+  ];
+
+  async function loadTrips(query, { timeoutOnImage = false, productRows = [lohagad, matheran] } = {}) {
+    vi.resetModules();
+    const calls = [];
+
+    function builder(table) {
+      let selected = "";
+      const api = {
+        select(value) {
+          selected = value;
+          calls.push({ table, op: "select", value });
+          return api;
+        },
+        eq(column, value) {
+          calls.push({ table, op: "eq", column, value });
+          return api;
+        },
+        in(column, value) {
+          calls.push({ table, op: "in", column, value });
+          return api;
+        },
+        order() {
+          return api;
+        },
+        then(onFulfilled, onRejected) {
+          let result;
+          if (table === "product_batches") {
+            result = { data: batches, error: null };
+          } else if (timeoutOnImage && selected.includes("primary_image_url")) {
+            result = { data: null, error: { message: "canceling statement due to statement timeout" } };
+          } else {
+            result = { data: productRows, error: null };
+          }
+          return Promise.resolve(result).then(onFulfilled, onRejected);
+        },
+      };
+      return api;
+    }
+
+    vi.doMock("../config/supabasePublicClient.js", () => ({
+      default: { from: (table) => builder(table) },
+    }));
+    vi.doMock("../config/supabaseAdminClient.js", () => ({
+      default: { from: () => ({}) },
+    }));
+
+    const { getCatalogTrips } = await import("../controllers/catalog.controller.js");
+    const res = mockRes();
+    await getCatalogTrips({ query }, res);
+    return { res, calls };
+  }
+
+  it("returns lean trip cards and does not select gallery, media, or extra_content", async () => {
+    const { res, calls } = await loadTrips({ hub: "pune-weekend" });
+    const productSelect = calls.find((call) => call.table === "products" && call.op === "select")?.value || "";
+    const selected = productSelect.split(",");
+
+    expect(res._status).toBe(200);
+    expect(res._body.success).toBe(true);
+    expect(res._body.data).toHaveLength(1);
+    expect(res._body.data[0]).toMatchObject({
+      id: "b2100000-0000-0000-0000-000000000001",
+      slug: "lohagad-dawn-ridge",
+      hubSlug: "pune-weekend",
+      productType: "trek",
+      price: 899,
+      image: "",
+    });
+    expect(res._body.data[0].nextBatch).toMatchObject({
+      date: "2026-11-07",
+      departureCity: "Pune",
+      label: "Pune sunrise batch",
+    });
+    expect(JSON.stringify(res._body)).not.toContain("data:image");
+    expect(selected).not.toContain("*");
+    expect(selected).not.toContain("gallery");
+    expect(selected).not.toContain("media");
+    expect(selected).not.toContain("extra_content");
+    expect(selected).toContain("hub_slug");
+    expect(selected).toContain("primary_image_url");
+    expect(calls.some((call) => call.table === "products" && call.op === "in" && call.column === "product_type")).toBe(true);
+  });
+
+  it("keeps an https cover and still applies the type filter", async () => {
+    const { res, calls } = await loadTrips({ type: "trek" });
+
+    expect(res._status).toBe(200);
+    expect(res._body.data.map((item) => item.slug)).toEqual([
+      "lohagad-dawn-ridge",
+      "matheran-forest-walk",
+    ]);
+    expect(res._body.data[1].image).toBe("https://example.com/matheran.jpg");
+    expect(calls).toContainEqual({ table: "products", op: "eq", column: "product_type", value: "trek" });
+  });
+
+  it("retries without the cover column when that read hits statement_timeout", async () => {
+    const { res, calls } = await loadTrips({}, { timeoutOnImage: true });
+    const selects = calls.filter((call) => call.table === "products" && call.op === "select").map((call) => call.value);
+
+    expect(selects).toHaveLength(2);
+    expect(selects[0].split(",")).toContain("primary_image_url");
+    expect(selects[1].split(",")).not.toContain("primary_image_url");
+    expect(selects[1].split(",")).not.toContain("gallery");
+    expect(res._status).toBe(200);
+    expect(res._body.data.map((item) => item.id)).toContain("b2100000-0000-0000-0000-000000000001");
+    expect(JSON.stringify(res._body)).not.toContain("data:image");
+  });
+
+  it("rejects an unknown hub before querying products", async () => {
+    const { res, calls } = await loadTrips({ hub: "not-a-hub" });
+
+    expect(res._status).toBe(400);
+    expect(res._body.success).toBe(false);
+    expect(calls).toHaveLength(0);
   });
 });
 

@@ -110,6 +110,35 @@ export function inferHubSlug(item = {}) {
   return "";
 }
 
+const MAX_PUBLIC_CARD_IMAGE_LENGTH = 4000;
+
+/**
+ * Cover art for a list card. Inline data URLs and other oversized values
+ * are dropped so a trip list never carries multi-megabyte image blobs.
+ * A normal https URL is returned unchanged.
+ */
+export function publicCardImage(value) {
+  if (typeof value !== "string") return "";
+  const url = value.trim();
+  if (!url || url.length > MAX_PUBLIC_CARD_IMAGE_LENGTH) return "";
+  if (/^data:/i.test(url)) return "";
+  return url;
+}
+
+function publicCardMedia(item) {
+  return (Array.isArray(item.media) ? item.media : [])
+    .map((entry) => {
+      const url = publicCardImage(typeof entry === "string" ? entry : entry?.url);
+      if (!url) return null;
+      return {
+        url,
+        alt: (typeof entry === "object" && entry?.alt) || item.name || item.title || "",
+        kind: (typeof entry === "object" && entry?.kind) || "image",
+      };
+    })
+    .filter(Boolean);
+}
+
 export function toPublicTripCard(item = {}) {
   const batches = parseBatches(item.trekDateBatches ?? item.tourDateBatches);
   const today = new Date().toISOString().slice(0, 10);
@@ -117,7 +146,7 @@ export function toPublicTripCard(item = {}) {
     .filter((batch) => batch.date && batch.date >= today && batch.status !== "CANCELLED" && batch.status !== "CLOSED")
     .sort((a, b) => String(a.date).localeCompare(String(b.date)));
   const next = upcoming[0] || null;
-  const media = Array.isArray(item.media) ? item.media.filter((entry) => entry?.url) : [];
+  const media = publicCardMedia(item);
   const hubSlug = item.hubSlug || inferHubSlug(item);
 
   return {
@@ -133,7 +162,7 @@ export function toPublicTripCard(item = {}) {
     duration: item.duration || "",
     difficulty: item.difficulty || "",
     price: item.price ?? null,
-    image: item.image || media[0]?.url || "",
+    image: publicCardImage(item.image) || media[0]?.url || "",
     media,
     nextBatch: next
       ? {

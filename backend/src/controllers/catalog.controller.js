@@ -1,5 +1,5 @@
 import supabasePublic from "../config/supabasePublicClient.js";
-import { listActiveProducts } from "./products.controller.js";
+import { listCatalogTripItems } from "./products.controller.js";
 import { CATALOG_HUBS, isCatalogHubSlug, toPublicTripCard } from "../../../shared/catalogHubs.js";
 
 const TRIP_TYPES = new Set(["trek", "tour", "camping"]);
@@ -39,7 +39,7 @@ export async function getCatalogTrips(req, res) {
     return res.status(400).json({ success: false, error: "Unknown catalog hub" });
   }
 
-  const { data, error } = await listActiveProducts({ type, hub });
+  const { data, error } = await listCatalogTripItems({ type, hub });
 
   if (error) {
     return res.status(500).json({ success: false, error: error.message });

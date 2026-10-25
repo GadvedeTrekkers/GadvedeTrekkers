@@ -9,7 +9,7 @@ import {
   productTypeFromStorageKey,
   slugify,
 } from "../utils/productMapper.js";
-import { inferHubSlug, isCatalogHubSlug } from "../../../shared/catalogHubs.js";
+import { inferHubSlug, isCatalogHubSlug, publicCardImage } from "../../../shared/catalogHubs.js";
 
 const PRODUCT_OPTIONAL_COLUMNS = ["hub_slug", "destination", "category", "media"];
 const BATCH_OPTIONAL_COLUMNS = ["end_date", "departure_city"];
@@ -104,6 +104,161 @@ export async function listActiveProducts({ type, hub } = {}) {
   if (error) return { error };
 
   let items = await Promise.all((data || []).map(enrichProduct));
+  if (hub) {
+    items = items.filter((item) => inferHubSlug(item) === hub);
+  }
+  return { data: items };
+}
+
+const TRIP_PRODUCT_TYPES = ["trek", "tour", "camping"];
+
+// Scalar columns only. gallery, media, and extra_content store inline
+// data-URL images (and extra_content copies the whole admin form). Selecting
+// them makes Postgres cancel the list with statement_timeout.
+const CATALOG_TRIP_COLUMNS = [
+  "id",
+  "slug",
+  "name",
+  "product_type",
+  "region",
+  "location",
+  "hub_slug",
+  "destination",
+  "category",
+  "difficulty",
+  "duration_label",
+  "base_price",
+  "sort_order",
+  "created_at",
+];
+
+const CATALOG_TRIP_OPTIONAL_COLUMNS = ["hub_slug", "destination", "category", "difficulty"];
+const CATALOG_TRIP_IMAGE_COLUMN = "primary_image_url";
+
+const CATALOG_BATCH_COLUMNS = [
+  "product_id",
+  "batch_date",
+  "end_date",
+  "batch_label",
+  "status",
+  "departure_city",
+  "price",
+];
+
+const CATALOG_BATCH_FALLBACK_COLUMNS = ["product_id", "batch_date", "batch_label", "status", "price"];
+
+function isStatementTimeout(error) {
+  return /statement timeout/i.test(String(error?.message || ""));
+}
+
+function withoutNamedColumns(columns, names) {
+  const drop = new Set(names);
+  return columns.filter((column) => !drop.has(column));
+}
+
+function queryActiveProducts(type, columns) {
+  let query = supabasePublic
+    .from("products")
+    .select(columns.join(","))
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (type) query = query.eq("product_type", type);
+  else query = query.in("product_type", TRIP_PRODUCT_TYPES);
+
+  return query;
+}
+
+async function loadCatalogProductRows(type) {
+  let columns = [...CATALOG_TRIP_COLUMNS, CATALOG_TRIP_IMAGE_COLUMN];
+  let droppedImage = false;
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const result = await queryActiveProducts(type, columns);
+    if (!result.error) return { data: result.data || [] };
+
+    const message = String(result.error.message || "");
+    if (!droppedImage && isStatementTimeout(result.error) && columns.includes(CATALOG_TRIP_IMAGE_COLUMN)) {
+      droppedImage = true;
+      columns = withoutNamedColumns(columns, [CATALOG_TRIP_IMAGE_COLUMN]);
+      continue;
+    }
+
+    if (isMissingColumnError(result.error)) {
+      const named = CATALOG_TRIP_OPTIONAL_COLUMNS.filter((column) => message.includes(column));
+      const next = withoutNamedColumns(columns, named.length ? named : CATALOG_TRIP_OPTIONAL_COLUMNS);
+      if (next.join(",") !== columns.join(",")) {
+        columns = next;
+        continue;
+      }
+    }
+
+    return { error: result.error };
+  }
+
+  return { error: { message: "Could not load catalog trips" } };
+}
+
+function queryBatches(productIds, columns) {
+  return supabasePublic
+    .from("product_batches")
+    .select(columns.join(","))
+    .in("product_id", productIds)
+    .order("batch_date", { ascending: true });
+}
+
+async function loadCatalogBatches(productIds) {
+  if (!productIds.length) return [];
+
+  let result = await queryBatches(productIds, CATALOG_BATCH_COLUMNS);
+  if (result.error && isMissingColumnError(result.error)) {
+    result = await queryBatches(productIds, CATALOG_BATCH_FALLBACK_COLUMNS);
+  }
+  if (result.error) {
+    console.error("listCatalogTripItems: batch lookup failed", result.error.message);
+    return [];
+  }
+  return result.data || [];
+}
+
+export function catalogItemFromLeanRow(row, batches = []) {
+  const batchJson = JSON.stringify((batches || []).map(batchItemFromRow));
+  const image = publicCardImage(row.primary_image_url);
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    productType: row.product_type,
+    location: row.location || "",
+    region: row.region || "",
+    hubSlug: row.hub_slug || "",
+    destination: row.destination || row.location || "",
+    category: row.category || "",
+    difficulty: row.difficulty || "",
+    duration: row.duration_label || "",
+    price: row.base_price ?? null,
+    image,
+    media: image ? [{ url: image, alt: row.name || "", kind: "image" }] : [],
+    trekDateBatches: batchJson,
+    ...(row.product_type === "tour" ? { tourDateBatches: batchJson } : {}),
+  };
+}
+
+export async function listCatalogTripItems({ type, hub } = {}) {
+  const products = await loadCatalogProductRows(type);
+  if (products.error) return { error: products.error };
+
+  const rows = products.data || [];
+  const batches = await loadCatalogBatches(rows.map((row) => row.id).filter(Boolean));
+  const batchesByProduct = new Map();
+  for (const batch of batches) {
+    const list = batchesByProduct.get(batch.product_id) || [];
+    list.push(batch);
+    batchesByProduct.set(batch.product_id, list);
+  }
+
+  let items = rows.map((row) => catalogItemFromLeanRow(row, batchesByProduct.get(row.id) || []));
   if (hub) {
     items = items.filter((item) => inferHubSlug(item) === hub);
   }
