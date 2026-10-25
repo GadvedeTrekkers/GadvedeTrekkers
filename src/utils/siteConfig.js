@@ -16,7 +16,7 @@ export const SITE = {
   address:     "Pune, Maharashtra, India",
 
   social: {
-    instagram: "https://www.instagram.com/gadvedetrekkers",
+    instagram: "https://www.instagram.com/gadvede_trekkers/",
     facebook:  "https://www.facebook.com/gadvedetrekkers",
     youtube:   "https://www.youtube.com/@gadvedetrekkers",
     twitter:   "@GadvedeTrekkers",

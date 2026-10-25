@@ -160,7 +160,7 @@ function BookingConfirmationEmail({ data = SAMPLE_BOOKING }) {
             Pune, Maharashtra · gadvedetrekkers@gmail.com · +91 98561 12727
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
-            {[["Website", "https://www.gadvede.com"], ["Instagram", "https://www.instagram.com/gadvedetrekkers"], ["WhatsApp", "https://wa.me/919856112727"]].map(([l, href]) => (
+            {[["Website", "https://www.gadvede.com"], ["Instagram", "https://www.instagram.com/gadvede_trekkers/"], ["WhatsApp", "https://wa.me/919856112727"]].map(([l, href]) => (
               <a key={l} href={href} style={{ color: "#6ee7b7", fontSize: 12, textDecoration: "none" }}>{l}</a>
             ))}
           </div>
