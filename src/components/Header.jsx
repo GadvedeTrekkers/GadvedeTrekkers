@@ -190,6 +190,11 @@ function Header() {
               </span>
               <ul className={`dropdown-menu ${openMenu === "events" ? "show" : ""}`} style={{ minWidth: "280px" }}>
                 <li>
+                  <Link className="dropdown-item" to="/trips" onClick={closeMenus}>
+                    Trip hubs
+                  </Link>
+                </li>
+                <li>
                   <Link className="dropdown-item" to="/treks" onClick={closeMenus}>
                     🥾 Treks
                   </Link>
@@ -254,6 +259,12 @@ function Header() {
                   </Link>
                 </li>
               </ul>
+            </li>
+
+            <li className="nav-item mx-3">
+              <Link className="nav-link text-white" to="/trips" onClick={closeMenus}>
+                Trips
+              </Link>
             </li>
 
             <li className="nav-item mx-3">

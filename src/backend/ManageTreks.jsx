@@ -14,6 +14,7 @@ import {
   harishchandragadThingsToCarry,
   harishchandragadDiscountCodes,
 } from "../data/harishchandragadDetails";
+import { CATALOG_HUBS, hubBySlug } from "../data/catalogHubs";
 import {
   kalsubaiOverview,
   kalsubaiHistory,
@@ -225,6 +226,9 @@ const FIELDS = [
   { key: "subtitle",      label: "Subtitle / Tagline",     col: 12, placeholder: "Medieval Hill Fort — 4650 Ft | Konkan Kada | Kedareshwar Cave" },
   { key: "fortType",      label: "Fort / Trek Type",       col: 4,  placeholder: "Ancient Hill Fort" },
   { key: "region",        label: "Region",                 required: true,  type: "select", options: ["mumbai", "pune"], col: 4 },
+  { key: "hubSlug",       label: "Catalog hub",            type: "select", options: CATALOG_HUBS.map((hub) => ({ value: hub.slug, label: hub.name })), col: 4 },
+  { key: "destination",   label: "Destination",            placeholder: "Lonavala, Maharashtra", col: 4 },
+  { key: "category",      label: "Category label",         placeholder: "Pune Weekend", col: 4 },
   { key: "location",      label: "Location",               required: true,  placeholder: "Pune, Maharashtra", col: 4 },
   { key: "difficulty",    label: "Difficulty",             required: true,  type: "select", options: ["Easy", "Medium", "Hard"], col: 4 },
   { key: "enduranceLevel",label: "Endurance Level",        type: "select",  options: ["Easy", "Medium", "Hard"], col: 4 },
@@ -409,7 +413,7 @@ Output only the lines in the specified format, nothing else.`,
 ];
 
 const DEFAULT = {
-  sortOrder: "", name: "", subtitle: "", fortType: "", region: "mumbai", location: "",
+  sortOrder: "", name: "", subtitle: "", fortType: "", region: "mumbai", hubSlug: "", destination: "", category: "", location: "",
   difficulty: "Medium", enduranceLevel: "Medium", duration: "", altitude: "",
   price: "", originalPrice: "", nextDate: "", rating: "", reviews: "", image: "", imageGallery: "[]",
   baseVillage: "", regionArea: "", climbTime: "", distance: "", drivePune: "",
@@ -463,8 +467,11 @@ function prepareTrekForm(form) {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const departurePlans = parseJson(form.departurePlans, {});
   const imageGallery = parseJson(form.imageGallery, []).filter(Boolean);
+  const hub = hubBySlug(form.hubSlug);
   return {
     ...form,
+    category: form.category || hub?.name || "",
+    destination: form.destination || form.location || "",
     trekDateBatches: JSON.stringify(trekDateBatches),
     departurePlans: JSON.stringify(departurePlans),
     imageGallery: JSON.stringify(imageGallery),

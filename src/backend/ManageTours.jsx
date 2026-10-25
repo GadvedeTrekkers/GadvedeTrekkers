@@ -11,10 +11,21 @@ import {
   parseLineItems,
 } from "../data/manaliTourDetails";
 import { replaceTourDates } from "../data/tourDatesStorage";
+import { CATALOG_HUBS, hubBySlug } from "../data/catalogHubs";
+
+const TOUR_REGION_HUB = {
+  himachal: "himachal",
+  uttarakhand: "uttarakhand",
+  rajasthan: "rajasthan",
+  kerala: "kerala-south",
+};
 
 const FIELDS = [
   { key: "name", label: "Tour Name", required: true, col: 8 },
   { key: "region", label: "Region", required: true, type: "select", col: 4, options: ["himachal", "kashmir", "northeast", "rajasthan", "kerala", "uttarakhand", "goa", "maharashtra", "karnataka"] },
+  { key: "hubSlug", label: "Catalog hub", type: "select", col: 4, options: CATALOG_HUBS.map((hub) => ({ value: hub.slug, label: hub.name })) },
+  { key: "destination", label: "Destination", col: 4, placeholder: "Solang Valley, Himachal Pradesh" },
+  { key: "category", label: "Category label", col: 4, placeholder: "Himachal" },
   { key: "state", label: "State", col: 4, placeholder: "Himachal Pradesh" },
   { key: "duration", label: "Duration", required: true, col: 4, placeholder: "7 Nights 8 Days" },
   { key: "destinationLine", label: "Destinations Covered", col: 4, placeholder: "Manali, Kullu, Kasol, Manikaran" },
@@ -125,6 +136,9 @@ const DEFAULT = {
   name: "",
   slug: "",
   region: "himachal",
+  hubSlug: "",
+  destination: "",
+  category: "",
   state: "",
   duration: "",
   destinationLine: "",
@@ -203,8 +217,13 @@ function prepareTourForm(form) {
   const tourDateBatches = parseJsonValue(form.tourDateBatches, [])
     .filter((entry) => entry?.date)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
+  const hubSlug = form.hubSlug || TOUR_REGION_HUB[form.region] || "";
+  const hub = hubBySlug(hubSlug);
   return {
     ...form,
+    hubSlug,
+    destination: form.destination || form.destinationLine || form.state || form.location || "",
+    category: form.category || hub?.name || "",
     slug: form.slug || slugifyTourName(form.name),
     imageGallery: JSON.stringify(imageGallery),
     image: imageGallery[0] || form.image || "",

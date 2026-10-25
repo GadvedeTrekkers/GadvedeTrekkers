@@ -242,7 +242,7 @@ function TrekDatesField({ value, onChange, errorMessages = [] }) {
   const addRow = () => {
     updateRows([
       ...rows,
-      { id: `date_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, date: "", label: "", whatsappGroupLink: "" },
+      { id: `date_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, date: "", endDate: "", label: "", departureCity: "", price: "", whatsappGroupLink: "" },
     ]);
   };
 
@@ -279,14 +279,26 @@ function TrekDatesField({ value, onChange, errorMessages = [] }) {
             <div className="fw-semibold small mb-2">Batch {index + 1}</div>
             <div className="row g-2 align-items-end">
               <div className="col-md-3">
-                <label className="form-label small fw-semibold mb-1">Date</label>
+                <label className="form-label small fw-semibold mb-1">Start date</label>
                 <input type="date" className="form-control form-control-sm" value={row.date || ""} onChange={(e) => updateRow(row.id, "date", e.target.value)} />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label small fw-semibold mb-1">End date</label>
+                <input type="date" className="form-control form-control-sm" value={row.endDate || ""} onChange={(e) => updateRow(row.id, "endDate", e.target.value)} />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label small fw-semibold mb-1">Departure city</label>
+                <input type="text" className="form-control form-control-sm" placeholder="Pune" value={row.departureCity || ""} onChange={(e) => updateRow(row.id, "departureCity", e.target.value)} />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label small fw-semibold mb-1">Batch price (₹)</label>
+                <input type="number" className="form-control form-control-sm" placeholder="Optional" value={row.price || ""} onChange={(e) => updateRow(row.id, "price", e.target.value)} />
               </div>
               <div className="col-md-3">
                 <label className="form-label small fw-semibold mb-1">Label</label>
                 <input type="text" className="form-control form-control-sm" placeholder="Weekend batch" value={row.label || ""} onChange={(e) => updateRow(row.id, "label", e.target.value)} />
               </div>
-              <div className="col-md-5">
+              <div className="col-md-8">
                 <label className="form-label small fw-semibold mb-1">WhatsApp Group Link</label>
                 <input type="url" className="form-control form-control-sm" placeholder="https://chat.whatsapp.com/..." value={row.whatsappGroupLink || ""} onChange={(e) => updateRow(row.id, "whatsappGroupLink", e.target.value)} />
               </div>
@@ -1017,9 +1029,13 @@ function ManagePage({
                   {f.type === "select" ? (
                     <select className={`form-select form-select-sm ${fieldErrors[f.key] ? "is-invalid" : ""}`} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} required={f.required}>
                       <option value="">- Select {f.label} -</option>
-                      {f.options.map((o) => (
-                        <option key={o} value={o}>{o}</option>
-                      ))}
+                      {f.options.map((o) => {
+                        const value = typeof o === "string" ? o : o.value;
+                        const label = typeof o === "string" ? o : o.label;
+                        return (
+                          <option key={value} value={value}>{label}</option>
+                        );
+                      })}
                     </select>
                   ) : f.type === "textarea" ? (
                     <textarea className={`form-control form-control-sm ${fieldErrors[f.key] ? "is-invalid" : ""}`} rows={3} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} placeholder={f.placeholder || ""} required={f.required} />

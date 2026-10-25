@@ -1,4 +1,5 @@
 import ManagePage from "./ManagePage";
+import { CATALOG_HUBS, hubBySlug } from "../data/catalogHubs";
 import {
   CAMPING_CARRY_OPTIONS,
   CAMPING_EXCLUDED_OPTIONS,
@@ -16,6 +17,9 @@ const FIELDS = [
   { key: "shortName", label: "Short Name", required: true, col: 4, placeholder: "Alibaug Camping" },
   { key: "type", label: "Type", required: true, type: "select", options: ["Beach", "Lake", "Forest", "Mountain", "Hill", "Farm"] },
   { key: "location", label: "Location", required: true, placeholder: "Alibaug, Maharashtra" },
+  { key: "hubSlug", label: "Catalog hub", type: "select", options: CATALOG_HUBS.map((hub) => ({ value: hub.slug, label: hub.name })), col: 4 },
+  { key: "destination", label: "Destination", placeholder: "Tamhini Ghat, Maharashtra", col: 4 },
+  { key: "category", label: "Category label", placeholder: "Camping", col: 4 },
   { key: "duration", label: "Duration", required: true, placeholder: "Overnight" },
   { key: "price", label: "Price (₹)", required: true, type: "number", placeholder: "1099" },
   { key: "originalPrice", label: "Original Price (₹)", type: "number", placeholder: "1499" },
@@ -24,6 +28,7 @@ const FIELDS = [
   { key: "coupon", label: "Coupon / Offers Label", placeholder: "3 offers" },
   { key: "description", label: "Listing Description", type: "textarea", col: 12, placeholder: "Short card description shown on the camping listing page." },
   { key: "imageGallery", label: "Camp Image Gallery", type: "imageGallery", col: 12 },
+  { key: "trekDateBatches", label: "Camp batches", type: "trekDates", col: 12 },
   { key: "nextDates", label: "Upcoming Dates", type: "textarea", col: 12, placeholder: "One date per line\nExample:\n27 Mar, 4:00 PM\n03 Apr, 4:00 PM" },
   { key: "overview", label: "Overview", type: "textarea", col: 12, placeholder: "Main overview visible on the details page." },
   { key: "howToReach", label: "How To Reach", type: "textarea", col: 12, placeholder: "Add travel instructions line by line." },
@@ -97,6 +102,10 @@ const DEFAULT = {
   shortName: "",
   type: "Lake",
   location: "",
+  hubSlug: "camping",
+  destination: "",
+  category: "Camping",
+  trekDateBatches: "[]",
   duration: "Overnight",
   price: "",
   originalPrice: "",
@@ -137,8 +146,13 @@ function prepareCampingForm(form) {
     .map((item) => item.trim())
     .filter(Boolean);
 
+  const hubSlug = form.hubSlug || "camping";
+  const hub = hubBySlug(hubSlug);
   return {
     ...form,
+    hubSlug,
+    destination: form.destination || form.location || "",
+    category: form.category || hub?.name || "Camping",
     slug: form.slug || slugify(form.shortName || form.name),
     sortOrder: form.sortOrder === "" ? "" : Number(form.sortOrder) || 0,
     price: Number(form.price) || 0,

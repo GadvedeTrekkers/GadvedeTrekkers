@@ -44,14 +44,40 @@ function slugify(value = "") {
     .replace(/^-+|-+$/g, "");
 }
 
+function mapBatchRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map((entry) => ({
+    id: entry.id,
+    date: entry.batch_date,
+    endDate: entry.end_date || "",
+    label: entry.batch_label || "",
+    departureCity: entry.departure_city || "",
+    whatsappGroupLink: entry.whatsapp_group_link || "",
+    status: entry.status || "OPEN",
+    price: entry.price ?? "",
+  }));
+}
+
 function mapPublicProductRow(row) {
   const rawItem = row?.extra_content?.rawItem || {};
+  const batches = mapBatchRows(row.product_batches);
+  const batchJson = JSON.stringify(batches);
+  const media = Array.isArray(row.media) && row.media.length ? row.media : rawItem.media || [];
   return {
     ...rawItem,
     id: row.id,
     slug: row.slug,
     name: row.name,
+    productType: row.product_type,
     location: row.location,
+    region: row.region ?? rawItem.region ?? "",
+    hubSlug: row.hub_slug || rawItem.hubSlug || "",
+    destination: row.destination || rawItem.destination || row.location || "",
+    category: row.category || rawItem.category || "",
+    media,
+    trekDateBatches: batches.length ? batchJson : rawItem.trekDateBatches || "[]",
+    ...(row.product_type === "tour"
+      ? { tourDateBatches: batches.length ? batchJson : rawItem.tourDateBatches || "[]" }
+      : {}),
     price: row.base_price ?? rawItem.price ?? "",
     originalPrice: row.compare_at_price ?? rawItem.originalPrice ?? "",
     duration: row.duration_label ?? rawItem.duration ?? "",
@@ -90,13 +116,23 @@ async function fetchPublicProductsFromSupabase(productType) {
   const fromSdk = async () => {
     if (!supabase) return null;
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("products")
-      .select("*")
+      .select("*, product_batches(*)")
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true })
       .eq("product_type", productType);
+
+    if (error) {
+      ({ data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true })
+        .eq("product_type", productType));
+    }
 
     if (error || !Array.isArray(data) || data.length === 0) {
       return null;
@@ -109,7 +145,7 @@ async function fetchPublicProductsFromSupabase(productType) {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY || typeof fetch !== "function") return null;
 
     const url = new URL(`${SUPABASE_URL}/rest/v1/products`);
-    url.searchParams.set("select", "*");
+    url.searchParams.set("select", "*,product_batches(*)");
     url.searchParams.set("is_active", "eq.true");
     url.searchParams.set("product_type", `eq.${productType}`);
     url.searchParams.set("order", "sort_order.asc,created_at.asc");

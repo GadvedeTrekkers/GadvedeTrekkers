@@ -3,6 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import productsRoutes   from "./routes/products.routes.js";
+import catalogRoutes    from "./routes/catalog.routes.js";
 import listingsRoutes   from "./routes/listings.routes.js";
 import bookingsRoutes   from "./routes/bookings.routes.js";
 import customersRoutes  from "./routes/customers.routes.js";
@@ -96,6 +97,8 @@ app.get("/", (req, res) => {
     <div class="endpoints">
       <div class="endpoint"><span class="method get">GET</span><span class="path">/api/health</span><span class="desc">Health check</span></div>
       <div class="endpoint"><span class="method get">GET</span><span class="path">/api/products</span><span class="desc">Product listings</span></div>
+      <div class="endpoint"><span class="method get">GET</span><span class="path">/api/catalog/hubs</span><span class="desc">Trip hubs</span></div>
+      <div class="endpoint"><span class="method get">GET</span><span class="path">/api/catalog/trips</span><span class="desc">Public trip cards</span></div>
       <div class="endpoint"><span class="method post">POST</span><span class="path">/api/auth/admin/login</span><span class="desc">Admin login</span></div>
       <div class="endpoint"><span class="method get">GET</span><span class="path">/api/bookings</span><span class="desc">Bookings (auth)</span></div>
       <div class="endpoint"><span class="method get">GET</span><span class="path">/api/customers</span><span class="desc">Customers (auth)</span></div>
@@ -110,6 +113,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth",       authRoutes);
 app.use("/api/products",   productsRoutes);
+app.use("/api/catalog",    catalogRoutes);
 app.use("/api/listings",   listingsRoutes);
 app.use("/api/bookings",   bookingsRoutes);
 app.use("/api/customers",  customersRoutes);

@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { useAdminData } from "../hooks/useAdminData";
 import { saveVendor } from "../data/vendorStorage";
+import { CATALOG_HUBS } from "../data/catalogHubs";
 
 /* ─── Field definitions for each category ─── */
 const TREK_FIELDS = [
   { key: "name",          label: "Trek Name",           required: true, col: 8 },
   { key: "region",        label: "Region",              required: true, type: "select", options: ["mumbai", "pune"], col: 4 },
+  { key: "hubSlug",       label: "Catalog hub",         type: "select", options: CATALOG_HUBS.map((hub) => ({ value: hub.slug, label: hub.name })), col: 4 },
+  { key: "destination",   label: "Destination",         placeholder: "Lonavala, Maharashtra", col: 4 },
+  { key: "category",      label: "Category label",      placeholder: "Pune Weekend", col: 4 },
   { key: "location",      label: "Location",            required: true, placeholder: "Pune, Maharashtra", col: 6 },
   { key: "difficulty",    label: "Difficulty",          required: true, type: "select", options: ["Easy", "Medium", "Hard"], col: 3 },
   { key: "duration",      label: "Duration",            required: true, placeholder: "1 Night 1 Day", col: 3 },
@@ -22,7 +26,7 @@ const TREK_FIELDS = [
 ];
 
 const TREK_DEFAULT = {
-  name: "", region: "mumbai", location: "", difficulty: "Medium",
+  name: "", region: "mumbai", hubSlug: "", destination: "", category: "", location: "", difficulty: "Medium",
   duration: "", altitude: "", price: "", originalPrice: "", nextDate: "",
   rating: "", reviews: "", image: "", itineraryPdfUrl: "", about: "", highlights: "", active: true,
 };
@@ -132,9 +136,13 @@ function GenericAddForm({ fields, defaultForm, storageKey, label }) {
                 onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
                 required={f.required}
               >
-                {f.options.map((o) => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
+                {f.options.map((o) => {
+                  const value = typeof o === "string" ? o : o.value;
+                  const label = typeof o === "string" ? o : o.label;
+                  return (
+                    <option key={value} value={value}>{label}</option>
+                  );
+                })}
               </select>
             ) : f.type === "textarea" ? (
               <textarea

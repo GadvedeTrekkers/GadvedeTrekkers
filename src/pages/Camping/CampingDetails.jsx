@@ -12,6 +12,7 @@ import {
   parsePipeItems,
 } from "../../data/campingDetailsData";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
+import { productService } from "../../services/product.service";
 
 const CAMPING_PREVIEW_KEY = "gt_camping_preview";
 
@@ -68,10 +69,46 @@ function normalizeCampingEntry(item) {
   };
 }
 
+function campingFromCatalog(item) {
+  if (!item) return null;
+  const batches = parseJsonValue(item.trekDateBatches, []);
+  const nextDates = Array.isArray(batches)
+    ? batches.map((batch) => batch?.date).filter(Boolean)
+    : [];
+  return normalizeCampingEntry({
+    ...item,
+    shortName: item.shortName || item.name,
+    type: item.type || "Camp",
+    overview: item.overview || item.description || item.about || "",
+    description: item.description || item.subtitle || "",
+    nextDates: item.nextDates || nextDates,
+  });
+}
+
 export default function CampingDetails() {
   const { id } = useParams();
   const [activeImage, setActiveImage] = useState(0);
   const [openFaq, setOpenFaq] = useState(null);
+  const [remoteCamp, setRemoteCamp] = useState(null);
+
+  useEffect(() => {
+    if (!id || id === "preview" || resolveCampingEntry(id)) {
+      setRemoteCamp(null);
+      return;
+    }
+    let cancelled = false;
+    productService
+      .getBySlug(id)
+      .then((item) => {
+        if (!cancelled && item?.productType === "camping") {
+          setRemoteCamp(campingFromCatalog(item));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const camp = useMemo(() => {
     if (id === "preview") {
@@ -83,8 +120,8 @@ export default function CampingDetails() {
       }
     }
 
-    return normalizeCampingEntry(resolveCampingEntry(id));
-  }, [id]);
+    return normalizeCampingEntry(resolveCampingEntry(id)) || remoteCamp;
+  }, [id, remoteCamp]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });

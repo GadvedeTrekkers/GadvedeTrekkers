@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { uniqueTreks, slugifyTrekName } from "../../data/treks";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
@@ -8,6 +8,7 @@ import { WhatsAppIcon, ArrowRightIcon } from "../../components/icons";
 import { handleImageError, withFallbackImages } from "../../utils/imageFallback";
 import { syncProductsFromApi } from "../../api/getAll";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
+import { CATALOG_HUBS, hubBySlug, inferHubSlug } from "../../data/catalogHubs";
 
 const ALLOW_STATIC_TREK_FALLBACK = import.meta.env.DEV;
 
@@ -19,6 +20,28 @@ const parseGallery = (value, fallback) => {
     return fallback;
   }
 };
+
+function formatBatchDate(value) {
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function upcomingBatch(item) {
+  const today = new Date().toISOString().slice(0, 10);
+  return parseGalleryBatches(item.trekDateBatches)
+    .filter((batch) => batch?.date && batch.date >= today && batch.status !== "CANCELLED" && batch.status !== "CLOSED")
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0] || null;
+}
+
+function parseGalleryBatches(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 function buildTreks(rawItems = getAdminItems("gt_treks")) {
   const source =
@@ -34,12 +57,20 @@ function buildTreks(rawItems = getAdminItems("gt_treks")) {
     .map((t) => {
       const fallbackGallery = [t.image, t.image, t.image].filter(Boolean);
       const gallery = withFallbackImages(parseGallery(t.imageGallery, fallbackGallery));
+      const nextBatch = upcomingBatch(t);
+      const hubSlug = t.hubSlug || inferHubSlug({ ...t, productType: t.productType || "trek" });
       return {
         ...normaliseItem(t),
         slug: t.slug || slugifyTrekName(t.name),
         image: gallery[0] || t.image,
         gallery,
         seasonalTag: t.seasonalTag || "",
+        hubSlug,
+        hubName: hubBySlug(hubSlug)?.name || t.category || "",
+        destination: t.destination || t.location || "",
+        category: t.category || hubBySlug(hubSlug)?.name || "",
+        nextBatch,
+        nextDate: nextBatch?.date ? formatBatchDate(nextBatch.date) : t.nextDate || "",
         _sortOrder: Number(t.sortOrder ?? 999),
       };
     });
@@ -78,6 +109,8 @@ function getDiscountPercent(original, current) {
 
 function Trek() {
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeHub = searchParams.get("hub") || "all";
   const [showAllTreks, setShowAllTreks] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
   const [activeSort, setActiveSort] = useState("recommended");
@@ -214,6 +247,9 @@ function Trek() {
     if (activeFilter !== "All") {
       result = result.filter((t) => t.difficulty === activeFilter);
     }
+    if (activeHub !== "all") {
+      result = result.filter((t) => t.hubSlug === activeHub);
+    }
     if (isSearchActive) {
       const q = searchQuery.trim().toLowerCase();
       result = result.filter((t) =>
@@ -224,6 +260,9 @@ function Trek() {
         t.region?.toLowerCase().includes(q) ||
         t.state?.toLowerCase().includes(q) ||
         t.seasonalTag?.toLowerCase().includes(q) ||
+        t.destination?.toLowerCase().includes(q) ||
+        t.category?.toLowerCase().includes(q) ||
+        t.hubName?.toLowerCase().includes(q) ||
         t.tags?.toLowerCase().includes(q)
       );
     }
@@ -232,7 +271,7 @@ function Trek() {
     else if (activeSort === "rating") result.sort((a, b) => b.rating - a.rating);
     else result.sort((a, b) => Number(a._sortOrder ?? 999) - Number(b._sortOrder ?? 999));
     return result;
-  }, [treks, activeFilter, activeSort, searchQuery]);
+  }, [treks, activeFilter, activeSort, searchQuery, activeHub]);
 
   const visibleTreks = showAllTreks
     ? filteredTreks
@@ -330,6 +369,36 @@ function Trek() {
               Type {3 - searchQuery.length} more letter{3 - searchQuery.length !== 1 ? "s" : ""} to search…
             </div>
           )}
+        </div>
+
+        <div className="d-flex flex-wrap gap-2 mb-3" role="navigation" aria-label="Trek hubs">
+          <button
+            type="button"
+            className={`btn btn-sm ${activeHub === "all" ? "btn-success" : "btn-outline-success"}`}
+            onClick={() => {
+              const next = new URLSearchParams(searchParams);
+              next.delete("hub");
+              setSearchParams(next);
+              setShowAllTreks(false);
+            }}
+          >
+            All treks
+          </button>
+          {CATALOG_HUBS.map((hub) => (
+            <button
+              key={hub.slug}
+              type="button"
+              className={`btn btn-sm ${activeHub === hub.slug ? "btn-success" : "btn-outline-success"}`}
+              onClick={() => {
+                const next = new URLSearchParams(searchParams);
+                next.set("hub", hub.slug);
+                setSearchParams(next);
+                setShowAllTreks(false);
+              }}
+            >
+              {hub.name}
+            </button>
+          ))}
         </div>
 
         {/* ── FILTER + SORT BAR ────────────────────── */}
@@ -439,7 +508,7 @@ function Trek() {
                       label="Book on WhatsApp"
                     />
                     <Link
-                      to={`/treks/${slugifyTrekName(trek.name)}`}
+                      to={`/treks/${trek.slug || slugifyTrekName(trek.name)}`}
                       className="trek-overlay-btn trek-overlay-details"
                       tabIndex="-1"
                       aria-hidden="true"
@@ -456,7 +525,7 @@ function Trek() {
                         {trek.name}
                       </h2>
                       <p className="trek-location" itemProp="address">
-                        📍 {trek.location}
+                        📍 {trek.destination || trek.location}
                       </p>
                     </div>
 
@@ -482,6 +551,7 @@ function Trek() {
                       {trek.difficulty}
                     </span>
                     {trek.duration && <span className="trek-chip chip-neutral">⏱ {trek.duration}</span>}
+                    {trek.category && <span className="trek-chip chip-neutral">{trek.category}</span>}
                   </div>
 
                   <div className="trek-pricing">
@@ -498,7 +568,10 @@ function Trek() {
                   {trek.nextDate && String(trek.nextDate).trim() && !isDateExpired(trek.nextDate) && (
                     <div className="trek-next-date">
                       <span className="trek-next-label">📅 Next</span>
-                      <span>{trek.nextDate}</span>
+                      <span>
+                        {trek.nextBatch?.departureCity ? `${trek.nextBatch.departureCity} · ` : ""}
+                        {trek.nextDate}
+                      </span>
                     </div>
                   )}
 
@@ -508,7 +581,7 @@ function Trek() {
                       Book on WhatsApp
                     </BookingCTA>
                     <Link
-                      to={`/treks/${slugifyTrekName(trek.name)}`}
+                      to={`/treks/${trek.slug || slugifyTrekName(trek.name)}`}
                       className="trek-secondary-btn trek-details-link"
                     >
                       View Details

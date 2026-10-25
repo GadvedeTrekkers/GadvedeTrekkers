@@ -14,6 +14,7 @@ import { WhatsAppIcon, ArrowRightIcon } from "../components/icons";
 import { handleImageError, withFallbackImages } from "../utils/imageFallback";
 import { stripPromptFields } from "../utils/contentSanitizer";
 import { syncProductsFromApi } from "../api/getAll";
+import { CATALOG_HUBS } from "../data/catalogHubs";
 
 const ALLOW_STATIC_TREK_FALLBACK = import.meta.env.DEV;
 
@@ -1073,6 +1074,34 @@ function Home() {
             <Link to="/treks" className="btn btn-success fw-semibold px-4 py-2" style={{ borderRadius: "999px" }}>
               View All Treks →
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-5">
+        <div className="container">
+          <div className="text-center mb-4">
+            <span style={{ color: "#16a34a", fontWeight: 700, fontSize: "0.8rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+              Gadvede Trekkers
+            </span>
+            <h2 className="fw-bold mt-1 mb-2">Browse trips by hub</h2>
+            <p className="text-muted mx-auto" style={{ maxWidth: 640 }}>
+              City weekends, mountain regions, camping, backpacking, and New Year batches from one catalog.
+            </p>
+          </div>
+          <div className="row g-3">
+            {CATALOG_HUBS.map((hub) => (
+              <div className="col-6 col-md-4 col-lg-4" key={hub.slug}>
+                <Link
+                  to={`/trips/${hub.slug}`}
+                  className="d-block h-100 text-decoration-none text-dark border rounded-4 p-3"
+                  style={{ background: "#f8fffe" }}
+                >
+                  <div className="fw-bold">{hub.name}</div>
+                  <div className="text-muted small mt-1">{hub.description}</div>
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -100,6 +100,7 @@ import ListEvent      from "../pages/Opportunities/ListEvent";
 import FeedbackForm   from "../pages/Feedback/FeedbackForm";
 import TicketPage     from "../pages/Ticket/TicketPage";
 import WeekendTrips from "../components/WeekendTrips";
+import Trips from "../pages/Trips/Trips";
 import CancellationPolicy from "../pages/CancellationPolicy";
 
 function AppRoutes() {
@@ -111,6 +112,8 @@ function AppRoutes() {
       <Route path="/contact" element={<Contact />} />
 
       {/* ================= TREKS ================= */}
+      <Route path="/trips"                    element={<Trips />} />
+      <Route path="/trips/:hubSlug"           element={<Trips />} />
       <Route path="/treks"                    element={<Trek />} />
       <Route path="/treks/andharban-trek-2025"        element={<AndharbanTrek />} />
       <Route path="/treks/rajmachi-fort-trek"         element={<RajmachiTrek />} />

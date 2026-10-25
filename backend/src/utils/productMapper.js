@@ -51,6 +51,30 @@ function safeDate(value) {
   return Number.isNaN(fallback.getTime()) ? null : fallback.toISOString().slice(0, 10);
 }
 
+function buildMedia(item) {
+  if (Array.isArray(item.media) && item.media.length) {
+    return item.media
+      .filter((entry) => entry && (entry.url || typeof entry === "string"))
+      .map((entry) =>
+        typeof entry === "string"
+          ? { url: entry, alt: item.name || item.title || "", kind: "image" }
+          : {
+              url: entry.url,
+              alt: entry.alt || item.name || item.title || "",
+              kind: entry.kind || "image",
+            }
+      );
+  }
+
+  const gallery = parseJson(item.imageGallery, []);
+  const urls = [...(Array.isArray(gallery) ? gallery : []), item.image].filter(Boolean);
+  return [...new Set(urls)].map((url) => ({
+    url,
+    alt: item.name || item.title || "",
+    kind: "image",
+  }));
+}
+
 export function productTypeFromStorageKey(storageKey) {
   return PRODUCT_KEY_TO_TYPE[storageKey] || null;
 }
@@ -66,12 +90,18 @@ export function productRowFromItem(storageKey, item) {
   const imageGallery = parseJson(item.imageGallery, []);
   const gallery = Array.isArray(imageGallery) ? imageGallery.filter(Boolean) : [];
 
+  const media = buildMedia(item);
+  const hubSlug = item.hubSlug || item.hub_slug || null;
+
   return {
     slug: item.slug || slugify(item.name || item.title || ""),
     name: item.name || item.title || "Untitled",
     product_type: productType,
     region: item.region || null,
     location: item.location || null,
+    hub_slug: hubSlug || null,
+    destination: item.destination || item.location || null,
+    category: item.category || null,
     base_village: item.baseVillage || null,
     difficulty: item.difficulty || null,
     endurance_level: item.enduranceLevel || null,
@@ -93,8 +123,9 @@ export function productRowFromItem(storageKey, item) {
     compare_at_price: safeNumber(item.originalPrice),
     rating: safeNumber(item.rating),
     review_count: Number(item.reviews || 0) || 0,
-    primary_image_url: item.image || gallery[0] || null,
-    gallery: gallery.length ? gallery : [item.image].filter(Boolean),
+    primary_image_url: item.image || gallery[0] || media[0]?.url || null,
+    gallery: gallery.length ? gallery : media.map((entry) => entry.url).filter(Boolean),
+    media,
     is_featured: Boolean(item.isFeatured),
     is_active: item.active !== false,
     sort_order: Number(item.sortOrder || 999),
@@ -103,12 +134,21 @@ export function productRowFromItem(storageKey, item) {
 
 export function productItemFromRow(row) {
   const rawItem = row?.extra_content?.rawItem || {};
+  const media = Array.isArray(row.media) && row.media.length ? row.media : rawItem.media || [];
+  const mediaUrls = (Array.isArray(media) ? media : []).map((entry) => entry?.url).filter(Boolean);
+  const gallery = Array.isArray(row.gallery) && row.gallery.length ? row.gallery : mediaUrls;
   return {
     ...rawItem,
     id: row.id,
     slug: row.slug,
     name: row.name,
+    productType: row.product_type,
     location: row.location,
+    region: row.region ?? rawItem.region ?? "",
+    hubSlug: row.hub_slug || rawItem.hubSlug || "",
+    destination: row.destination || rawItem.destination || row.location || "",
+    category: row.category || rawItem.category || "",
+    media,
     price: row.base_price ?? rawItem.price ?? "",
     originalPrice: row.compare_at_price ?? rawItem.originalPrice ?? "",
     duration: row.duration_label ?? rawItem.duration ?? "",
@@ -120,8 +160,8 @@ export function productItemFromRow(row) {
     history: row.history ?? rawItem.history ?? "",
     mainAttractions: row.main_attractions ?? rawItem.mainAttractions ?? "",
     detailedHistory: row.detailed_history ?? rawItem.detailedHistory ?? "",
-    image: row.primary_image_url ?? rawItem.image ?? "",
-    imageGallery: JSON.stringify(row.gallery || []),
+    image: row.primary_image_url ?? rawItem.image ?? mediaUrls[0] ?? "",
+    imageGallery: JSON.stringify(gallery),
     active: row.is_active,
     sortOrder: row.sort_order,
     rating: row.rating ?? rawItem.rating ?? "",
@@ -130,16 +170,40 @@ export function productItemFromRow(row) {
 }
 
 export function buildBatchRows(productId, item) {
-  return parseJson(item.trekDateBatches, [])
+  const source = item.trekDateBatches ?? item.tourDateBatches ?? "[]";
+  return parseJson(source, [])
     .filter((entry) => entry?.date)
-    .map((entry) => ({
-      product_id: productId,
-      batch_date: safeDate(entry.date),
-      batch_label: entry.label || null,
-      whatsapp_group_link: entry.whatsappGroupLink || null,
-      status: "OPEN",
-    }))
+    .map((entry) => {
+      const row = {
+        product_id: productId,
+        batch_date: safeDate(entry.date),
+        end_date: safeDate(entry.endDate || entry.end_date),
+        batch_label: entry.label || null,
+        departure_city: entry.departureCity || entry.departure_city || null,
+        whatsapp_group_link: entry.whatsappGroupLink || null,
+        status: entry.status || "OPEN",
+        price: safeNumber(entry.price),
+      };
+      const seats = Number(entry.seatsTotal || entry.seats_total);
+      if (Number.isFinite(seats) && seats > 0) row.seats_total = seats;
+      return row;
+    })
     .filter((entry) => entry.batch_date);
+}
+
+export function batchItemFromRow(entry) {
+  return {
+    id: entry.id,
+    date: entry.batch_date,
+    endDate: entry.end_date || "",
+    label: entry.batch_label || "",
+    departureCity: entry.departure_city || "",
+    whatsappGroupLink: entry.whatsapp_group_link || "",
+    status: entry.status || "OPEN",
+    price: entry.price ?? "",
+    seatsTotal: entry.seats_total ?? "",
+    seatsAvailable: entry.seats_available ?? "",
+  };
 }
 
 export function buildDepartureRows(productId, item) {
