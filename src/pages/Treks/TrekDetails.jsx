@@ -348,7 +348,7 @@ function TrekDetails() {
     return buildTrekPageSeo({
       slug: id,
       trek: rated ? trek : { ...(trek || {}), rating: undefined, reviews: undefined },
-      pricing: Object.keys(cardPricing).length ? cardPricing : staticRichTrek?.pricing,
+      pricing: { ...(staticRichTrek?.pricing || {}), ...cardPricing },
     });
   }, [id, trek, staticRichTrek, remoteTrek, adminTrek, previewTrek]);
   useSeo(pageSeo);
