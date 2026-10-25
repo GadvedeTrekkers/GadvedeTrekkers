@@ -15,7 +15,7 @@ insert into public.products (
 )
 values
   (
-    'b2000000-0000-0000-0000-000000000001',
+    'b2100000-0000-0000-0000-000000000001',
     'Lohagad Dawn Ridge',
     'lohagad-dawn-ridge',
     'trek',
@@ -34,7 +34,7 @@ values
     '{"rawItem":{"name":"Lohagad Dawn Ridge","slug":"lohagad-dawn-ridge","hubSlug":"pune-weekend","destination":"Lonavala, Maharashtra","category":"Pune Weekend","region":"pune","location":"Lonavala, Maharashtra","difficulty":"Easy","duration":"1 Day","altitude":"3400 ft","price":899,"originalPrice":1199,"subtitle":"A Gadvede Trekkers sunrise walk on the Lohagad ridge, back in Pune by evening.","about":"Lohagad Dawn Ridge is a Gadvede Trekkers weekend walk for people who want a proper hill morning without an overnight pack.","imageGallery":"[]","trekDateBatches":"[{\"date\":\"2026-11-07\",\"label\":\"Pune sunrise batch\",\"departureCity\":\"Pune\",\"status\":\"OPEN\"},{\"date\":\"2026-11-21\",\"label\":\"Pune sunrise batch\",\"departureCity\":\"Pune\",\"status\":\"OPEN\"}]"}}'::jsonb
   ),
   (
-    'b2000000-0000-0000-0000-000000000002',
+    'b2100000-0000-0000-0000-000000000002',
     'Matheran Forest Walk',
     'matheran-forest-walk',
     'trek',
@@ -53,7 +53,7 @@ values
     '{"rawItem":{"name":"Matheran Forest Walk","slug":"matheran-forest-walk","hubSlug":"mumbai-weekend","destination":"Matheran, Maharashtra","category":"Mumbai Weekend","region":"mumbai","location":"Matheran, Maharashtra","difficulty":"Easy","duration":"1 Day","altitude":"2600 ft","price":999,"originalPrice":1299,"subtitle":"A shaded forest walk from the Matheran toy-train side, led by Gadvede Trekkers.","about":"Matheran Forest Walk is a Gadvede Trekkers day out for Mumbai groups who want red earth, forest shade, and a slow lunch stop.","imageGallery":"[]","trekDateBatches":"[{\"date\":\"2026-11-08\",\"label\":\"Mumbai morning batch\",\"departureCity\":\"Mumbai\",\"status\":\"OPEN\"}]"}}'::jsonb
   ),
   (
-    'b2000000-0000-0000-0000-000000000003',
+    'b2100000-0000-0000-0000-000000000003',
     'Solang Meadow Base',
     'solang-meadow-base',
     'tour',
@@ -72,7 +72,7 @@ values
     '{"rawItem":{"name":"Solang Meadow Base","slug":"solang-meadow-base","hubSlug":"himachal","destination":"Solang Valley, Himachal Pradesh","category":"Himachal","region":"himachal","state":"Himachal Pradesh","location":"Solang Valley, Himachal Pradesh","destinationLine":"Solang Valley","duration":"4 Days 3 Nights","price":7499,"originalPrice":8999,"subtitle":"A small Gadvede Trekkers base in Solang with meadow walks and one acclimatisation day.","overview":"Solang Meadow Base is a short Gadvede Trekkers trip for groups who want Himachal at a walking pace.","imageGallery":"[]","tourDateBatches":"[{\"date\":\"2026-12-11\",\"endDate\":\"2026-12-14\",\"label\":\"December meadow batch\",\"departureCity\":\"Delhi\",\"status\":\"OPEN\",\"price\":7499}]"}}'::jsonb
   ),
   (
-    'b2000000-0000-0000-0000-000000000004',
+    'b2100000-0000-0000-0000-000000000004',
     'Rishikesh Riverbank Walk',
     'rishikesh-riverbank-walk',
     'tour',
@@ -91,7 +91,7 @@ values
     '{"rawItem":{"name":"Rishikesh Riverbank Walk","slug":"rishikesh-riverbank-walk","hubSlug":"uttarakhand","destination":"Rishikesh, Uttarakhand","category":"Uttarakhand","region":"uttarakhand","location":"Rishikesh, Uttarakhand","duration":"3 Days 2 Nights","price":5499,"originalPrice":6499,"subtitle":"A Gadvede Trekkers riverbank stay with morning walks and an easy gorge trail.","overview":"Rishikesh Riverbank Walk keeps the group close to the water.","imageGallery":"[]","tourDateBatches":"[{\"date\":\"2026-11-27\",\"endDate\":\"2026-11-29\",\"label\":\"November river batch\",\"departureCity\":\"Delhi\",\"status\":\"OPEN\"}]"}}'::jsonb
   ),
   (
-    'b2000000-0000-0000-0000-000000000005',
+    'b2100000-0000-0000-0000-000000000005',
     'Sam Dune Night Circle',
     'sam-dune-night-circle',
     'tour',
@@ -110,7 +110,7 @@ values
     '{"rawItem":{"name":"Sam Dune Night Circle","slug":"sam-dune-night-circle","hubSlug":"rajasthan","destination":"Jaisalmer, Rajasthan","category":"Rajasthan","region":"rajasthan","location":"Jaisalmer, Rajasthan","duration":"3 Days 2 Nights","price":6299,"originalPrice":7499,"subtitle":"One night in a Gadvede Trekkers dune camp outside Jaisalmer, with a fort morning.","overview":"Sam Dune Night Circle is a compact Gadvede Trekkers plan with a fort walk and one dune-camp night.","imageGallery":"[]","tourDateBatches":"[{\"date\":\"2026-12-18\",\"endDate\":\"2026-12-20\",\"label\":\"December dune batch\",\"departureCity\":\"Jaisalmer\",\"status\":\"OPEN\"}]"}}'::jsonb
   ),
   (
-    'b2000000-0000-0000-0000-000000000006',
+    'b2100000-0000-0000-0000-000000000006',
     'Wayanad Canopy Stay',
     'wayanad-canopy-stay',
     'tour',
@@ -129,7 +129,7 @@ values
     '{"rawItem":{"name":"Wayanad Canopy Stay","slug":"wayanad-canopy-stay","hubSlug":"kerala-south","destination":"Wayanad, Kerala","category":"Kerala & South","region":"kerala","location":"Wayanad, Kerala","duration":"3 Days 2 Nights","price":6899,"originalPrice":7999,"subtitle":"A Gadvede Trekkers plantation stay with a short canopy walk and a lake evening.","overview":"Wayanad Canopy Stay is Gadvede Trekkers'' southern long weekend.","imageGallery":"[]","tourDateBatches":"[{\"date\":\"2026-12-04\",\"endDate\":\"2026-12-06\",\"label\":\"December canopy batch\",\"departureCity\":\"Bengaluru\",\"status\":\"OPEN\"}]"}}'::jsonb
   ),
   (
-    'b2000000-0000-0000-0000-000000000007',
+    'b2100000-0000-0000-0000-000000000007',
     'Tamhini Ghat Lakeside Camp',
     'tamhini-ghat-lakeside-camp',
     'camping',
@@ -148,7 +148,7 @@ values
     '{"rawItem":{"name":"Tamhini Ghat Lakeside Camp","shortName":"Tamhini Lakeside Camp","slug":"tamhini-ghat-lakeside-camp","hubSlug":"camping","destination":"Tamhini Ghat, Maharashtra","category":"Camping","type":"Lake","region":"pune","location":"Tamhini Ghat, Maharashtra","duration":"1 Night","price":1499,"originalPrice":1899,"description":"A Gadvede Trekkers lakeside camp below Tamhini with dinner, breakfast, and a short ridge walk.","overview":"Tamhini Ghat Lakeside Camp is a one-night Gadvede Trekkers camp. Tents are twin sharing. Dinner and breakfast are cooked on site.","imageGallery":"[]","trekDateBatches":"[{\"date\":\"2026-11-14\",\"endDate\":\"2026-11-15\",\"label\":\"Lake weekend\",\"departureCity\":\"Pune\",\"status\":\"OPEN\"}]"}}'::jsonb
   ),
   (
-    'b2000000-0000-0000-0000-000000000008',
+    'b2100000-0000-0000-0000-000000000008',
     'Sahyadri Two-Day Pack',
     'sahyadri-two-day-pack',
     'trek',
@@ -167,7 +167,7 @@ values
     '{"rawItem":{"name":"Sahyadri Two-Day Pack","slug":"sahyadri-two-day-pack","hubSlug":"backpacking","destination":"Western Ghats, Maharashtra","category":"Backpacking","region":"pune","location":"Western Ghats, Maharashtra","difficulty":"Medium","duration":"2 Days 1 Night","price":2499,"originalPrice":2999,"subtitle":"A Gadvede Trekkers backpacking loop with one trail camp and a shared cook.","about":"Sahyadri Two-Day Pack is Gadvede Trekkers'' own backpacking format. You carry a light day pack. The team carries the camp kitchen and tents.","imageGallery":"[]","trekDateBatches":"[{\"date\":\"2026-11-28\",\"endDate\":\"2026-11-29\",\"label\":\"Trail camp batch\",\"departureCity\":\"Pune\",\"status\":\"OPEN\"}]"}}'::jsonb
   ),
   (
-    'b2000000-0000-0000-0000-000000000009',
+    'b2100000-0000-0000-0000-000000000009',
     'New Year Ridge Camp',
     'new-year-ridge-camp',
     'camping',
@@ -192,16 +192,16 @@ insert into public.product_batches (
   seats_total, seats_available, price, status, available
 )
 values
-  ('c2000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', '2026-11-07', '2026-11-07', 'Pune sunrise batch', 'Pune', 30, 30, 899, 'OPEN', true),
-  ('c2000000-0000-0000-0000-000000000002', 'b2000000-0000-0000-0000-000000000001', '2026-11-21', '2026-11-21', 'Pune sunrise batch', 'Pune', 30, 30, 899, 'OPEN', true),
-  ('c2000000-0000-0000-0000-000000000003', 'b2000000-0000-0000-0000-000000000002', '2026-11-08', '2026-11-08', 'Mumbai morning batch', 'Mumbai', 30, 30, 999, 'OPEN', true),
-  ('c2000000-0000-0000-0000-000000000004', 'b2000000-0000-0000-0000-000000000003', '2026-12-11', '2026-12-14', 'December meadow batch', 'Delhi', 16, 16, 7499, 'OPEN', true),
-  ('c2000000-0000-0000-0000-000000000005', 'b2000000-0000-0000-0000-000000000004', '2026-11-27', '2026-11-29', 'November river batch', 'Delhi', 18, 18, 5499, 'OPEN', true),
-  ('c2000000-0000-0000-0000-000000000006', 'b2000000-0000-0000-0000-000000000005', '2026-12-18', '2026-12-20', 'December dune batch', 'Jaisalmer', 16, 16, 6299, 'OPEN', true),
-  ('c2000000-0000-0000-0000-000000000007', 'b2000000-0000-0000-0000-000000000006', '2026-12-04', '2026-12-06', 'December canopy batch', 'Bengaluru', 16, 16, 6899, 'OPEN', true),
-  ('c2000000-0000-0000-0000-000000000008', 'b2000000-0000-0000-0000-000000000007', '2026-11-14', '2026-11-15', 'Lake weekend', 'Pune', 24, 24, 1499, 'OPEN', true),
-  ('c2000000-0000-0000-0000-000000000009', 'b2000000-0000-0000-0000-000000000008', '2026-11-28', '2026-11-29', 'Trail camp batch', 'Pune', 16, 16, 2499, 'OPEN', true),
-  ('c2000000-0000-0000-0000-000000000010', 'b2000000-0000-0000-0000-000000000009', '2026-12-31', '2027-01-02', 'New Year batch', 'Pune', 20, 20, 2499, 'OPEN', true)
+  ('c2100000-0000-0000-0000-000000000001', 'b2100000-0000-0000-0000-000000000001', '2026-11-07', '2026-11-07', 'Pune sunrise batch', 'Pune', 30, 30, 899, 'OPEN', true),
+  ('c2100000-0000-0000-0000-000000000002', 'b2100000-0000-0000-0000-000000000001', '2026-11-21', '2026-11-21', 'Pune sunrise batch', 'Pune', 30, 30, 899, 'OPEN', true),
+  ('c2100000-0000-0000-0000-000000000003', 'b2100000-0000-0000-0000-000000000002', '2026-11-08', '2026-11-08', 'Mumbai morning batch', 'Mumbai', 30, 30, 999, 'OPEN', true),
+  ('c2100000-0000-0000-0000-000000000004', 'b2100000-0000-0000-0000-000000000003', '2026-12-11', '2026-12-14', 'December meadow batch', 'Delhi', 16, 16, 7499, 'OPEN', true),
+  ('c2100000-0000-0000-0000-000000000005', 'b2100000-0000-0000-0000-000000000004', '2026-11-27', '2026-11-29', 'November river batch', 'Delhi', 18, 18, 5499, 'OPEN', true),
+  ('c2100000-0000-0000-0000-000000000006', 'b2100000-0000-0000-0000-000000000005', '2026-12-18', '2026-12-20', 'December dune batch', 'Jaisalmer', 16, 16, 6299, 'OPEN', true),
+  ('c2100000-0000-0000-0000-000000000007', 'b2100000-0000-0000-0000-000000000006', '2026-12-04', '2026-12-06', 'December canopy batch', 'Bengaluru', 16, 16, 6899, 'OPEN', true),
+  ('c2100000-0000-0000-0000-000000000008', 'b2100000-0000-0000-0000-000000000007', '2026-11-14', '2026-11-15', 'Lake weekend', 'Pune', 24, 24, 1499, 'OPEN', true),
+  ('c2100000-0000-0000-0000-000000000009', 'b2100000-0000-0000-0000-000000000008', '2026-11-28', '2026-11-29', 'Trail camp batch', 'Pune', 16, 16, 2499, 'OPEN', true),
+  ('c2100000-0000-0000-0000-000000000010', 'b2100000-0000-0000-0000-000000000009', '2026-12-31', '2027-01-02', 'New Year batch', 'Pune', 20, 20, 2499, 'OPEN', true)
 on conflict (id) do nothing;
 
 commit;
