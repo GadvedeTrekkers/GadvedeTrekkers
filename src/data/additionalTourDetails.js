@@ -1,3 +1,5 @@
+import { GADVEDE_NEW_TRIP_SEEDS } from "./gadvedeNewTrips";
+
 const MALVAN_GALLERY = [
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1400&q=80",
   "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=1400&q=80",
@@ -40,7 +42,7 @@ const RAJASTHAN_GALLERY = [
   "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=1400&q=80",
 ];
 
-export const ADDITIONAL_TOUR_SEEDS = {
+const BASE_TOUR_SEEDS = {
   "malvan-tarkarli-with-scuba-diving-and-watersports": {
     name: "Malvan Tarkarli with Scuba Diving and Watersports",
     slug: "malvan-tarkarli-with-scuba-diving-and-watersports",
@@ -76,7 +78,7 @@ export const ADDITIONAL_TOUR_SEEDS = {
     offerCodes: "LOYALTY200|Old Customers Enjoy Flat 200 Off",
     detailedItinerary: "Day 01|03:00 PM - 10:00 PM|Mumbai pickups from Dadar, Sion, Chembur, Vashi and Pune pickups from FC Road, Wakad, Chandani Chowk, and Katraj. Overnight journey to Malvan.\nDay 02|Morning|Arrive in Malvan, check in, freshen up, and have breakfast.\nDay 02|Day Plan|Enjoy watersports and scuba diving, then visit Rock Garden for sunset and Ganesh Temple.\nDay 03|Morning to Evening|Explore Sindhudurg Fort by ferry, head to Tarkarli Beach, then Devbaug Beach for sunset and depart for Pune/Mumbai.\nDay 04|07:00 AM / 11:00 AM|Arrive in Pune and Mumbai.",
     thingsToCarry: "Rucksack bag and day pack\nWater bottle\nQuick-dry clothes\nGloves\nLong pants\nUndergarments\nSocks\nSmall towel\nRain jacket or poncho\nGood shoes and sandals\nBasic medicines\nDettol, bandages, cotton\nToothpaste and toothbrush\nSanitizer\nSunscreen, lip balm, cold cream\nLED torch",
-    paymentDetails: "UPI ID|7387523876@upi\nAccount Name|RAJBALA YADAV\nBank Name|HDFC BANK\nAccount Number|50100308491863\nIFSC|HDFC0002501\nAccount Name 2|NITIN YADAV\nBank Name 2|PUNJAB NATIONAL BANK\nAccount Number 2|0530001500002688\nIFSC 2|PUNB0053000\nConfirmation Contact|Send payment screenshot on WhatsApp 7387523876",
+    paymentDetails: "",
     cancellationPolicy: "Initial booking amount is non-refundable.\n30+ days before trip: 50% refund.\n15 to 30 days: 25% refund.\n0 to 15 days: no refund.\nNo show, no refund.\nTickets can be transferred to another person.\nIf trip is canceled by us, only trip amount will be refunded.",
     policyNotes: "A complete schedule will be shared 12 hours before departure on WhatsApp.\nOrganizers may change the schedule in unavoidable circumstances.\nThe tour is weather-based and activities may change if conditions deteriorate.",
     faq: "What makes Tarkarli and Malvan special?|They combine beaches, marine life, water sports, and historic forts in one coastal trip.\nWhen is the best time to visit?|October to March is ideal for scuba diving and water sports.\nAre beginners allowed to do scuba?|Yes, trained professionals support beginners as well.",
@@ -117,7 +119,7 @@ export const ADDITIONAL_TOUR_SEEDS = {
     offerCodes: "LOYALTY200|Old Customers Enjoy Flat 200 Off",
     detailedItinerary: "Day 01|02:00 PM onward|Mumbai, Pune, and Bangalore departures towards Hampi.\nDay 02|Morning to Night|Reach Hampi, explore Chintamani Temple, Sanapur Lake, cliff jumping, coracle ride, and Anjanadri Hill sunset.\nDay 03|Full Day|Explore Hampi heritage sites including Vijaya Vitthal Temple, Queen's Bath, Lotus Mahal, Elephant Stables, and Virupaksha Temple, then depart for Murudeshwar.\nDay 04|Morning to Night|Visit Murudeshwar Temple, beach, Shiva statue, Honnavar backwaters, and Gokarna sunset points before return journey.\nDay 05|Morning|Arrive in Pune and Mumbai.",
     thingsToCarry: "Rucksack and day pack\nWater bottle\nComfortable clothes\nPoncho\nGood shoes and sandals\nBasic medicines\nSunscreen and sanitizer\nTorch",
-    paymentDetails: "UPI ID|trekhievers@okhdfcbank\nAccount Name|Nitin Yadav\nBank Name|HDFC BANK\nAccount Number|50100220035954\nIFSC|HDFC0000084\nConfirmation Contact|Send screenshot on WhatsApp 8484826729",
+    paymentDetails: "",
     cancellationPolicy: "30+ days before trip: 50% of total tour cost charged as cancellation fee.\n0 to 30 days: 100% cancellation fee.\nTickets may be transferred to friends.\nFees are non-refundable but transferable to the same event.",
     policyNotes: "Seats are reserved only after full payment.\nOrganizers may change or cancel schedules with notice.\nNo alcohol, no drugs, and no litter policy.",
     faq: "Is this itinerary fast-paced?|Yes, it is packed and best suited for active travelers.\nAre activities affected in monsoon?|Yes, cliff jumping, coracle ride, and some boating experiences may close in monsoon.\nWho should choose this trip?|Travelers who want heritage plus beaches in one Karnataka circuit.",
@@ -197,7 +199,7 @@ export const ADDITIONAL_TOUR_SEEDS = {
     offerCodes: "LOYALTY200|Old Customers Enjoy Flat 200 Off",
     detailedItinerary: "Day 01|Afternoon / Night|Depart from Mumbai, Pune, and Bangalore to Hospet by bus or tempo traveller.\nDay 02|Morning to Night|Reach Hampi, explore Anegundi side, Chintamani Temple, Durga Temple, Sanapur Lake, cliff jump, coracle ride, and Anjanadri Hill.\nDay 03|Full Day|Explore major Hampi heritage points like Vitthal Temple, Queen's Bath, Pushkarni, Lotus Mahal, Elephant Stables, Virupaksha Temple, and depart in the evening.\nDay 04|Morning|Reach Pune, Mumbai, and Bangalore.",
     thingsToCarry: "Backpack\nGood trekking shoes\nWater bottles\nRainwear\nCap\nGloves\nSunscreen\nTorch\nBasic medicines\nToiletries\nIdentity documents",
-    paymentDetails: "UPI ID|7387523876@upi\nAccount Name|Nitin Yadav\nBank Name|HDFC BANK\nAccount Number|50100220035954\nIFSC|HDFC0000084\nConfirmation Contact|Send screenshot on WhatsApp 8149796729",
+    paymentDetails: "",
     cancellationPolicy: "Initial booking amount is non-refundable.\n30+ days: 50% refund.\n15 to 30 days: 25% refund.\n0 to 15 days: no refund.\nNo show, no refund.\nTickets can be transferred to another person.",
     policyNotes: "Schedule is shared 12 hours before departure.\nOrganizers may change the plan in unavoidable circumstances.\nThe tour is weather-based.",
     faq: "Where is Hampi located?|Hampi is in Karnataka, India.\nCan Hampi be visited in a day?|Usually a 2-day trip is better to cover the main heritage sites.\nIs solo travel feasible?|Yes, solo travelers usually blend well in group trips.",
@@ -237,7 +239,7 @@ export const ADDITIONAL_TOUR_SEEDS = {
     notIncluded: "5% GST\nSonprayag to Gaurikund sumo fare\nYatra registration\nPorter, pony, palki, helicopter tickets\nPersonal expenses\nEntry tickets\nAdventure activities\nAdditional food or accommodation due to delays\nTips\nAnything not listed in inclusions",
     detailedItinerary: "Day 01|Night|Delhi reporting and overnight journey.\nDay 02|Full Day|Haridwar and Rishikesh pickups, Devprayag visit, and Sitapur stay.\nDay 03|03:00 AM onward|Depart for Gaurikund, begin Kedarnath trek, attend evening aarti, overnight stay.\nDay 04|Morning to Evening|Darshan, nearby spiritual points, trek back, and return to Sitapur.\nDay 05|Full Day|Drive to Badrinath and evening darshan if time permits.\nDay 06|Morning to Night|Badrinath darshan, Mana Village circuit, depart for Haridwar/Rishikesh.\nDay 07|06:00 AM|Reach Delhi.",
     thingsToCarry: "Medical certificate\nGovernment ID\nBackpack\nTrekking shoes\nSocks\nWarm clothes\nRaincoat/poncho\nBalaclava\nWaterproof gloves\nSunglasses\nSunscreen\nHeadlamp\nWater bottles\nTrekking pole\nPersonal medical kit",
-    paymentDetails: "UPI ID|7387523876@paytm\nAccount Name|Nitin Yadav\nBank Name|HDFC BANK\nAccount Number|50100220035954\nIFSC|HDFC0000084\nConfirmation Contact|Send screenshot on WhatsApp 7387523876",
+    paymentDetails: "",
     cancellationPolicy: "Initial booking amount is non-refundable.\n30+ days: 50% refund.\n15 to 30 days: 25% refund.\n0 to 15 days: no refund.\nNo show, no refund.\nTickets can be transferred to another person.\nIf trip is canceled by us, only trip amount is refunded.",
     policyNotes: "Schedule is shared 12 hours before departure.\nOrganizers may modify the plan in unavoidable circumstances.\nThis is a fast-paced backpacking-style Himalayan trip.",
     faq: "Is registration required?|Yes, Kedarnath Yatra registration is required separately.\nIs this a comfortable pilgrimage trip?|It is more of a backpacking-style yatra suited for active travelers.\nAre helicopter bookings included?|No, helicopter bookings are optional add-ons.",
@@ -278,7 +280,7 @@ export const ADDITIONAL_TOUR_SEEDS = {
     offerCodes: "LOYALTY500|Old Customers Enjoy Flat 500 Off",
     detailedItinerary: "Day 00|Evening|Mumbai travelers head to Pune and board train. Pune travelers report by 11:00 PM.\nDay 01|Evening|Bangalore participants board train towards Aluva.\nDay 02|Early Morning onward|Kochi station and airport pickups, Athirapally visit, continue to Munnar.\nDay 03|04:00 AM onward|Optional Kolukkumalai sunrise, then Munnar sightseeing.\nDay 04|Full Day|Drive to Thekkady, elephant experience, spice plantation, and watch cultural shows.\nDay 05|Full Day|Drive to Alleppey and enjoy backwater experience.\nDay 06|Morning|Kochi drop and return journey.\nDay 07|Arrival|Reach Mumbai/Pune/Bangalore.",
     thingsToCarry: "Backpack\nTrekking shoes\nSocks\nComfortable clothes\nJacket\nRainwear\nCap\nGloves\nSunglasses\nSunscreen\nHeadlamp\nWater bottles\nPersonal medical kit",
-    paymentDetails: "UPI ID|trekhievers@okhdfcbank\nAccount Name|Nitin Yadav\nBank Name|HDFC BANK\nAccount Number|50100220035954\nIFSC|HDFC0000084\nConfirmation Contact|Send screenshot on WhatsApp 7387523876",
+    paymentDetails: "",
     cancellationPolicy: "Initial booking amount is non-refundable.\n30+ days: 50% refund.\n15 to 30 days: 25% refund.\n0 to 15 days: no refund.\nNo show, no refund.\nTickets can be transferred to another person.",
     policyNotes: "Train tickets may be confirmed or RAC based on availability.\nOrganizers may alter the plan in unavoidable situations.\nThe tour is weather-based and delays may happen.",
     faq: "What makes Kerala popular?|Kerala is known for backwaters, greenery, culture, wildlife, and food.\nWhen is the best time to visit?|October to March is ideal for pleasant weather.\nIs Kerala safe for solo travelers?|Yes, Kerala is widely considered safe and welcoming for solo and family travel.",
@@ -319,10 +321,12 @@ export const ADDITIONAL_TOUR_SEEDS = {
     offerCodes: "LOYALTY500|Old Customers Enjoy Flat 500 Off",
     detailedItinerary: "Day 00|Morning to Night|Travel to Ahmedabad by train, meet the team, and overnight road journey to Jodhpur.\nDay 01|Full Day|Explore Umaid Bhavan Palace Museum, Jaswant Thada, Mehrangarh Fort, and Jodhpur streets.\nDay 02|Full Day|Drive to Jaisalmer dunes, visit Kuldhara Village, desert camp check-in, camel ride, safari, and cultural program.\nDay 03|Full Day|Explore Jaisalmer Fort, Jain Mandir, Patwon ki Haveli, Gadisar Lake, and depart overnight to Udaipur.\nDay 04|Afternoon to Night|Udaipur arrival, Fateh Sagar Lake, Sajjangarh, Bahubali Hills or ropeway sunset.\nDay 05|Full Day|City Palace, Lake Pichola, Jagdish Temple, Bagore Ki Haveli, Lal Ghat or Ambrai Ghat, then depart to Ahmedabad.\nDay 06|Early Morning onward|Reach Ahmedabad and continue to Mumbai, Pune, or Surat.",
     thingsToCarry: "Rucksack and day pack\nComfortable clothes\nGloves\nLong pants\nSocks\nQuick-dry towel\nRain jacket or poncho\nGood shoes and sandals\nSanitizer\nSun cap\nLip balm\nCold cream and sunscreen SPF 40+\nWater bottle\nToiletry bag\nBasic medical kit\nSunglasses\nPower bank\nDocuments\nCamera",
-    paymentDetails: "UPI ID|trekhievers@okhdfcbank\nAccount Name|Nitin Yadav\nBank Name|HDFC BANK\nAccount Number|50100220035954\nIFSC|HDFC0000084\nConfirmation Contact|Send screenshot on WhatsApp 7387523876",
+    paymentDetails: "",
     cancellationPolicy: "Initial booking amount is non-refundable.\n30+ days: 50% refund.\n15 to 30 days: 25% refund.\n0 to 15 days: no refund.\nNo show, no refund.\nTickets can be transferred to another person.",
     policyNotes: "Schedule is shared 12 hours before departure on WhatsApp.\nOrganizers may modify the schedule in unavoidable circumstances.\nThe tour is weather-based and may see last-minute changes.",
     faq: "What kind of experience is this?|It is a mix of forts, desert camps, camel rides, and lake-city sightseeing.\nIs desert camping included?|Yes, Sam Sand Dunes camping with cultural program is included.\nCan train or flight tickets be arranged?|Yes, travel assistance can be arranged separately.",
     active: true,
   },
 };
+
+export const ADDITIONAL_TOUR_SEEDS = { ...BASE_TOUR_SEEDS, ...GADVEDE_NEW_TRIP_SEEDS };

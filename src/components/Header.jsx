@@ -15,6 +15,7 @@ function Header() {
     { label: "Hampi", to: "/tours/hampi-tour" },
     { label: "Hampi Gokarna Murudeshwar", to: "/tours/hampi-gokarna-murudeshwar" },
     { label: "Gokarna Murudeshwar", to: "/tours/gokarna-honnavar-murudeshwar" },
+    { label: "Amritsar Dharamshala Dalhousie", to: "/tours/amritsar-dharamshala-dalhousie-khajjiar" },
   ];
 
   useEffect(() => {

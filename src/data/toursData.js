@@ -5,6 +5,7 @@ export const toursData = {
     { name: "Manali Kasol Jibhi",           duration: "6 Days",   price: 11499, originalPrice: 14999, nextDate: "15 Oct 2025", image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429" },
     { name: "Spiti Circuit",                duration: "8-10 Days",price: 18999, originalPrice: 22999, nextDate: "20 Oct 2025", image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff" },
     { name: "Winter Spiti Valley",          duration: "9 Days",   price: 19999, originalPrice: 24999, nextDate: "10 Jan 2026", image: "https://images.unsplash.com/photo-1587474260584-136574528ed5" },
+    { name: "Amritsar – Dharamshala – Dalhousie – Khajjiar | From Pune", slug: "amritsar-dharamshala-dalhousie-khajjiar", duration: "6 Nights 7 Days", price: 14000, originalPrice: 0, nextDate: "On request", image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23" },
   ],
   kashmir: [
     { name: "Kashmir Srinagar Gulmarg Sonamarg", duration: "5 Days", price: 14999, originalPrice: 18999, nextDate: "12 Oct 2025", image: "https://images.unsplash.com/photo-1595815771614-ade9d652a65d" },
@@ -28,10 +29,10 @@ export const toursData = {
     { name: "Goa Backpacking",              duration: "4 Days",   price: 8999,  originalPrice: 11999, nextDate: "20 Oct 2025", image: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2" },
   ],
   maharashtra: [
-    { name: "Malvan Tarkarli with Scuba Diving and Watersports", duration: "3 Nights 4 Days", price: 5500, originalPrice: 6500, nextDate: "27 Mar 2026", image: "https://images.unsplash.com/photo-1519046904884-53103b34b206" },
+    { name: "Malvan Tarkarli with Scuba Diving and Watersports", slug: "malvan-tarkarli-with-scuba-diving-and-watersports", duration: "3 Nights 4 Days", price: 5500, originalPrice: 6500, nextDate: "30 Oct 2026", image: "https://images.unsplash.com/photo-1519046904884-53103b34b206" },
   ],
   karnataka: [
-    { name: "Hampi Gokarna Murudeshwar",    duration: "4 Nights 5 Days",   price: 9499, originalPrice: 13999, nextDate: "27 Mar 2026", image: "https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788" },
+    { name: "Hampi – Gokarna – Murudeshwar | From Pune", slug: "hampi-gokarna-murudeshwar", duration: "4 Nights 5 Days", price: 11500, originalPrice: 0, nextDate: "30 Oct 2026", image: "https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788" },
     { name: "Gokarna Honnavar Murudeshwar", duration: "3 Nights 4 Days",   price: 5499, originalPrice: 11999, nextDate: "27 Mar 2026", image: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21" },
     { name: "Hampi Tour",                   duration: "3 Nights 4 Days",   price: 5499, originalPrice: 8999, nextDate: "27 Mar 2026", image: "https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788" },
   ],

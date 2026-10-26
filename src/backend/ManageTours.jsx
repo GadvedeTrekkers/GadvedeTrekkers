@@ -110,7 +110,7 @@ Write a complete realistic itinerary for all ${form.duration || "days"} of this 
   },
   { key: "thingsToCarry", label: "Things to Carry", type: "checklistTextarea", col: 12, options: TOUR_CARRY_OPTIONS, placeholder: "Add custom carry items, one per line" },
   { key: "travelInfo", label: "Travel Information (Title|Description, one per line)", type: "textarea", col: 12, placeholder: "Ticket Booking Process|IRCTC-certified agents..." },
-  { key: "paymentDetails", label: "Payment Details (Label|Value, one per line)", type: "textarea", col: 12, placeholder: "UPI ID|trekhievers@okhdfcbank" },
+  { key: "paymentDetails", label: "Payment Details (Label|Value, one per line)", type: "textarea", col: 12, placeholder: "Booking|WhatsApp +91 86058 66155" },
   { key: "cancellationPolicy", label: "Cancellation Policy", type: "textarea", col: 12 },
   { key: "policyNotes", label: "Policy Notes", type: "textarea", col: 12 },
   {

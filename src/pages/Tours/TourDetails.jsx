@@ -4,7 +4,7 @@ import { getTourDates } from "../../data/tourDatesStorage";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
-import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
+import { BOOKING_WHATSAPP_NUMBER, buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { toursList } from "../../data/toursData";
 import { ADDITIONAL_TOUR_SEEDS } from "../../data/additionalTourDetails";
 import { productService } from "../../services/product.service";
@@ -326,6 +326,11 @@ function TourDetails() {
               <button onClick={downloadItinerary} className="btn" style={{ background: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 12, padding: "14px 24px", fontWeight: 700, cursor: "pointer" }}>
                 Itinerary
               </button>
+              {tour.itineraryPdfUrl && (
+                <a href={tour.itineraryPdfUrl} target="_blank" rel="noopener noreferrer" download className="btn" style={{ background: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 12, padding: "14px 24px", fontWeight: 700 }}>
+                  📄 Brochure PDF
+                </a>
+              )}
               <a
                 href={createWhatsAppInquiryUrl({ packageName: tour.name, location: tour.destinationLine || tour.location || "Maharashtra", category: "Tour" })}
                 target="_blank"
@@ -582,6 +587,12 @@ function TourDetails() {
             <section style={sectionCardStyle}>
               <h2 style={sectionTitleStyle}>Payment Details</h2>
               <div style={{ display: "grid", gap: 10 }}>
+                {paymentDetails.length === 0 && (
+                  <div style={paymentRowStyle}>
+                    <span style={{ fontWeight: 700, color: "#264a3a" }}>Booking</span>
+                    <a href={`https://wa.me/${BOOKING_WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi Gadvede Trekkers, I want to book ${tour.name}`)}`} target="_blank" rel="noopener noreferrer" style={{ color: "#103528", fontWeight: 800 }}>WhatsApp +91 86058 66155 — we share payment details on confirmation</a>
+                  </div>
+                )}
                 {paymentDetails.map((item) => (
                   <div key={item.label} style={paymentRowStyle}>
                     <span style={{ fontWeight: 700, color: "#264a3a" }}>{item.label}</span>
@@ -625,7 +636,7 @@ function TourDetails() {
               <div style={{ textAlign: "center", marginBottom: 18 }}>
                 <div style={{ color: "#70867a", fontSize: ".84rem" }}>Starting From</div>
                 <div style={{ color: "#0a6a47", fontWeight: 900, fontSize: "2.2rem" }}>₹{tour.price}</div>
-                <div style={{ color: "#738b7f", fontWeight: 600 }}>+ {tour.taxPercent}% GST</div>
+                {Number(tour.taxPercent) > 0 && <div style={{ color: "#738b7f", fontWeight: 600 }}>+ {tour.taxPercent}% GST</div>}
               </div>
               <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
                 <div style={miniBadgeStyle}>Instant Confirmation</div>
