@@ -104,6 +104,7 @@ export const GADVEDE_NEW_TRIP_SEEDS = {
     "cancellationPolicy": "No refund on the initial booking amount for any cancellation. If full payment has been made:\nCancellation 30+ days before the start date: 50% of the trip cost refunded within 5–7 working days.\nCancellation 15–30 days before: 25% of the trip cost refunded within 5–7 working days.\nCancellation 0–15 days before: 100% cancellation fee, no refund.\nActivities cancelled due to weather or government restrictions: we try to arrange an alternative; no refund for the activity.\nNo show, no refund.\nTickets cannot be moved to another date but can be transferred to another person.\nIf Gadvede Trekkers cancels the trip, the trip amount is refunded.",
     "policyNotes": "The full schedule is shared with registered participants on WhatsApp 12 hours before departure.\nGadvede Trekkers may modify the schedule in unavoidable circumstances.\nThe trip is weather-dependent; plans may change if conditions turn unsafe.",
     "faq": "Do I need to know swimming for scuba?|No. It is a guided introductory dive with trained instructors.\nIs dinner included?|No, dinner is on your own on all days; Day 2 and Day 3 breakfast and lunch are included.\nWhen is the best time?|October to February has the clearest water for scuba.",
+    "itineraryPdfUrl": "/itineraries/Malvan-Tarkarli-Trip.pdf",
     "pickup_points": [
       "Mumbai · Dadar – Sion – Chembur – Vashi · 3:00–4:30 PM",
       "Pune · FC Road, Wakad, Chandani Chowk, Katraj · 8:30–10:00 PM"
@@ -174,6 +175,7 @@ export const GADVEDE_NEW_TRIP_SEEDS = {
     "cancellationPolicy": "No refund on the initial booking amount for any cancellation. If full payment has been made:\nCancellation 30+ days before the start date: 50% of the trip cost refunded within 5–7 working days.\nCancellation 15–30 days before: 25% of the trip cost refunded within 5–7 working days.\nCancellation 0–15 days before: 100% cancellation fee, no refund.\nActivities cancelled due to weather or government restrictions: we try to arrange an alternative; no refund for the activity.\nNo show, no refund.\nTickets cannot be moved to another date but can be transferred to another person.\nIf Gadvede Trekkers cancels the trip, the trip amount is refunded.",
     "policyNotes": "The full schedule is shared with registered participants on WhatsApp 12 hours before departure.\nGadvede Trekkers may modify the schedule in unavoidable circumstances.\nThe trip is weather-dependent; plans may change if conditions turn unsafe.",
     "faq": "Is travel from Pune included?|The package runs Amritsar to Amritsar; Pune ↔ Amritsar tickets can be arranged on request.\nWhat meals are included?|Day 1 dinner only; Days 2–6 breakfast and dinner at the hotel.",
+    "itineraryPdfUrl": "/itineraries/Amritsar-Dharamshala-Dalhousie-Khajjiar-Trip.pdf",
     "pickup_points": [
       "Amritsar railway station (Day 1 arrival)"
     ],
