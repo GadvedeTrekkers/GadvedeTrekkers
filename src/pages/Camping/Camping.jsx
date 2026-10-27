@@ -10,10 +10,13 @@ import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 
 const TYPE_FILTERS = ["All", "Beach", "Lake", "Forest", "Mountain", "Hill", "Farm"];
 
-function parseDates(value) {
-  if (Array.isArray(value)) return value.filter(Boolean);
-  if (typeof value === "string" && value.trim().startsWith("[")) {
-    return parseJsonValue(value, []).filter(Boolean);
+function parseDates(value, depth = 0) {
+  // Admin saves can double-encode nextDates (e.g. ['["25 Mar, 4:00 PM"]']); unwrap nested JSON arrays.
+  if (Array.isArray(value)) {
+    return depth > 8 ? value.filter(Boolean) : value.flatMap((entry) => parseDates(entry, depth + 1));
+  }
+  if (typeof value === "string" && value.trim().startsWith("[") && depth <= 8) {
+    return parseDates(parseJsonValue(value, []), depth + 1);
   }
 
   return String(value || "")
@@ -44,15 +47,38 @@ export default function Camping() {
           nextDates: parseDates(item.nextDates),
         }));
 
-    const publicCamps = (camps, treks) =>
-      selectPublicTrips([...(camps || []), ...(treks || [])]).filter(
-        (item) => item.productType === "camping" || item.slug === "new-year-beach-side-camping"
+    // Real camping products (product_type=camping) are listed as-is; selectPublicTrips is the
+    // 4-slug Home/Treks allowlist and would drop every admin-created camp. It is used here only
+    // to pick up the NYE listing that is stored as a trek.
+    const publicCamps = (camps, treks) => {
+      const liveCamps = (camps || []).filter(
+        (item) =>
+          item &&
+          item.slug &&
+          item.active !== false &&
+          String(item.productType || item.product_type || "camping").toLowerCase() === "camping"
       );
+      const nyeTrek = selectPublicTrips(treks || []).filter(
+        (item) => item.slug === "new-year-beach-side-camping"
+      );
+      const seen = new Set();
+      return [...nyeTrek, ...liveCamps].filter((item) => {
+        if (seen.has(item.slug)) return false;
+        seen.add(item.slug);
+        return true;
+      });
+    };
 
-    const sync = () =>
+    // saveAdminItems() fires a key-less synthetic "storage" event on every product sync
+    // (tours, rentals, villas... from other components). Re-reading gt_camping then wipes the
+    // API result whenever the camping cache failed to persist (QuotaExceededError on large
+    // payloads), which shows "0 of 0 camps". Only react to real cross-tab events for our keys.
+    const sync = (event) => {
+      if (!event || !["gt_camping", "gt_treks"].includes(event.key)) return;
       setCampingItems(
         buildItems(publicCamps(getAdminItems("gt_camping"), getAdminItems("gt_treks")))
       );
+    };
 
     Promise.all([
       syncProductsFromApi("camping", "gt_camping").catch(() => []),
