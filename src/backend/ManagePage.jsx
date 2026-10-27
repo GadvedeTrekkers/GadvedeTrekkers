@@ -6,6 +6,7 @@ import { apiRequest } from "../api/backendClient";
 import { formatTimeFromInput, toTimeInputValue } from "../utils/pickupTime";
 import InfoTooltip from "../components/InfoTooltip";
 import { useToast } from "../components/Toast";
+import { validateAdminForm } from "./adminFormValidation";
 
 const CITY_STOPS = {
   Mumbai: ["Dadar", "Thane", "Borivali", "Ghatkopar", "Andheri", "Bandra", "CST / CSMT", "Kurla", "Mulund", "Vashi", "Panvel", "Kalyan"],
@@ -51,66 +52,6 @@ function buildPickupOptions(city, savedLocations = []) {
   });
 
   return Array.from(options.values());
-}
-
-function validatePickupRowsByCity(parsed = {}) {
-  const issues = [];
-
-  Object.entries(parsed || {}).forEach(([city, rows]) => {
-    (rows || []).forEach((row, index) => {
-      const time = String(row?.time || "").trim();
-      const location = String(row?.location || "").trim();
-      const mapUrl = String(row?.mapUrl || "").trim();
-      const hasAnyValue = time || location || mapUrl;
-
-      if (!hasAnyValue) return;
-      if (!location) {
-        issues.push(`${city} pickup ${index + 1}: add a pickup location.`);
-      }
-      if (mapUrl && !/^https?:\/\//i.test(mapUrl)) {
-        issues.push(`${city} pickup ${index + 1}: Google Maps link should start with http:// or https://.`);
-      }
-    });
-  });
-
-  return issues;
-}
-
-function validateTrekDates(rows = []) {
-  const issues = [];
-
-  (rows || []).forEach((row, index) => {
-    const hasAnyValue = String(row?.date || "").trim() || String(row?.label || "").trim() || String(row?.whatsappGroupLink || "").trim();
-    if (!hasAnyValue) return;
-    if (!String(row?.date || "").trim()) {
-      issues.push(`Batch ${index + 1}: date is required.`);
-    }
-    if (String(row?.whatsappGroupLink || "").trim() && !/^https?:\/\//i.test(String(row.whatsappGroupLink).trim())) {
-      issues.push(`Batch ${index + 1}: WhatsApp link should start with http:// or https://.`);
-    }
-  });
-
-  return issues;
-}
-
-function validateAdminForm(fields, form) {
-  const nextErrors = {};
-
-  fields.forEach((field) => {
-    if (field.type === "departurePlans" || field.type === "pickups") {
-      const parsed = parseJsonValue(form[field.key], {});
-      const issues = validatePickupRowsByCity(parsed);
-      if (issues.length) nextErrors[field.key] = issues;
-    } else if (field.type === "trekDates") {
-      const rows = parseJsonValue(form[field.key], []);
-      const issues = validateTrekDates(rows);
-      if (issues.length) nextErrors[field.key] = issues;
-    } else if (field.required && !String(form[field.key] ?? "").trim()) {
-      nextErrors[field.key] = [`${field.label} is required.`];
-    }
-  });
-
-  return nextErrors;
 }
 
 function PickupPointsField({ value, onChange, cities, errorMessages = [] }) {
@@ -932,37 +873,41 @@ function ManagePage({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const validationErrors = validateAdminForm(fields, form);
-    if (Object.keys(validationErrors).length > 0) {
-      setFieldErrors(validationErrors);
-      toast?.error("Please fix the highlighted form issues before saving.");
-      return;
-    }
+    try {
+      const validationErrors = validateAdminForm(fields, form);
+      if (Object.keys(validationErrors).length > 0) {
+        setFieldErrors(validationErrors);
+        toast?.error("Please fix the highlighted form issues before saving.");
+        return;
+      }
 
-    const preparedForm = transformForm ? transformForm(form, { editId }) : form;
-    let savedItem;
-    if (editId) {
-      savedItem = update(editId, preparedForm);
-      logActivity({
-        action: `${title.toUpperCase().replace(/\s+/g, "_")}_UPDATED`,
-        actionLabel: `Updated ${title}: ${preparedForm.name || preparedForm.title || editId}`,
-        details: `ID: ${editId}`,
-        module: title,
-        severity: "info",
-      });
-    } else {
-      savedItem = add(preparedForm);
-      logActivity({
-        action: `${title.toUpperCase().replace(/\s+/g, "_")}_ADDED`,
-        actionLabel: `Added new ${title}: ${preparedForm.name || preparedForm.title || "-"}`,
-        details: `Name: ${preparedForm.name || preparedForm.title || "-"}`,
-        module: title,
-        severity: "info",
-      });
+      const preparedForm = transformForm ? transformForm(form, { editId }) : form;
+      let savedItem;
+      if (editId) {
+        savedItem = update(editId, preparedForm);
+        logActivity({
+          action: `${title.toUpperCase().replace(/\s+/g, "_")}_UPDATED`,
+          actionLabel: `Updated ${title}: ${preparedForm.name || preparedForm.title || editId}`,
+          details: `ID: ${editId}`,
+          module: title,
+          severity: "info",
+        });
+      } else {
+        savedItem = add(preparedForm);
+        logActivity({
+          action: `${title.toUpperCase().replace(/\s+/g, "_")}_ADDED`,
+          actionLabel: `Added new ${title}: ${preparedForm.name || preparedForm.title || "-"}`,
+          details: `Name: ${preparedForm.name || preparedForm.title || "-"}`,
+          module: title,
+          severity: "info",
+        });
+      }
+      afterSubmit?.(savedItem, { editId });
+      toast?.success(editId ? `${title} updated successfully.` : `${title} saved successfully.`);
+      handleCancel();
+    } catch (error) {
+      toast?.error(error?.message || "Could not save this listing.");
     }
-    afterSubmit?.(savedItem, { editId });
-    toast?.success(editId ? `${title} updated successfully.` : `${title} saved successfully.`);
-    handleCancel();
   };
 
   const handleDelete = (id) => {
