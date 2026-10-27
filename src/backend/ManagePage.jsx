@@ -7,6 +7,7 @@ import { formatTimeFromInput, toTimeInputValue } from "../utils/pickupTime";
 import InfoTooltip from "../components/InfoTooltip";
 import { useToast } from "../components/Toast";
 import { validateAdminForm } from "./adminFormValidation";
+import { isSavedSelectValueMissing, nativeInvalidToastMessage, numberInputStep } from "./adminNativeConstraints";
 
 const CITY_STOPS = {
   Mumbai: ["Dadar", "Thane", "Borivali", "Ghatkopar", "Andheri", "Bandra", "CST / CSMT", "Kurla", "Mulund", "Vashi", "Panvel", "Kalyan"],
@@ -233,7 +234,7 @@ function TrekDatesField({ value, onChange, errorMessages = [] }) {
               </div>
               <div className="col-md-3">
                 <label className="form-label small fw-semibold mb-1">Batch price (₹)</label>
-                <input type="number" className="form-control form-control-sm" placeholder="Optional" value={row.price || ""} onChange={(e) => updateRow(row.id, "price", e.target.value)} />
+                <input type="number" step="any" className="form-control form-control-sm" placeholder="Optional" value={row.price || ""} onChange={(e) => updateRow(row.id, "price", e.target.value)} />
               </div>
               <div className="col-md-3">
                 <label className="form-label small fw-semibold mb-1">Label</label>
@@ -504,6 +505,8 @@ function DeparturePlansField({ value, onChange, cityOptions = [] }) {
                   <label className="form-label small fw-semibold mb-1">{activeCity} Price (INR)</label>
                   <input
                     type="number"
+                    step="any"
+                    min="0"
                     className="form-control form-control-sm"
                     placeholder={`Enter ${activeCity} price`}
                     value={plans[activeCity]?.price ?? ""}
@@ -700,6 +703,8 @@ function EnhancedDeparturePlansField({ value, onChange, cityOptions = [], errorM
                   <label className="form-label small fw-semibold mb-1">{activeCity} Price (INR)</label>
                   <input
                     type="number"
+                    step="any"
+                    min="0"
                     className="form-control form-control-sm"
                     placeholder={`Enter ${activeCity} price`}
                     value={plans[activeCity]?.price ?? ""}
@@ -871,6 +876,14 @@ function ManagePage({
     setShowForm(false);
   };
 
+  const handleNativeInvalid = (e) => {
+    // The browser blocks submit before onSubmit runs when an input fails native
+    // checks (required, step, type="url"). Tell the admin which field it is.
+    const el = e.target;
+    const label = el?.closest?.("[class*='col-md-']")?.querySelector?.("label")?.textContent;
+    toast?.error(nativeInvalidToastMessage(label, el?.validationMessage));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     try {
@@ -949,7 +962,7 @@ function ManagePage({
       {showForm && (
         <div className="adm-form-card" ref={formRef}>
           <h5 className="mb-4 fw-bold">{editId ? `Edit ${title}` : `Add New ${title}`}</h5>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} onInvalidCapture={handleNativeInvalid}>
             <div className="row g-3">
               {fields.map((f) => (
                 <div className={`col-md-${f.col || 6}`} key={f.key}>
@@ -974,7 +987,10 @@ function ManagePage({
                   {f.type === "select" ? (
                     <select className={`form-select form-select-sm ${fieldErrors[f.key] ? "is-invalid" : ""}`} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} required={f.required}>
                       <option value="">- Select {f.label} -</option>
-                      {f.options.map((o) => {
+                      {isSavedSelectValueMissing(f.options, form[f.key]) && (
+                        <option value={form[f.key]}>{form[f.key]} (current value)</option>
+                      )}
+                      {(f.options || []).map((o) => {
                         const value = typeof o === "string" ? o : o.value;
                         const label = typeof o === "string" ? o : o.label;
                         return (
@@ -1003,7 +1019,7 @@ function ManagePage({
                   ) : f.type === "imageGallery" ? (
                     <ImageGalleryField value={form[f.key] ?? "[]"} onChange={(val) => setForm({ ...form, [f.key]: val })} />
                   ) : (
-                    <input type={f.type || "text"} className={`form-control form-control-sm ${fieldErrors[f.key] ? "is-invalid" : ""}`} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} placeholder={f.placeholder || ""} required={f.required} />
+                    <input type={f.type || "text"} step={numberInputStep(f.type, f.step)} className={`form-control form-control-sm ${fieldErrors[f.key] ? "is-invalid" : ""}`} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} placeholder={f.placeholder || ""} required={f.required} />
                   )}
                   {fieldErrors[f.key] && f.type !== "pickups" && f.type !== "departurePlans" && (
                     <div className="invalid-feedback d-block">

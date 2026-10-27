@@ -131,3 +131,28 @@ test("forms without departurePlans keep required-field and batch checks", () => 
     "Batch 1: WhatsApp link should start with http:// or https://.",
   ]);
 });
+
+test("decimal ratings and difficulty values outside the select list still pass JS validation", () => {
+  const errors = validateAdminForm(
+    [
+      { key: "name", label: "Trek Name", type: "text", required: true },
+      { key: "difficulty", label: "Difficulty", type: "select", required: true, options: ["Easy", "Medium", "Hard"] },
+      { key: "rating", label: "Rating (1-5)", type: "number" },
+      { key: "departurePlans", label: "Departure Cities", type: "departurePlans" },
+    ],
+    {
+      name: "Vasota Fort Trek",
+      difficulty: "Moderate",
+      rating: 4.8,
+      departurePlans: {
+        Pune: {
+          price: "1499.5",
+          pickupPoints: [{ time: "07:30 PM", location: "Shivajinagar", mapUrl: "" }],
+          itinerary: "Day 1|07:30 PM|Depart",
+        },
+      },
+    }
+  );
+
+  assert.deepEqual(errors, {});
+});
