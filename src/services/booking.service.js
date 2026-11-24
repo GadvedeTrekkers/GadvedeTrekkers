@@ -1,3 +1,4 @@
+import { getWhatsappNumber } from "../config/whatsappSetting";
 /**
  * booking.service.js
  *
@@ -14,7 +15,6 @@
 
 import {
   BOOKING_MODE,
-  BOOKING_WHATSAPP_NUMBER,
 } from "../config/bookingConfig";
 import { handleWhatsAppLead } from "../utils/leadActions";
 
@@ -50,7 +50,7 @@ export const bookingService = {
 
   async _viaWhatsApp(product, options) {
     return handleWhatsAppLead({
-      phoneNumber: options.phoneNumber ?? BOOKING_WHATSAPP_NUMBER,
+      phoneNumber: options.phoneNumber ?? getWhatsappNumber(),
       packageName: product.name,
       location:    product.location,
       category:    product.category || product.type || "Package",

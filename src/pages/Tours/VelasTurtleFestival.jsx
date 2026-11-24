@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
+import { waBase } from "../../config/whatsappSetting";
 
 const gallery = [
   "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=900&q=80",
@@ -489,7 +490,7 @@ export default function VelasTurtleFestival() {
                 Book Now
               </a>
 
-              <a href="https://wa.me/919856112727?text=Hi%2C+I%27m+interested+in+Velas+Turtle+Festival+2026"
+              <a href={`${waBase()}?text=Hi%2C+I%27m+interested+in+Velas+Turtle+Festival+2026`}
                 target="_blank" rel="noopener noreferrer"
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#25d366", color: "#fff", borderRadius: 12, padding: "12px 0", fontWeight: 700, fontSize: "0.9rem", textDecoration: "none", marginBottom: 14 }}>
                 <span style={{ fontSize: "1.1rem" }}>💬</span> WhatsApp Enquiry

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { handleImageError } from "../../utils/imageFallback";
 import { Link } from "react-router-dom";
 import EnquiryModal from "../../components/EnquiryModal";
+import { waBase } from "../../config/whatsappSetting";
 
 const popularTrips = [
   {
@@ -279,7 +280,7 @@ export default function Corporate() {
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <a
-              href="https://wa.me/919856112727"
+              href={waBase()}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -354,7 +355,7 @@ export default function Corporate() {
                       <div style={{ fontWeight: 900, color: "#064e3b", fontSize: "1.2rem" }}>₹{trip.price}<span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#6b7280" }}>/person</span></div>
                     </div>
                     <a
-                      href="https://wa.me/919856112727"
+                      href={waBase()}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ background: "#25d366", color: "#fff", padding: "8px 16px", borderRadius: 8, fontWeight: 700, fontSize: "0.82rem", textDecoration: "none" }}
@@ -685,7 +686,7 @@ export default function Corporate() {
               <h4 style={{ fontWeight: 700, color: "#065f46", fontSize: "0.95rem", marginBottom: 8 }}>{pkg.title}</h4>
               <p style={{ fontSize: "0.85rem", color: "#374151", lineHeight: 1.7, margin: "0 0 16px" }}>{pkg.desc}</p>
               <a
-                href="https://wa.me/919856112727"
+                href={waBase()}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -722,7 +723,7 @@ export default function Corporate() {
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <a
-              href="https://wa.me/919856112727"
+              href={waBase()}
               target="_blank"
               rel="noopener noreferrer"
               style={{

@@ -1,3 +1,4 @@
+import { OFFICIAL_WHATSAPP_NUMBER, waBase } from "./whatsappSetting";
 /* ═══════════════════════════════════════════════════════════════
    BOOKING MODE CONFIGURATION
    ═══════════════════════════════════════════════════════════════
@@ -12,14 +13,15 @@
 
 export const BOOKING_MODE = "WHATSAPP"; // public booking channel — keep WhatsApp
 
-/* WhatsApp number used exclusively for BOOKING (separate from general inquiry) */
-export const BOOKING_WHATSAPP_NUMBER = "918605866155";
+/* FR-FE-89 / SEC-41: ONE official number for booking, inquiry and sharing.
+   These constants are the static default only; runtime value = getWhatsappNumber() (admin setting). */
+export const BOOKING_WHATSAPP_NUMBER = OFFICIAL_WHATSAPP_NUMBER;
 
 /* General inquiry number (existing) */
-export const INQUIRY_WHATSAPP_NUMBER = "919856112727";
+export const INQUIRY_WHATSAPP_NUMBER = OFFICIAL_WHATSAPP_NUMBER;
 
 /* Referral share WhatsApp number (same as booking) */
-export const SHARE_WHATSAPP_NUMBER = "918605866155";
+export const SHARE_WHATSAPP_NUMBER = OFFICIAL_WHATSAPP_NUMBER;
 
 /* ─── CTA Button Labels ───────────────────────────────────────── */
 export const CTA_LABELS = {
@@ -76,7 +78,7 @@ export function buildBookingWhatsAppUrl(trek, selectedDate = null) {
   if (trek?.referralCode) lines.push(`🎁 Referral: ${trek.referralCode}`);
   lines.push("", "Please confirm availability.");
 
-  return `https://wa.me/${BOOKING_WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+  return `${waBase()}?text=${encodeURIComponent(lines.join("\n"))}`;
 }
 
 /* ─── Build referral share WhatsApp URL ─────────────────────────

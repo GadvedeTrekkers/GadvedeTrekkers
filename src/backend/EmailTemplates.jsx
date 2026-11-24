@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { waBase } from "../config/whatsappSetting";
 
 /* ── Sample data for preview ── */
 const SAMPLE_BOOKING = {
@@ -127,7 +128,7 @@ function BookingConfirmationEmail({ data = SAMPLE_BOOKING }) {
               📲 Join your trek WhatsApp group to get real-time updates, safety tips, and meet fellow trekkers!
             </div>
             <a
-              href="https://wa.me/919856112727"
+              href={waBase()}
               style={{ background: "#25d366", color: "#fff", textDecoration: "none", padding: "10px 28px", borderRadius: 8, fontWeight: 700, fontSize: 14, display: "inline-block" }}
             >
               💬 Join WhatsApp Group
@@ -160,7 +161,7 @@ function BookingConfirmationEmail({ data = SAMPLE_BOOKING }) {
             Pune, Maharashtra · gadvedetrekkers@gmail.com · +91 98561 12727
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
-            {[["Website", "https://www.gadvede.com"], ["Instagram", "https://www.instagram.com/gadvede_trekkers/"], ["WhatsApp", "https://wa.me/919856112727"]].map(([l, href]) => (
+            {[["Website", "https://www.gadvede.com"], ["Instagram", "https://www.instagram.com/gadvede_trekkers/"], ["WhatsApp", waBase()]].map(([l, href]) => (
               <a key={l} href={href} style={{ color: "#6ee7b7", fontSize: 12, textDecoration: "none" }}>{l}</a>
             ))}
           </div>
@@ -409,7 +410,7 @@ function EnquiryAckEmail({ data = SAMPLE_ENQUIRY }) {
               Want a faster response? Chat with us directly on WhatsApp — we're usually online!
             </p>
             <a
-              href={`https://wa.me/919856112727?text=${encodeURIComponent(`Hi 👋\n\nI'm interested in:\n\n📍 Location: ${data.location || data.eventName}\n📦 Package: ${data.eventName}\n👥 Type: ${data.category}\n\nPlease share price and details.`)}`}
+              href={`${waBase()}?text=${encodeURIComponent(`Hi 👋\n\nI'm interested in:\n\n📍 Location: ${data.location || data.eventName}\n📦 Package: ${data.eventName}\n👥 Type: ${data.category}\n\nPlease share price and details.`)}`}
               style={{ background: "#25d366", color: "#fff", textDecoration: "none", padding: "11px 28px", borderRadius: 8, fontWeight: 700, fontSize: 14, display: "inline-block" }}
             >
               💬 Chat on WhatsApp

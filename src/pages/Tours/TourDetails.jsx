@@ -4,10 +4,11 @@ import { getTourDates } from "../../data/tourDatesStorage";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
-import { BOOKING_WHATSAPP_NUMBER, buildBookingWhatsAppUrl } from "../../config/bookingConfig";
+import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { toursList } from "../../data/toursData";
 import { ADDITIONAL_TOUR_SEEDS } from "../../data/additionalTourDetails";
 import { productService } from "../../services/product.service";
+import { formatWhatsappDisplay, waBase } from "../../config/whatsappSetting";
 import {
   MANALI_TOUR_SEED,
   MANALI_GALLERY,
@@ -590,7 +591,7 @@ function TourDetails() {
                 {paymentDetails.length === 0 && (
                   <div style={paymentRowStyle}>
                     <span style={{ fontWeight: 700, color: "#264a3a" }}>Booking</span>
-                    <a href={`https://wa.me/${BOOKING_WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi Gadvede Trekkers, I want to book ${tour.name}`)}`} target="_blank" rel="noopener noreferrer" style={{ color: "#103528", fontWeight: 800 }}>WhatsApp +91 86058 66155 — we share payment details on confirmation</a>
+                    <a href={`${waBase()}?text=${encodeURIComponent(`Hi Gadvede Trekkers, I want to book ${tour.name}`)}`} target="_blank" rel="noopener noreferrer" style={{ color: "#103528", fontWeight: 800 }}>WhatsApp {formatWhatsappDisplay()} — we share payment details on confirmation</a>
                   </div>
                 )}
                 {paymentDetails.map((item) => (

@@ -13,6 +13,7 @@ import { collectSellingPrices, genuineCompareAt, resolveTripGallery } from "../u
 import { tripDetailPath } from "../data/publicTrips";
 import { FEATURED_TRIPS, mergeFeaturedTrips } from "../data/featuredTrips";
 import { useSeo } from "../seo/useSeo";
+import { waBase } from "../config/whatsappSetting";
 import {
   DEFAULT_OG,
   HOME_DESCRIPTION,
@@ -1439,7 +1440,7 @@ function Home() {
               Explore All Treks →
             </Link>
             <a
-              href="https://wa.me/919856112727"
+              href={waBase()}
               className="ht-cta-banner-btn-secondary"
               target="_blank"
               rel="noopener noreferrer"
@@ -1483,7 +1484,7 @@ function Home() {
 
       {/* ── Floating WhatsApp button ── */}
       <a
-        href="https://wa.me/919856112727"
+        href={waBase()}
         target="_blank"
         rel="noopener noreferrer"
         title="Chat on WhatsApp"
