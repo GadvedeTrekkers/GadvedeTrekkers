@@ -1,4 +1,4 @@
-import { OFFICIAL_WHATSAPP_NUMBER, waBase } from "./whatsappSetting";
+import { OFFICIAL_WHATSAPP_NUMBER, waSendUrl, waUrl } from "./whatsappSetting.js";
 /* ═══════════════════════════════════════════════════════════════
    BOOKING MODE CONFIGURATION
    ═══════════════════════════════════════════════════════════════
@@ -78,7 +78,7 @@ export function buildBookingWhatsAppUrl(trek, selectedDate = null) {
   if (trek?.referralCode) lines.push(`🎁 Referral: ${trek.referralCode}`);
   lines.push("", "Please confirm availability.");
 
-  return `${waBase()}?text=${encodeURIComponent(lines.join("\n"))}`;
+  return waUrl(lines.join("\n"));
 }
 
 /* ─── Build referral share WhatsApp URL ─────────────────────────
@@ -94,7 +94,7 @@ export function buildShareWhatsAppUrl(trek, referralUrl, selectedDate = null) {
   const trekName = trek?.name || "Trek";
   const price    = trek?.price ? `₹${trek.price}` : "TBD";
   const date     = selectedDate || trek?.nextDate || "Flexible";
-  const url      = referralUrl || window.location.href;
+  const url      = referralUrl || (typeof window !== "undefined" ? window.location.href : "https://www.gadvede.com");
 
   const message = [
     "Hi 👋  Join me on this trek!",
@@ -108,5 +108,5 @@ export function buildShareWhatsAppUrl(trek, referralUrl, selectedDate = null) {
     "Use my referral code for benefits.",
   ].join("\n");
 
-  return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  return waSendUrl(message, ""); // share link: no recipient
 }
