@@ -5,7 +5,7 @@ import { getWhatsappNumber, waUrl } from "./whatsappSetting";
  * Header, Footer and Contact page.
  */
 export const CONTACT = {
-  phones: ["9856112727", "9856122727"],
+  phones: ["9856112727"],
   /** Live value from the admin setting (FR-FE-89); default = official number. */
   get whatsapp() { return getWhatsappNumber(); },
   email: "info@gadvede.com",
