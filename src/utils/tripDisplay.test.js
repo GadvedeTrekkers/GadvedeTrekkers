@@ -3,8 +3,12 @@ import assert from "node:assert/strict";
 import {
   collectSellingPrices,
   genuineCompareAt,
+  linkifyHtml,
+  linkifyText,
   markdownBlocks,
+  parseCombinedItineraryRoutes,
   parseItineraryDays,
+  publicTrekItineraries,
   resolveTripGallery,
   stripMarkdownInline,
   upcomingDepartures,
@@ -26,6 +30,155 @@ test("itinerary keeps API day headers and pipe-separated times", () => {
   });
   assert.equal(days[1].events[0].time, "06:00 AM");
   assert.equal(JSON.stringify(days).includes("*"), false);
+});
+
+const PUNE_DEPARTURE_ITINERARY = `Day 1|09:00 PM|Report to the Gadvede trek leaders at Fergusson College Main Gate, FC Road, Pune (https://goo.gl/maps/53XNsyDPwcSVReZW9) for attendance and a quick introduction.
+Day 1|09:30 PM|Pick-up from Nashik Phata (https://goo.gl/maps/3Fdnzh3YdLEimfHg7); the bus then departs overnight for Bari.
+
+Keep your ID ready
+Day 2|03:30 AM|Arrive at Bari base village and rest for a while before the climb.
+Day 2||Rest before the climb
+Day 2|05:00 AM|Freshen up and start the climb to Kalsubai Peak.
+Day 2|09:00 AM|Reach the summit.
+Day 2|10:30 AM|Breakfast.
+Day 2|11:00 AM|Begin the descent.
+Day 2|02:00 PM|Lunch at the base village.
+Day 2|03:00 PM|Board the bus for Pune.
+Day 2|08:00 PM|Arrive in Pune.
+Day 1|10:15 PM|Late joiners meet the leader`;
+
+test("repeated Day N rows share one heading, in first-seen order", () => {
+  const days = parseItineraryDays(PUNE_DEPARTURE_ITINERARY);
+  assert.deepEqual(days.map((day) => day.title), ["Day 1", "Day 2"]);
+  assert.deepEqual(
+    days[0].events.map((event) => event.time),
+    ["09:00 PM", "09:30 PM", "", "10:15 PM"]
+  );
+  assert.equal(days[0].events[2].desc, "Keep your ID ready");
+  assert.equal(days[0].events[3].desc, "Late joiners meet the leader");
+  assert.equal(days[1].events.length, 9);
+  assert.deepEqual(days[1].events[1], { time: "", desc: "Rest before the climb" });
+  assert.match(days[0].events[0].desc, /https:\/\/goo\.gl\/maps\/53XNsyDPwcSVReZW9/);
+  assert.equal(days[0].events[0].desc.includes("<"), false);
+});
+
+test("blank lines, missing times, header lines, and case still group", () => {
+  const days = parseItineraryDays(`
+
+**Day 1**|09:00 PM|**Report**
+
+day 1|Reach the base village
+Day 1|06:30 AM|
+Day 2 — Summit
+Sunrise photos
+Day 1 — Departure from Pune
+07:30 PM|Second header stays separate
+`);
+  assert.equal(days.length, 3);
+  assert.equal(days[0].title, "Day 1");
+  assert.deepEqual(days[0].events, [
+    { time: "09:00 PM", desc: "Report" },
+    { time: "", desc: "Reach the base village" },
+    { time: "06:30 AM", desc: "" },
+  ]);
+  assert.equal(days[1].title, "Day 2 — Summit");
+  assert.deepEqual(days[1].events, [{ time: "", desc: "Sunrise photos" }]);
+  assert.equal(days[2].title, "Day 1 — Departure from Pune");
+  assert.equal(days[2].events[0].time, "07:30 PM");
+});
+
+test("a note before any day stays on its own untitled block", () => {
+  const days = parseItineraryDays("Bring water\n\nDay 1|09:00 PM|Report");
+  assert.equal(days[0].title, "");
+  assert.deepEqual(days[0].events, [{ time: "", desc: "Bring water" }]);
+  assert.equal(days[1].title, "Day 1");
+});
+
+test("legacy City|Day|time|text groups per city without mixing routes", () => {
+  const routes = parseCombinedItineraryRoutes(`Pune|Day 1|09:00 PM|Report at FC Road (https://goo.gl/maps/53XNsyDPwcSVReZW9)
+Bring a torch
+Mumbai|Day 2|06:00 AM|Summit
+Pune|Day 2|05:00 AM|Start the climb
+Pune|Day 1|09:30 PM|Nashik Phata
+Mumbai|Day 1|08:30 PM|Teen Hath Naka
+`);
+  assert.deepEqual(Object.keys(routes), ["pune", "mumbai"]);
+  assert.equal(routes.pune.label, "From Pune");
+  assert.deepEqual(routes.pune.days.map((day) => day.title), ["Day 1", "Day 2"]);
+  assert.deepEqual(
+    routes.pune.days[0].events.map((event) => event.desc),
+    ["Report at FC Road (https://goo.gl/maps/53XNsyDPwcSVReZW9)", "Bring a torch", "Nashik Phata"]
+  );
+  assert.equal(routes.pune.days[1].events[0].time, "05:00 AM");
+  assert.deepEqual(routes.mumbai.days.map((day) => day.title), ["Day 2", "Day 1"]);
+  assert.equal(routes.mumbai.days[1].events[0].desc, "Teen Hath Naka");
+});
+
+test("departure plans win, and an empty plan falls back to the legacy field", () => {
+  const fromPlans = publicTrekItineraries(
+    { Pune: { itinerary: "Day 1|09:00 PM|From plans\nDay 1|10:00 PM|Still day 1" } },
+    "Pune|Day 1|01:00 AM|From legacy"
+  );
+  assert.equal(fromPlans.pune.days.length, 1);
+  assert.deepEqual(
+    fromPlans.pune.days[0].events.map((event) => event.desc),
+    ["From plans", "Still day 1"]
+  );
+
+  const fromLegacy = publicTrekItineraries(
+    JSON.stringify({ Pune: { price: 1399, itinerary: "" } }),
+    "Mumbai|Day 1|08:30 PM|Legacy only\nMumbai|Day 1|09:00 PM|Second stop"
+  );
+  assert.equal(fromLegacy.pune, undefined);
+  assert.equal(fromLegacy.mumbai.days.length, 1);
+  assert.equal(fromLegacy.mumbai.days[0].events.length, 2);
+  assert.equal(fromLegacy.mumbai.icon, "🚌");
+});
+
+test("linkify turns map URLs into a short accessible link and escapes everything else", () => {
+  const segments = linkifyText(
+    'Report (https://goo.gl/maps/53XNsyDPwcSVReZW9) and http://example.com/notes. See https://en.wikipedia.org/wiki/Trek_(hiking).'
+  );
+  assert.equal(segments[0].text, "Report (");
+  assert.deepEqual(segments[1], {
+    type: "link",
+    href: "https://goo.gl/maps/53XNsyDPwcSVReZW9",
+    label: "View on map",
+    ariaLabel: "View on map: https://goo.gl/maps/53XNsyDPwcSVReZW9",
+  });
+  assert.equal(segments[2].text, ") and ");
+  assert.equal(segments[3].href, "http://example.com/notes");
+  assert.equal(segments[3].label, "http://example.com/notes");
+  assert.equal(segments[3].ariaLabel, undefined);
+  assert.equal(segments[4].text, ". See ");
+  assert.equal(segments[5].href, "https://en.wikipedia.org/wiki/Trek_(hiking)");
+  assert.equal(segments[6].text, ".");
+
+  const maps = linkifyText("https://maps.google.com/maps?q=kothrud and https://maps.app.goo.gl/abcDEF");
+  assert.equal(maps[0].label, "View on map");
+  assert.equal(maps[2].label, "View on map");
+  assert.equal(maps[2].href, "https://maps.app.goo.gl/abcDEF");
+
+  const html = linkifyHtml(
+    `Meet <script>alert(1)</script> <img src=x onerror="alert(1)"> at https://goo.gl/maps/abc123 now. javascript:alert(1)`
+  );
+  assert.equal(html.includes("<script"), false);
+  assert.equal(html.includes("<img"), false);
+  assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.match(html, /&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt;/);
+  assert.match(html, /javascript:alert\(1\)/);
+  assert.match(
+    html,
+    /<a href="https:\/\/goo\.gl\/maps\/abc123" target="_blank" rel="noopener noreferrer" aria-label="View on map: https:\/\/goo\.gl\/maps\/abc123">View on map<\/a>/
+  );
+  assert.equal((html.match(/<a /g) || []).length, 1);
+
+  const quoted = linkifyHtml('Click <a href="https://evil.example/phish">here</a> & go');
+  assert.match(quoted, /&lt;a href=&quot;/);
+  assert.match(quoted, /&amp; go/);
+  assert.match(quoted, /href="https:\/\/evil\.example\/phish"/);
+  assert.equal(quoted.includes("<a href=\"https://evil"), true);
+  assert.equal(quoted.includes("<script"), false);
 });
 
 test("overview markdown no longer contains asterisks", () => {

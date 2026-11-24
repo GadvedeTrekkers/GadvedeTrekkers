@@ -12,13 +12,16 @@ import { cleanDisplayText, isPromptLike, stripPromptFields } from "../../utils/c
 import {
   asList,
   collectSellingPrices,
+  escapeHtml,
   genuineCompareAt,
   itineraryHasEvents,
+  linkifyHtml,
+  linkifyText,
   markdownBlocks,
-  parseDeparturePlanItineraries,
   parseJsonish,
   pickupGroups,
   pricingCards,
+  publicTrekItineraries,
   resolveTripGallery,
   sectionList,
   stripMarkdownInline,
@@ -64,6 +67,27 @@ function Paragraphs({ text, className = "td-para" }) {
       </p>
     );
   });
+}
+
+function ItineraryDescription({ text }) {
+  const segments = linkifyText(text);
+  if (!segments.length) return null;
+  return segments.map((segment, index) =>
+    segment.type === "link" ? (
+      <a
+        key={`link-${index}`}
+        href={segment.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="td-timeline-link"
+        aria-label={segment.ariaLabel || undefined}
+      >
+        {segment.label}
+      </a>
+    ) : (
+      <span key={`text-${index}`}>{segment.text}</span>
+    )
+  );
 }
 
 function DepartureRows({ departures, trek }) {
@@ -176,7 +200,7 @@ function TrekDetails() {
   const staticRichTrek =
     richTrekFor({ name: trek?.name, slug: id || trek?.slug }) ||
     (trek?.name ? richTrekDetails[trek.name] || null : null);
-  const catalogItineraries = parseDeparturePlanItineraries(trek?.departurePlans);
+  const catalogItineraries = publicTrekItineraries(trek?.departurePlans, trek?.itinerary);
   const hasTimedItinerary = itineraryHasEvents(catalogItineraries);
   const hasCatalogCopy = Boolean(
     trek && (trek.description || trek.about || trek.includedItems || Object.keys(catalogItineraries).length)
@@ -283,12 +307,13 @@ function TrekDetails() {
       .carry-grid li{background:#f6fbf8;border:1px solid #e3efe8;border-radius:6px;padding:6px 10px;font-size:.84rem}
       .discount{background:#f0fdf4;border:1px solid #d5f6e4;border-radius:8px;padding:10px 14px;margin-bottom:8px}
       .discount-code{font-weight:900;letter-spacing:1px;color:#065f46}
+      a{color:#0a6a47}
       @media print{body{padding:16px}.highlight-list,.inc-grid,.carry-grid{break-inside:avoid}}`;
 
     const allRoutes = Object.entries(itineraries).map(([key, route]) => {
       const rows = (route?.days || []).map((day) =>
-        `<div class="day-title">${day.title}</div>${
-          (day.events || []).map((ev) => `<div class="event"><span class="event-time">${ev.time || ""}</span><span>${ev.desc}</span></div>`).join("")
+        `<div class="day-title">${escapeHtml(day.title)}</div>${
+          (day.events || []).map((ev) => `<div class="event"><span class="event-time">${escapeHtml(ev.time || "")}</span><span>${linkifyHtml(ev.desc)}</span></div>`).join("")
         }`
       ).join("<br>");
       return `<h3>${route?.label || key}</h3>${rows || "<p style='color:#888'>No events listed.</p>"}`;
@@ -792,7 +817,7 @@ function TrekDetails() {
                       <div className="td-timeline-event" key={eventIndex}>
                         <div className="td-timeline-time">{event.time}</div>
                         <div className="td-timeline-dot" />
-                        <div className="td-timeline-desc">{event.desc}</div>
+                        <div className="td-timeline-desc"><ItineraryDescription text={event.desc} /></div>
                       </div>
                     ))}
                   </div>
