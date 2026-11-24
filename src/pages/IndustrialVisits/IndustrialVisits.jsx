@@ -4,7 +4,7 @@ import { ivDestinations as seedDestinations, parseIvItinerary } from "../../data
 import { getAdminItems } from "../../data/adminStorage";
 import EnquiryModal from "../../components/EnquiryModal";
 import { syncProductsFromApi } from "../../api/getAll";
-import { waBase } from "../../config/whatsappSetting";
+import { waUrl } from "../../config/whatsappSetting";
 
 const _parseLines = (v) => {
   if (Array.isArray(v)) return v.map((item) => String(item || "").trim()).filter(Boolean);
@@ -549,7 +549,7 @@ export default function IndustrialVisits() {
               📞 Get a Free Quote
             </Link>
             <a
-              href={`${waBase()}?text=Hi%2C%20I%20want%20to%20enquire%20about%20industrial%20visit%20packages%20for%20colleges`}
+              href={waUrl("Hi, I want to enquire about industrial visit packages for colleges")}
               target="_blank"
               rel="noopener noreferrer"
               style={{ background: "#25d366", color: "#fff", padding: "13px 32px", borderRadius: 12, fontWeight: 800, fontSize: "0.95rem", textDecoration: "none", transition: "transform 0.2s" }}
