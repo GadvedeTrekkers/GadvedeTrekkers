@@ -9,13 +9,13 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const BANNED = [['86058', '66155'].join(''), ['9999', '999999'].join('')];
+const BANNED = [['86058', '66155'].join(''), ['9999', '999999'].join(''), ['88280', '04949'].join('')];
 // Whole phone-number tokens only (optional +91/91/0 prefix), so long numeric constants in vendor code don't match.
 const BANNED_RE = BANNED.map((b) => new RegExp(`(?<!\\d)(?:\\+?91|0)?${b}(?!\\d)`));
 const ALLOWED = new Set(['919856112727', '9856112727']);
 // Numbers awaiting a BA/Pratik decision (BRD review M18). Reported as warnings, not failures, until decided.
-//   918828004949 — cancellation-policy WhatsApp link (src/pages/CancellationPolicy.jsx)
-const PENDING_REVIEW = new Set(['918828004949']);
+//   (none; the old cancellation-policy number was retired by Pratik on 25 Nov 2026 and is now banned)
+const PENDING_REVIEW = new Set([]);
 const SKIP_DIRS = new Set(['node_modules', '.git', 'coverage', 'test-results', 'playwright-report']);
 const TEXT_EXT = /\.(m?[jt]sx?|cjs|json|sql|md|html?|css|ya?ml|txt|env|example|sh|svg)$/i;
 const MAX_BYTES = 5 * 1024 * 1024;

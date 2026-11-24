@@ -122,7 +122,7 @@ const importantNotes = [
   "Velas Turtle Festival is a budget trip — stay is in Homestay (dormitory-style).",
   "Food will be local Konkani cuisine.",
   "We don't have couple rooms — minimum 4 guests in one room or dorm-like rooms.",
-  "For AC Rooms, extra ₹200 per person (WhatsApp us on 8828004949).",
+  "For AC Rooms, extra ₹200 per person (WhatsApp us on 98561 12727).",
   "Festival sells out quickly — book in advance.",
   "First 18 bookings: stay in main homestay; after that, alternate homestay.",
   "Without transport: Bankot and Harihareshwar in your own vehicle. Ferry and parking charges not included.",
