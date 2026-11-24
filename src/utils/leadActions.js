@@ -1,4 +1,5 @@
 import { saveEnquiry } from "../data/enquiryStorage";
+import { waSendUrl } from "../config/whatsappSetting";
 
 export const DEFAULT_SALES_SMS =
   "Hi, I’m interested in outing packages near Pune/Mumbai.\nPlease share details.";
@@ -103,7 +104,7 @@ export function createWhatsAppInquiryUrl({
     location,
     category,
   });
-  return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+  return waSendUrl(message, phoneNumber);
 }
 
 export async function handleWhatsAppLead({
@@ -176,7 +177,7 @@ export async function handleWhatsAppLead({
       preferredDate,
     });
     const phone = phoneNumber || DEFAULT_WHATSAPP_NUMBER;
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    const waUrl = waSendUrl(message, phone);
     openWhatsAppUrl(waUrl);
   }
 
