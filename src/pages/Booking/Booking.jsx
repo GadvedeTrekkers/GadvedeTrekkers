@@ -12,7 +12,7 @@ import { syncEnquiriesWithBookings } from "../../data/enquiryStorage";
 import { createAlert, recordEmailAlertAttempt } from "../../data/notificationStorage";
 import InfoTooltip from "../../components/InfoTooltip";
 import { getEventDepartureConfig } from "../../utils/eventDepartureConfig";
-import { waBase } from "../../config/whatsappSetting";
+import { waUrl } from "../../config/whatsappSetting";
 
 const paymentOptions = [
   "Debit Card / Credit Card",
@@ -736,7 +736,7 @@ function Booking() {
                       Contact us on WhatsApp and we'll confirm your preferred date.
                     </div>
                     <a
-                      href={`${waBase()}?text=${encodeURIComponent(`Hi! I want to book the ${selectedTrek?.name || "trek"} — can you share available dates?`)}`}
+                      href={waUrl(`Hi! I want to book the ${selectedTrek?.name || "trek"} — can you share available dates?`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
