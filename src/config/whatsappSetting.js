@@ -1,7 +1,7 @@
 /**
  * whatsappSetting.js — FR-FE-89 / SEC-41
  * Every WhatsApp CTA on the site must read ONE admin-managed setting.
- *  - Default/fallback: the official number +91 98561 12727 (confirmed by Pratik, 24 Nov 2026).
+ *  - Default/fallback: the official number +91 98561 12727 (SEC-41: the only official number).
  *  - Runtime value: GET {VITE_API_BASE_URL}/api/settings/contact (changed only by Super Admin, audit-logged).
  * Use waBase() / waUrl(message) / getWhatsappNumber() — never hard-code a wa.me number.
  */
