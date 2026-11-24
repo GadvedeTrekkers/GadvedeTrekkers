@@ -1,4 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// Fixtures use fixed departure dates (Nov 2026); pin "now" so upcoming-batch logic stays deterministic.
+beforeAll(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-10-27T00:00:00Z")); });
+afterAll(() => { vi.useRealTimers(); });
 import {
   buildBatchRows,
   productItemFromRow,
@@ -126,7 +130,8 @@ describe("admin upsert accepts a trip and its batch", () => {
     vi.resetModules();
     const single = vi.fn();
     const batchInsert = vi.fn().mockResolvedValue({ error: null });
-    const batchDeleteEq = vi.fn().mockResolvedValue({ error: null });
+    const batchDeleteIn = vi.fn().mockResolvedValue({ error: null });
+    const oldBatchSelectEq = vi.fn().mockResolvedValue({ data: [{ id: "old-batch-1" }], error: null });
     const departureDeleteEq = vi.fn().mockResolvedValue({ error: null });
 
     vi.doMock("../config/supabaseAdminClient.js", () => ({
@@ -142,7 +147,11 @@ describe("admin upsert accepts a trip and its batch", () => {
             };
           }
           if (table === "product_batches") {
-            return { delete: () => ({ eq: batchDeleteEq }), insert: batchInsert };
+            return {
+              select: () => ({ eq: oldBatchSelectEq }),
+              delete: () => ({ in: batchDeleteIn }),
+              insert: batchInsert,
+            };
           }
           return { delete: () => ({ eq: departureDeleteEq }), insert: vi.fn() };
         },
@@ -204,10 +213,75 @@ describe("admin upsert accepts a trip and its batch", () => {
       date: "2026-11-07",
       departureCity: "Pune",
     });
-    expect(batchDeleteEq).toHaveBeenCalledWith("product_id", "product-1");
+    expect(oldBatchSelectEq).toHaveBeenCalledWith("product_id", "product-1");
     expect(batchInsert).toHaveBeenCalled();
     const inserted = batchInsert.mock.calls[0][0];
     expect(inserted[0].departure_city).toBe("Pune");
+    // old rows are removed only after the new rows were written
+    expect(batchDeleteIn).toHaveBeenCalledWith("id", ["old-batch-1"]);
+    expect(batchInsert.mock.invocationCallOrder[0]).toBeLessThan(batchDeleteIn.mock.invocationCallOrder[0]);
+  });
+
+  it("keeps existing dates and returns 500 when the batch insert fails", async () => {
+    vi.resetModules();
+    const missingPrice = { message: "column product_batches.price does not exist" };
+    const batchInsert = vi.fn().mockResolvedValue({ error: missingPrice });
+    const batchDeleteIn = vi.fn().mockResolvedValue({ error: null });
+    const oldBatchSelectEq = vi.fn().mockResolvedValue({ data: [{ id: "old-batch-1" }], error: null });
+    const single = vi.fn().mockResolvedValue({
+      data: { ...productRowFromItem("gt_tours", trip), id: "product-2" },
+      error: null,
+    });
+
+    vi.doMock("../config/supabaseAdminClient.js", () => ({
+      default: {
+        from: (table) => {
+          if (table === "products") return { upsert: () => ({ select: () => ({ single }) }) };
+          if (table === "product_batches") {
+            return {
+              select: () => ({ eq: oldBatchSelectEq }),
+              delete: () => ({ in: batchDeleteIn }),
+              insert: batchInsert,
+            };
+          }
+          return { delete: () => ({ eq: vi.fn().mockResolvedValue({ error: null }) }), insert: vi.fn() };
+        },
+      },
+    }));
+    vi.doMock("../config/supabasePublicClient.js", () => ({ default: { from: () => ({}) } }));
+
+    const { upsertAdminProduct } = await import("../controllers/products.controller.js");
+    const res = mockRes();
+    await upsertAdminProduct(
+      { body: { storageKey: "gt_tours", item: { ...trip, tourDateBatches: trip.trekDateBatches } } },
+      res
+    );
+
+    expect(res._status).toBe(500);
+    expect(res._body.success).toBe(false);
+    expect(batchInsert).toHaveBeenCalledTimes(2); // original + retry without optional columns
+    expect(batchInsert.mock.calls[1][0][0]).not.toHaveProperty("price");
+    expect(batchDeleteIn).not.toHaveBeenCalled();
+  });
+});
+
+describe("batch-save-wipe regressions", () => {
+  it("does not send price when a batch has no price (production has no price column)", () => {
+    const [batch] = buildBatchRows("product-1", {
+      tourDateBatches: JSON.stringify([{ date: "2026-12-04", endDate: "2026-12-07", departureCity: "Pune", price: "" }]),
+    });
+    expect(batch).not.toHaveProperty("price");
+    expect(batch).toMatchObject({ batch_date: "2026-12-04", end_date: "2026-12-07", departure_city: "Pune" });
+  });
+
+  it("keeps highlights and things to carry as separate items when the admin sends arrays", () => {
+    const row = productRowFromItem("gt_tours", {
+      name: "Malvan Tarkarli",
+      highlights: ["Scuba diving, parasailing", "Sindhudurg Fort"],
+      thingsToCarry: ["Water bottle", "Toiletries, sunscreen"],
+    });
+    expect(row.highlights).toEqual(["Scuba diving, parasailing", "Sindhudurg Fort"]);
+    expect(row.things_to_carry).toEqual(["Water bottle", "Toiletries, sunscreen"]);
   });
 });
 
