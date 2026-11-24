@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { getAdminItems } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
-import { waBase } from "../../config/whatsappSetting";
+import { waUrl } from "../../config/whatsappSetting";
 
 export const villasList = [
   {
@@ -564,7 +564,7 @@ function VillaDetail({ villa, onClose }) {
           {/* WhatsApp quick contact */}
           <div style={{ marginTop: 16, textAlign: "center" }}>
             <a
-              href={`${waBase()}?text=Hi! I'm interested in booking ${villa.name}.`}
+              href={waUrl(`Hi! I'm interested in booking ${villa.name}.`)}
               target="_blank"
               rel="noopener noreferrer"
               style={{
