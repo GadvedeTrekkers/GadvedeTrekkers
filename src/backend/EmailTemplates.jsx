@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { waBase } from "../config/whatsappSetting";
+import { waBase, waSendUrl, waUrl } from "../config/whatsappSetting";
 
 /* ── Sample data for preview ── */
 const SAMPLE_BOOKING = {
@@ -333,7 +333,7 @@ function AdminEnquiryAlertEmail({ data = SAMPLE_ENQUIRY }) {
           <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "18px 24px", marginBottom: 24 }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: BRAND_GREEN, marginBottom: 14 }}>⚡ Quick Response Actions</div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <a href={`https://wa.me/91${data.phone}?text=${encodeURIComponent(`Hi ${data.name} 👋\n\nThank you for your interest in ${data.eventName}!\nWe'd love to help you plan your adventure.\n\nPlease share your preferred dates and we'll send you a customised quote.\n\n— Gadvede Trekkers`)}`}
+              <a href={waSendUrl(`Hi ${data.name} 👋\n\nThank you for your interest in ${data.eventName}!\nWe'd love to help you plan your adventure.\n\nPlease share your preferred dates and we'll send you a customised quote.\n\n— Gadvede Trekkers`, `91${data.phone}`)}
                 style={{ background: "#25d366", color: "#fff", textDecoration: "none", padding: "10px 18px", borderRadius: 8, fontWeight: 700, fontSize: 13, display: "inline-block" }}>
                 💬 WhatsApp Now
               </a>
@@ -410,7 +410,7 @@ function EnquiryAckEmail({ data = SAMPLE_ENQUIRY }) {
               Want a faster response? Chat with us directly on WhatsApp — we're usually online!
             </p>
             <a
-              href={`${waBase()}?text=${encodeURIComponent(`Hi 👋\n\nI'm interested in:\n\n📍 Location: ${data.location || data.eventName}\n📦 Package: ${data.eventName}\n👥 Type: ${data.category}\n\nPlease share price and details.`)}`}
+              href={waUrl(`Hi 👋\n\nI'm interested in:\n\n📍 Location: ${data.location || data.eventName}\n📦 Package: ${data.eventName}\n👥 Type: ${data.category}\n\nPlease share price and details.`)}
               style={{ background: "#25d366", color: "#fff", textDecoration: "none", padding: "11px 28px", borderRadius: 8, fontWeight: 700, fontSize: 14, display: "inline-block" }}
             >
               💬 Chat on WhatsApp

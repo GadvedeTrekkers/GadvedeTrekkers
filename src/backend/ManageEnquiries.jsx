@@ -18,6 +18,7 @@ import {
   openSmsWithMessage,
 } from "../utils/leadActions";
 import { canAssignEnquiries } from "../utils/roleHelpers";
+import { waSendUrl } from "../config/whatsappSetting";
 
 const STATUS_COLUMNS = [
   { key: ENQUIRY_STATUS.NEW_LEAD, label: "New Lead", color: "#d97706", bg: "#fff7ed" },
@@ -324,7 +325,7 @@ export default function ManageEnquiries() {
       category: item.category || "Enquiry",
       customerName: item.name,
     });
-    window.open(`https://wa.me/91${item.phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+    window.open(waSendUrl(message, `91${item.phone}`), "_blank", "noopener,noreferrer");
   };
 
   const handleContact = (item) => {
