@@ -21,6 +21,7 @@ import { ENQUIRY_STATUS, ENQUIRY_TAGS, getEnquiries, setEnquiryStatus, setEnquir
 import { getLocalLeaderTrekEvents, loadLeaderTrekEvents } from "../../services/leaderEvents.service";
 import { buildSalesFollowUpWhatsAppMessage, DEFAULT_SALES_SMS, openSmsWithMessage } from "../../utils/leadActions";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
+import { waSendUrl } from "../../config/whatsappSetting";
 import {
   compareEventsAscending,
   compareEventsDescending,
@@ -269,7 +270,7 @@ export default function EmployeePortal() {
   const handleEnquiryWhatsApp = (item) => {
     if (!item.phone) return;
     const msg = buildSalesFollowUpWhatsAppMessage({ eventName: item.eventName, location: item.location || item.eventName?.split("–")[0]?.trim() || "Pune/Mumbai", category: item.category || "Enquiry", customerName: item.name });
-    window.open(`https://wa.me/91${item.phone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+    window.open(waSendUrl(msg, `91${item.phone}`), "_blank", "noopener,noreferrer");
   };
 
   const TABS = [
