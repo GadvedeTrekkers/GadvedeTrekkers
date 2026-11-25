@@ -3398,6 +3398,14 @@ footer .row > div {
   font-weight: 500;
 }
 
+.td-timeline-link {
+  color: #0f6f4a;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+
 /* Booking steps */
 .td-booking-steps-card { margin-top: 24px; }
 .td-booking-steps { padding: 0; margin: 0; list-style: none; display: grid; gap: 10px; }

@@ -3,6 +3,7 @@
  * Detail pages render API copy and departurePlans as-is:
  * markdown is turned into headings and lists, and itinerary lines stay
  * in the order and wording returned by product_departure_plans.
+ * Repeated day rows share one heading; http(s) URLs in descriptions become links.
  */
 
 const COVER_FILE_BY_SLUG = {
@@ -178,46 +179,108 @@ function itinerarySource(plan) {
   return plan.itinerary || plan.itinerary_text || "";
 }
 
+function isDayLabel(value) {
+  return /^day\s+\d+\b/i.test(String(value || "").trim());
+}
+
+/** A clock time such as "09:00 PM" or "6:30". Free-text titles are not times. */
+function looksLikeClockTime(value) {
+  const text = String(value || "").trim();
+  if (!/^(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:a\.?m\.?|p\.?m\.?)?$/i.test(text)) return false;
+  return /:|(?:a\.?m\.?|p\.?m\.?)/i.test(text);
+}
+
+function routeKey(city) {
+  return String(city || "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+}
+
+function routePresentation(city, days) {
+  return {
+    label: `From ${city}`,
+    sublabel: `${city} route`,
+    icon: /kasara/i.test(city) ? "🚂" : "🚌",
+    note: "",
+    days,
+  };
+}
+
 /**
- * Split departurePlans.itinerary_text into days.
- * Timed lines are "time|activity". A line that starts with "Day N" and has
- * no pipe is a day header. Nothing is added that the text does not contain.
+ * Split an itinerary into days.
+ * Per-route lines are "Day N|HH:MM AM/PM|Description". The same day title
+ * is one heading (first time it appears), including when it shows up again
+ * later. A header with no pipe ("Day 1 — Departure") still starts that day,
+ * and "time|description" lines with no day stay on the current day.
+ * Legacy rows are "City|Day N|time|text"; the city is ignored here.
+ * Blank lines are skipped. Nothing is added that the text does not contain.
  */
 export function parseItineraryDays(text) {
   const days = [];
   let current = null;
+
   const openDay = (title) => {
-    current = { title: stripMarkdownInline(title), events: [] };
+    const cleanTitle = stripMarkdownInline(title);
+    if (cleanTitle) {
+      const existing = days.find((day) => day.title.toLowerCase() === cleanTitle.toLowerCase());
+      if (existing) {
+        current = existing;
+        return;
+      }
+    }
+    current = { title: cleanTitle, events: [] };
     days.push(current);
+  };
+
+  const addEvent = (time, desc) => {
+    const cleanTime = stripMarkdownInline(time);
+    const cleanDesc = stripMarkdownInline(desc);
+    if (!cleanTime && !cleanDesc) return;
+    if (!current) openDay("");
+    current.events.push({ time: cleanTime, desc: cleanDesc });
+  };
+
+  const addDayEvent = (title, rest) => {
+    openDay(title);
+    if (rest.length === 0) return;
+    if (rest.length === 1) {
+      if (looksLikeClockTime(rest[0])) addEvent(rest[0], "");
+      else addEvent("", rest[0]);
+      return;
+    }
+    addEvent(rest[0], rest.slice(1).join(" | "));
   };
 
   String(text || "")
     .replace(/\r/g, "")
     .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .forEach((line) => {
+    .forEach((raw) => {
+      const line = raw.trim();
+      if (!line) return;
       const clean = stripMarkdownInline(line);
-      if (/^day\s+\d+\b/i.test(clean) && !clean.includes("|")) {
+      if (!clean) return;
+
+      if (isDayLabel(clean) && !clean.includes("|")) {
         openDay(clean);
         return;
       }
-      if (!current) openDay("");
-      if (!clean.includes("|")) {
-        current.events.push({ time: "", desc: clean });
+
+      const parts = clean.split("|").map((part) => part.trim());
+      while (parts.length > 1 && parts[parts.length - 1] === "") parts.pop();
+
+      if (parts.length >= 2 && isDayLabel(parts[1]) && !isDayLabel(parts[0])) {
+        addDayEvent(parts[1], parts.slice(2));
         return;
       }
-      const parts = clean.split("|").map((part) => part.trim()).filter(Boolean);
-      if (parts.length >= 3 && /^day\s+\d+\b/i.test(parts[0])) {
-        openDay(parts[0]);
-        current.events.push({ time: parts[1], desc: parts.slice(2).join(" | ") });
+      if (isDayLabel(parts[0]) && parts.length >= 2) {
+        addDayEvent(parts[0], parts.slice(1));
         return;
       }
       if (parts.length >= 2) {
-        current.events.push({ time: parts[0], desc: parts.slice(1).join(" | ") });
+        addEvent(parts[0], parts.slice(1).join(" | "));
         return;
       }
-      current.events.push({ time: "", desc: parts[0] || clean });
+      addEvent("", parts[0] || clean);
     });
 
   return days;
@@ -225,23 +288,164 @@ export function parseItineraryDays(text) {
 
 export function parseDeparturePlanItineraries(departurePlans) {
   return Object.fromEntries(
-    Object.entries(parseDeparturePlans(departurePlans)).map(([city, plan]) => {
-      const key = String(city || "")
-        .toLowerCase()
-        .replace(/[^a-z]/g, "");
-      const days = parseItineraryDays(itinerarySource(plan));
-      return [
-        key,
-        {
-          label: `From ${city}`,
-          sublabel: `${city} route`,
-          icon: /kasara/i.test(city) ? "🚂" : "🚌",
-          note: "",
-          days,
-        },
-      ];
-    })
+    Object.entries(parseDeparturePlans(departurePlans)).map(([city, plan]) => [
+      routeKey(city),
+      routePresentation(city, parseItineraryDays(itinerarySource(plan))),
+    ])
   );
+}
+
+/**
+ * Older products store every city in one itinerary string:
+ * "City|Day N|time|text". Split that into the same route shape, with days
+ * grouped in the order each city and day first appears.
+ */
+export function parseCombinedItineraryRoutes(text) {
+  const buckets = new Map();
+  let lastKey = "";
+
+  String(text || "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .forEach((raw) => {
+      const line = raw.trim();
+      if (!line) return;
+      const parts = line.split("|").map((part) => part.trim());
+      if (parts.length >= 2 && isDayLabel(parts[1]) && !isDayLabel(parts[0]) && parts[0]) {
+        const key = routeKey(parts[0]);
+        if (!key) return;
+        if (!buckets.has(key)) buckets.set(key, { city: parts[0], lines: [] });
+        lastKey = key;
+        buckets.get(key).lines.push(parts.slice(1).join("|"));
+        return;
+      }
+      if (lastKey && buckets.has(lastKey)) buckets.get(lastKey).lines.push(line);
+    });
+
+  return Object.fromEntries(
+    [...buckets.entries()].map(([key, bucket]) => [
+      key,
+      routePresentation(bucket.city, parseItineraryDays(bucket.lines.join("\n"))),
+    ])
+  );
+}
+
+/** Per-route departurePlans when they have events, otherwise the legacy combined field. */
+export function publicTrekItineraries(departurePlans, legacyItinerary = "") {
+  const fromPlans = parseDeparturePlanItineraries(departurePlans);
+  if (itineraryHasEvents(fromPlans)) return fromPlans;
+  const fromLegacy = parseCombinedItineraryRoutes(legacyItinerary);
+  if (itineraryHasEvents(fromLegacy)) return fromLegacy;
+  return fromPlans;
+}
+
+function trimTrailingUrlPunctuation(raw) {
+  let url = String(raw || "");
+  const count = (value, char) => value.split(char).length - 1;
+  while (url) {
+    const last = url[url.length - 1];
+    if (last === ")" && count(url, ")") > count(url, "(")) {
+      url = url.slice(0, -1);
+      continue;
+    }
+    if (last === "]" && count(url, "]") > count(url, "[")) {
+      url = url.slice(0, -1);
+      continue;
+    }
+    if (",.;:!?".includes(last)) {
+      url = url.slice(0, -1);
+      continue;
+    }
+    break;
+  }
+  return url;
+}
+
+function hasControlChar(value) {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 31 || code === 127) return true;
+  }
+  return false;
+}
+
+function safeHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    if (!url.hostname || url.username || url.password) return "";
+    if (hasControlChar(value)) return "";
+    return value;
+  } catch {
+    return "";
+  }
+}
+
+function mapLinkLabel(href) {
+  let url;
+  try {
+    url = new URL(href);
+  } catch {
+    return "";
+  }
+  const host = url.hostname.toLowerCase().replace(/^www\./, "");
+  const path = url.pathname.toLowerCase();
+  const googleMap =
+    host === "maps.google.com" ||
+    ((host === "google.com" || host.endsWith(".google.com")) && path.startsWith("/maps"));
+  const shortMap = host === "maps.app.goo.gl" || (host === "goo.gl" && path.startsWith("/maps"));
+  return googleMap || shortMap ? "View on map" : "";
+}
+
+/**
+ * Split plain text into text runs and http(s) links.
+ * Map short links are labeled "View on map". Everything else stays text,
+ * including markup, so callers can render it without injecting HTML.
+ */
+export function linkifyText(value) {
+  const source = String(value ?? "");
+  if (!source) return [];
+  const segments = [];
+  const pattern = /https?:\/\/[^\s<>"'`]+/gi;
+  let cursor = 0;
+  for (const match of source.matchAll(pattern)) {
+    const start = match.index ?? 0;
+    if (start < cursor) continue;
+    const candidate = trimTrailingUrlPunctuation(match[0]);
+    const href = safeHttpUrl(candidate);
+    if (!href) continue;
+    if (start > cursor) segments.push({ type: "text", text: source.slice(cursor, start) });
+    const label = mapLinkLabel(href);
+    segments.push({
+      type: "link",
+      href,
+      label: label || href,
+      ...(label ? { ariaLabel: `${label}: ${href}` } : {}),
+    });
+    cursor = start + candidate.length;
+  }
+  if (cursor < source.length) segments.push({ type: "text", text: source.slice(cursor) });
+  return segments;
+}
+
+export function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** HTML for a description: escaped text, with safe http(s) anchors only. */
+export function linkifyHtml(value) {
+  return linkifyText(value)
+    .map((segment) => {
+      if (segment.type !== "link") return escapeHtml(segment.text);
+      const aria = segment.ariaLabel ? ` aria-label="${escapeHtml(segment.ariaLabel)}"` : "";
+      return `<a href="${escapeHtml(segment.href)}" target="_blank" rel="noopener noreferrer"${aria}>${escapeHtml(segment.label)}</a>`;
+    })
+    .join("");
 }
 
 export function itineraryHasEvents(itineraries) {
