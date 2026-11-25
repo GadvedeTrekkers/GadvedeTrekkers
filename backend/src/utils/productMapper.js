@@ -33,6 +33,9 @@ function parseJson(value, fallback) {
 }
 
 function splitLines(value) {
+  if (Array.isArray(value)) {
+    return value.map((line) => String(line ?? "").trim()).filter(Boolean);
+  }
   return String(value || "")
     .split("\n")
     .map((line) => line.trim())
@@ -252,8 +255,10 @@ export function buildBatchRows(productId, item) {
         departure_city: entry.departureCity || entry.departure_city || null,
         whatsapp_group_link: entry.whatsappGroupLink || null,
         status: entry.status || "OPEN",
-        price: safeNumber(entry.price),
       };
+      // production product_batches has no price column; only send it when set
+      const price = safeNumber(entry.price);
+      if (price != null) row.price = price;
       const seats = Number(entry.seatsTotal || entry.seats_total);
       if (Number.isFinite(seats) && seats > 0) row.seats_total = seats;
       return row;

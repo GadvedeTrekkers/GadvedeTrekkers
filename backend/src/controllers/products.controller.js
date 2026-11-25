@@ -13,7 +13,7 @@ import { inferHubSlug, isCatalogHubSlug, publicCardImage } from "../../../shared
 import { publicTripPhoto } from "../../../shared/publicTrips.js";
 
 const PRODUCT_OPTIONAL_COLUMNS = ["hub_slug", "destination", "category", "media"];
-const BATCH_OPTIONAL_COLUMNS = ["end_date", "departure_city"];
+const BATCH_OPTIONAL_COLUMNS = ["end_date", "departure_city", "price", "seats_total"];
 
 function isMissingColumnError(error) {
   const message = String(error?.message || "");
@@ -386,9 +386,23 @@ export async function upsertAdminProduct(req, res) {
           : { trekDateBatches: item.trekDateBatches || "[]" };
       const batchRows = buildBatchRows(data.id, batchSource);
 
-      await supabaseAdmin.from("product_batches").delete().eq("product_id", data.id);
+      // Keep the old rows until the new ones are safely written.
+      const { data: oldRows } = await supabaseAdmin
+        .from("product_batches")
+        .select("id")
+        .eq("product_id", data.id);
       if (batchRows.length) {
-        await insertBatchRows(batchRows);
+        const inserted = await insertBatchRows(batchRows);
+        if (inserted.error) {
+          return res.status(500).json({
+            success: false,
+            error: `Trip dates were not saved: ${inserted.error.message}. Existing dates were kept.`,
+          });
+        }
+      }
+      const oldIds = (oldRows || []).map((row) => row.id);
+      if (oldIds.length) {
+        await supabaseAdmin.from("product_batches").delete().in("id", oldIds);
       }
     }
 
