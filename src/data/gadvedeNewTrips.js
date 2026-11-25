@@ -30,7 +30,7 @@ export const GADVEDE_NEW_TRIP_SEEDS = {
     "departureDatesHometown": "October 2026|30 (returns 3 Nov)",
     "pricingOptions": "Pune to Pune|11500|Seater Traveller or Sleeper Bus, 2 nights stay, 5 meals, activities",
     "addOns": "",
-    "bookingNote": "Book on WhatsApp +91 86058 66155 — the Gadvede Trekkers team confirms your seat and shares payment details.",
+    "bookingNote": "Book on WhatsApp +91 98561 12727 — the Gadvede Trekkers team confirms your seat and shares payment details.",
     "included": "Pune → Hampi → Gokarna → Pune transport (Seater Traveller or Sleeper Bus) and internal transfers\n2 nights stay: Hampi hotel and Yellapur/Gokarna guesthouse\nMeals: Day 2 dinner; Day 3 breakfast + dinner; Day 4 breakfast + dinner\nCoracle ride\nCliff jumping (optional, subject to water levels)\nHonnavar boating or Mangrove Boardwalk\nSightseeing as per itinerary\nLocal bites: coconut water, sugarcane juice, nimbu pani / kokam sharbat\nGadvede Trekkers trip coordinator and first aid",
     "notIncluded": "Lunch on all days\nBreakfast on the way to Hampi (Day 2)\nFood during travel and meals not listed\nPersonal expenses, snacks and mineral water\nAnything not mentioned in inclusions",
     "offerCodes": "",
@@ -58,7 +58,7 @@ export const GADVEDE_NEW_TRIP_SEEDS = {
         "price": 11500
       }
     ],
-    "bookingWhatsapp": "918605866155",
+    "bookingWhatsapp": "919856112727",
     "active": true,
     "productType": "tour"
   },
@@ -92,7 +92,7 @@ export const GADVEDE_NEW_TRIP_SEEDS = {
     "departureDatesHometown": "October 2026|2, 9, 16, 23, 30\nNovember 2026|6, 13, 20, 27\nDecember 2026|4, 11, 18, 25\nJanuary 2027|1, 8, 15, 22, 29\nFebruary 2027|5, 12, 19, 26",
     "pricingOptions": "Pune|5500|Tempo Traveller from Pune\nMumbai|6500|Tempo Traveller from Mumbai\nMalvan to Malvan|4500|Self-arrival package",
     "addOns": "Couple Sharing Room|1000 per couple",
-    "bookingNote": "Book your seat at just ₹4,000 and pay the rest 15 days before the departure date. Book on WhatsApp +91 86058 66155.",
+    "bookingNote": "Book your seat at just ₹4,000 and pay the rest 15 days before the departure date. Book on WhatsApp +91 98561 12727.",
     "included": "Transportation: Pune/Mumbai to Pune/Mumbai by Tempo Traveller (seater) and internal travel for sightseeing for 2 days\nAccommodation: room stay on triple/quad sharing (AC or Non-AC as per package)\nMeals: Day 2 breakfast + lunch, Day 3 breakfast + lunch\nActivities: scuba diving with video, parasailing, jet ski, banana ride, bumper ride (one time each)\nSindhudurg boat ferry charges\nSightseeing: Malvan Beach, Tarkarli Beach, Devbaug Beach, Sindhudurg Fort, Rock Garden, Ganesh Temple\nEntry charges at all listed sightseeing points\nGadvede Trekkers tour leader and first aid",
     "notIncluded": "GST (5%)\nTravel till pickup point\nDinner on all days\nAdditional meals, soft drinks and mineral water\nRepeated watersport activities\nPersonal expenses\nExpenses due to roadblocks, bad weather or other unforeseen circumstances\nMedical or emergency evacuation\nFood during travel\nAnything not mentioned in inclusions",
     "offerCodes": "",
@@ -129,7 +129,7 @@ export const GADVEDE_NEW_TRIP_SEEDS = {
       }
     ],
     "bookingAmount": 4000,
-    "bookingWhatsapp": "918605866155",
+    "bookingWhatsapp": "919856112727",
     "active": true,
     "highlights": "Activities — Scuba diving with video, parasailing, jet ski, banana ride, bumper ride\nBeach & sightseeing — Rock Garden sunset, Sindhudurg Fort by boat ferry, Tarkarli Beach, Devbaug Beach sunset, Ganesh Temple\nFood — Malvani cuisine — fish curry, sol kadhi, vegetarian Malvani thali",
     "productType": "tour"
@@ -160,10 +160,10 @@ export const GADVEDE_NEW_TRIP_SEEDS = {
     "overview": "A seven-day Gadvede Trekkers loop from Amritsar into the Dhauladhar hills.\n\nSpend two nights in Dharamshala with McLeodganj and Bhagsu, two in Dalhousie with a day at Khajjiar meadow, and two in Amritsar for the Golden Temple, Jallianwala Bagh and the Wagah Border ceremony, before heading home to Pune.",
     "keyHighlights": "Dharamshala|McLeodganj, Dalai Lama Temple, Bhagsunag & Bhagsu falls, Dal Lake\nDalhousie|Mall Road, Gandhi Chowk, St. John's Church, Kalatop\nKhajjiar|Meadow and lake — 'Mini Switzerland of India'\nAmritsar|Golden Temple, Jallianwala Bagh, Wagah–Attari Border",
     "briefItinerary": "Day 01|Arrive Amritsar → transfer to Dharamshala (accommodation & dinner only)\nDay 02|Dharamshala local sightseeing\nDay 03|Dharamshala → Dalhousie + local\nDay 04|Khajjiar + local sightseeing, stay Dalhousie\nDay 05|Khajjiar → Amritsar\nDay 06|Amritsar local sightseeing\nDay 07|Departure towards Pune",
-    "departureDatesHometown": "Dates|On request — WhatsApp +91 86058 66155",
+    "departureDatesHometown": "Dates|On request — WhatsApp +91 98561 12727",
     "pricingOptions": "Amritsar to Amritsar|14000|6 nights stay, sightseeing transport, meals as listed",
     "addOns": "",
-    "bookingNote": "Book on WhatsApp +91 86058 66155 — the Gadvede Trekkers team confirms dates and shares payment details.",
+    "bookingNote": "Book on WhatsApp +91 98561 12727 — the Gadvede Trekkers team confirms dates and shares payment details.",
     "included": "Amritsar → Dharamshala → Dalhousie → Khajjiar → Amritsar transport for transfers and sightseeing\n6 nights stay: Dharamshala (2), Dalhousie (2), Amritsar (2)\nDay 1: accommodation and dinner only\nDays 2–6: breakfast and dinner at the hotel\nSightseeing as per itinerary\nGadvede Trekkers trip coordinator and first aid",
     "notIncluded": "Pune ↔ Amritsar train/flight tickets (can be arranged on request)\nLunch on all days\nEntry tickets, adventure activities at Khajjiar (zorbing, horse riding, paragliding)\nPersonal expenses\nAnything not mentioned in inclusions",
     "offerCodes": "",
@@ -185,7 +185,7 @@ export const GADVEDE_NEW_TRIP_SEEDS = {
         "price": 14000
       }
     ],
-    "bookingWhatsapp": "918605866155",
+    "bookingWhatsapp": "919856112727",
     "active": true,
     "highlights": "Dharamshala — McLeodganj, Dalai Lama Temple, Bhagsunag & Bhagsu falls, Dal Lake\nDalhousie — Mall Road, Gandhi Chowk, St. John's Church, Kalatop\nKhajjiar — Meadow and lake — 'Mini Switzerland of India'\nAmritsar — Golden Temple, Jallianwala Bagh, Wagah–Attari Border",
     "productType": "tour"

@@ -102,6 +102,7 @@ import TicketPage     from "../pages/Ticket/TicketPage";
 import WeekendTrips from "../components/WeekendTrips";
 import Trips from "../pages/Trips/Trips";
 import CancellationPolicy from "../pages/CancellationPolicy";
+import PrivacyPolicy from "../pages/Privacy/PrivacyPolicy";
 
 function AppRoutes() {
   return (
@@ -164,6 +165,8 @@ function AppRoutes() {
 
       {/* ================= POLICIES ================= */}
       <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
       {/* ================= VILLAS ================= */}
       <Route path="/villas" element={<Villas />} />

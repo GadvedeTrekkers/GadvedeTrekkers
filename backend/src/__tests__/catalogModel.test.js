@@ -1,4 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// Fixtures use fixed departure dates (Nov 2026); pin "now" so upcoming-batch logic stays deterministic.
+beforeAll(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-10-27T00:00:00Z")); });
+afterAll(() => { vi.useRealTimers(); });
 import {
   buildBatchRows,
   productItemFromRow,

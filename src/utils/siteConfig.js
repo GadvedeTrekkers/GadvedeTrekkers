@@ -1,3 +1,4 @@
+import { waUrl } from "../config/whatsappSetting";
 /**
  * siteConfig.js
  * Central site configuration for Gadvede Trekkers.
@@ -27,7 +28,7 @@ export const SITE = {
 
   /** Generates a WhatsApp enquiry link */
   whatsappLink: (message = "") =>
-    `https://wa.me/919856112727${message ? `?text=${encodeURIComponent(message)}` : ""}`,
+    waUrl(message),
 };
 
 export default SITE;

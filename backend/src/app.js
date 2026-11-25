@@ -16,6 +16,8 @@ import employeesRoutes      from "./routes/employees.routes.js";
 import vendorsRoutes        from "./routes/vendors.routes.js";
 import trekPaymentsRoutes   from "./routes/trekPayments.routes.js";
 import adminToolsRoutes     from "./routes/admin-tools.routes.js";
+import createMetaWebhookRouter from "./routes/metaWebhook.routes.js";
+import createSettingsRouter    from "./routes/settings.routes.js";
 import supabasePublic   from "./config/supabasePublicClient.js";
 import supabaseAdmin    from "./config/supabaseAdminClient.js";
 
@@ -23,6 +25,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Meta (Instagram/Facebook Page) webhook — server-to-server from Meta, so it is mounted BEFORE cors and
+// express.json: it needs the raw body for X-Hub-Signature-256 and must not be blocked by the Origin allow-list.
+// It has its own rate limiter. Canonical path /api/v1/webhooks/meta; /api/webhooks/meta is an alias.
+const metaWebhook = createMetaWebhookRouter();
+app.use("/api/v1/webhooks/meta", metaWebhook);
+app.use("/api/webhooks/meta", metaWebhook);
 
 // Production domains are always allowed so a stale CORS_ORIGIN env var on the
 // server never silently blocks the live frontend.  Additional origins (e.g.
@@ -125,6 +134,9 @@ app.use("/api/employees",     employeesRoutes);
 app.use("/api/vendors",       vendorsRoutes);
 app.use("/api/trek-payments", trekPaymentsRoutes);
 app.use("/api/admin-tools",   adminToolsRoutes);
+const settingsRoutes = createSettingsRouter();
+app.use("/api/settings",      settingsRoutes);   // FR-FE-89 WhatsApp setting
+app.use("/api/v1/settings",   settingsRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, status: "ok" });

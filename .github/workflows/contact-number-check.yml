@@ -1,0 +1,22 @@
+name: contact-number-check (SEC-41)
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Scan sources and committed admin-dist for retired / non-allow-listed WhatsApp numbers
+        run: node scripts/check-contact-numbers.mjs
+      - name: Frontend build, then scan the built bundle too
+        run: npm ci && npm run build && node scripts/check-contact-numbers.mjs
+      - name: Backend tests
+        working-directory: backend
+        run: npm ci && npm test

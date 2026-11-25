@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
+import { waUrl } from "../../config/whatsappSetting";
 
 const gallery = [
   "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=900&q=80",
@@ -121,7 +122,7 @@ const importantNotes = [
   "Velas Turtle Festival is a budget trip — stay is in Homestay (dormitory-style).",
   "Food will be local Konkani cuisine.",
   "We don't have couple rooms — minimum 4 guests in one room or dorm-like rooms.",
-  "For AC Rooms, extra ₹200 per person (WhatsApp us on 8828004949).",
+  "For AC Rooms, extra ₹200 per person (WhatsApp us on 98561 12727).",
   "Festival sells out quickly — book in advance.",
   "First 18 bookings: stay in main homestay; after that, alternate homestay.",
   "Without transport: Bankot and Harihareshwar in your own vehicle. Ferry and parking charges not included.",
@@ -489,7 +490,7 @@ export default function VelasTurtleFestival() {
                 Book Now
               </a>
 
-              <a href="https://wa.me/919856112727?text=Hi%2C+I%27m+interested+in+Velas+Turtle+Festival+2026"
+              <a href={waUrl("Hi, I'm interested in Velas Turtle Festival 2026")}
                 target="_blank" rel="noopener noreferrer"
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#25d366", color: "#fff", borderRadius: 12, padding: "12px 0", fontWeight: 700, fontSize: "0.9rem", textDecoration: "none", marginBottom: 14 }}>
                 <span style={{ fontSize: "1.1rem" }}>💬</span> WhatsApp Enquiry

@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
 import { createWhatsAppInquiryUrl, handleWhatsAppLead } from "../../utils/leadActions";
-import { BOOKING_WHATSAPP_NUMBER, buildBookingWhatsAppUrl } from "../../config/bookingConfig";
+import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
+import { getWhatsappNumber } from "../../config/whatsappSetting";
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -46,7 +47,7 @@ function BookNowButton({ item }) {
       aria-label={`Book ${item.name} on WhatsApp`}
       onClick={() => {
         handleWhatsAppLead({
-          phoneNumber: BOOKING_WHATSAPP_NUMBER,
+          phoneNumber: getWhatsappNumber(),
           packageName: item.name,
           location: item.location,
           category: "Heritage Walk",

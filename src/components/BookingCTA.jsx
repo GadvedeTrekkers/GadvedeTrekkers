@@ -1,7 +1,8 @@
 /**
  * BookingCTA — unified Call-To-Action for public booking buttons.
  *
- * Always renders a real wa.me link. iOS and Android both follow <a href>,
+ * Always renders a real WhatsApp click-to-chat link (api.whatsapp.com/send — emoji-safe,
+ * see waSendUrl in whatsappSetting.js). iOS and Android both follow <a href>,
  * including target="_blank". This component does not route to /book,
  * /booking, or a payment page.
  *

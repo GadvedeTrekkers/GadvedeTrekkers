@@ -12,6 +12,7 @@ import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 import { CATALOG_HUBS, hubBySlug, inferHubSlug } from "../../data/catalogHubs";
 import { collectSellingPrices, genuineCompareAt, resolveTripGallery } from "../../utils/tripDisplay";
 import { useSeo } from "../../seo/useSeo";
+import { waUrl } from "../../config/whatsappSetting";
 import {
   SITE_ORIGIN,
   TREKS_DESCRIPTION,
@@ -587,7 +588,7 @@ function Trek() {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", marginTop: 8 }}>
               {isSearchActive && (
                 <a
-                  href={`https://wa.me/919856112727?text=${encodeURIComponent(`Hi! I'm looking for a customised trek to "${searchQuery}". Can you help?`)}`}
+                  href={waUrl(`Hi! I'm looking for a customised trek to "${searchQuery}". Can you help?`)}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
