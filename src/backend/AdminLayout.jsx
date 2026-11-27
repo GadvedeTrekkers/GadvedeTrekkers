@@ -39,6 +39,7 @@ const NAV = [
   { path: "/admin/docs",         icon: "📖",  label: "How It Works" },
   { path: "/admin/email-templates", icon: "✉️", label: "Email Templates" },
   { path: "/admin/profile-setup", icon: "🏢", label: "Profile Setup", adminOnly: true },
+  { path: "/admin/automations",  icon: "🤖", label: "Automations", adminOnly: true }, /* Settings › Automations (CRM follow-ups / reminders / reviews) */
 ];
 /* Profile Setup (t84u) is only listed for Super Admin / Admin; the backend enforces the same roles. */
 const canSeeAdminOnly = (u) => u?.username === "admin" || ["superadmin", "admin"].includes(String(u?.role || "").toLowerCase().replace(/[\s_-]/g, ""));
