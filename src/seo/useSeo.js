@@ -61,7 +61,7 @@ function writeJsonLd(data) {
 function applyHead(seo) {
   document.title = seo.title;
   upsertMeta("name", "description", seo.description);
-  upsertMeta("name", "robots", "index, follow");
+  upsertMeta("name", "robots", seo.robots || "index, follow");
   upsertMeta("property", "og:title", seo.title);
   upsertMeta("property", "og:description", seo.description);
   upsertMeta("property", "og:url", seo.canonical);
@@ -95,6 +95,7 @@ export function useSeo({
   imageAlt,
   type = "website",
   jsonLd,
+  robots = "index, follow",
 }) {
   const jsonLdText = jsonLd ? JSON.stringify(jsonLd) : "";
 
@@ -108,8 +109,9 @@ export function useSeo({
       imageHeight,
       imageAlt,
       type,
+      robots,
       jsonLd: jsonLdText ? JSON.parse(jsonLdText) : null,
     });
     return () => applyHead(DEFAULTS);
-  }, [title, description, canonical, image, imageWidth, imageHeight, imageAlt, type, jsonLdText]);
+  }, [title, description, canonical, image, imageWidth, imageHeight, imageAlt, type, robots, jsonLdText]);
 }
