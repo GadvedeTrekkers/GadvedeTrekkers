@@ -6,6 +6,6 @@ const router = express.Router();
 
 router.get("/",    requireAdminJWT, listCustomers);
 router.get("/:id", requireAdminJWT, getCustomerById);
-router.post("/upsert", upsertCustomer);
+router.post("/upsert", requireAdminJWT, upsertCustomer); // staff only; public flows create customers server-side
 
 export default router;
