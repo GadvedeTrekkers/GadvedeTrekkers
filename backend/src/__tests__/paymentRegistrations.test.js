@@ -105,7 +105,7 @@ describe("routes", () => {
     db = fakeRegistrationDb();
     const app = express();
     app.use(express.json({ limit: "10mb" }));
-    app.use("/api/payment-registrations", createPaymentRegistrationsRouter({ db: async () => db, listEvents: async () => EVENTS, now: () => NOW, submitLimitPer15Min: 4, log: () => {} }));
+    app.use("/api/payment-registrations", createPaymentRegistrationsRouter({ db: async () => db, listEvents: async () => EVENTS, now: () => NOW, submitLimitPer15Min: 4, log: () => {}, sendEmails: async () => {} }));
     srv = await listen(app);
   });
   afterAll(() => srv.close());
