@@ -22,6 +22,14 @@ export const TRIPS_TITLE = "Open Trips | Gadvede Trekkers";
 export const TRIPS_DESCRIPTION =
   "Four open Gadvede Trekkers trips from Pune and Mumbai: Vasota, Harishchandragad, Kalsubai, and New Year beach camping. From ₹1,400. Book on WhatsApp.";
 
+export const TOURS_TITLE = "Group Tours from Pune & Mumbai | Gadvede Trekkers";
+export const TOURS_DESCRIPTION =
+  "Fixed-departure group tours from Pune and Mumbai: Rajasthan, Manali Kullu Kasol, Malvan Tarkarli scuba, Hampi Gokarna and Amritsar Dalhousie.";
+
+export const CAMPING_TITLE = "Camping near Pune & Mumbai | Pawna, Alibaug | Gadvede";
+export const CAMPING_DESCRIPTION =
+  "Lake and beach camping near Pune and Mumbai: Pawna Lake from ₹1,099, Alibaug beach from ₹1,000, and New Year beach camping. BBQ, bonfire, meals.";
+
 export const DEFAULT_OG = {
   path: "/trips/vasota.jpg",
   width: 1024,
@@ -70,17 +78,13 @@ export const TRIP_SEO = {
     name: "Harishchandragad Trek",
     location: "Pachnai, Ahmednagar",
     duration: "1 night, 2 days",
-    lowPrice: 1400,
-    description:
-      "Harishchandragad trek from Pachnai, Ahmednagar. 1 night, 2 days to Konkan Kada. From ₹1,400. Book on WhatsApp with Gadvede Trekkers.",
+    lowPrice: 1399,
   },
   "kalsubai-peak-trek": {
     name: "Kalsubai Peak Trek",
     location: "Bari, Ahmednagar",
     duration: "1 night",
-    lowPrice: 1400,
-    description:
-      "Kalsubai Peak trek from Bari, Ahmednagar — Maharashtra's highest peak. 1 night. From ₹1,400. Book on WhatsApp with Gadvede Trekkers.",
+    lowPrice: 1099,
   },
   "new-year-beach-side-camping": {
     name: "New Year Beach Side Camping",
@@ -258,6 +262,52 @@ export function listJsonLd(pageUrl, name, items) {
   };
 }
 
+/** SEO copy stored on the product (products.extra_content.rawItem.seo, passed through by the API). */
+export function productSeo(item) {
+  const seo = item?.seo && typeof item.seo === "object" ? item.seo : {};
+  const clean = (v) => (typeof v === "string" ? v.trim() : "");
+  return {
+    title: clean(seo.title),
+    description: clean(seo.description),
+    h1: clean(seo.h1),
+    intro: clean(seo.intro),
+    canonicalPath: clean(seo.canonicalPath),
+  };
+}
+
+/** "Question|Answer" per line (rawItem.faq / faqs) -> [{ question, answer }]. */
+export function parseFaq(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((f) => ({ question: String(f?.question || f?.q || "").trim(), answer: String(f?.answer || f?.a || "").trim() }))
+      .filter((f) => f.question && f.answer);
+  }
+  return String(value || "")
+    .split("\n")
+    .map((line) => {
+      const i = line.indexOf("|");
+      if (i < 0) return null;
+      return { question: line.slice(0, i).trim(), answer: line.slice(i + 1).trim() };
+    })
+    .filter((f) => f && f.question && f.answer);
+}
+
+export function faqPageNode(faqs) {
+  if (!faqs?.length) return null;
+  return {
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.question,
+      acceptedAnswer: { "@type": "Answer", text: f.answer },
+    })),
+  };
+}
+
+function seoTitle(seo, name) {
+  return seo.title && seo.title.length <= 65 ? seo.title : trekTitle(name);
+}
+
 export function buildTrekPageSeo({ slug = "", trek = null, pricing = null } = {}) {
   const preset = TRIP_SEO[slug] || null;
   const name = trek?.name || preset?.name || "Trek";
@@ -271,7 +321,9 @@ export function buildTrekPageSeo({ slug = "", trek = null, pricing = null } = {}
   const positive = prices.filter((n) => n > 0);
   const lowPrice = positive.length ? Math.min(...positive) : null;
   const highPrice = positive.length ? Math.max(...positive) : null;
+  const seo = productSeo(trek);
   const description =
+    seo.description ||
     preset?.description ||
     [
       `${name} with Gadvede Trekkers`,
@@ -284,8 +336,9 @@ export function buildTrekPageSeo({ slug = "", trek = null, pricing = null } = {}
       .join(". ")
       .replace(/\.\./g, ".");
   const image = ogForSlug(slug);
-  const canonical = absoluteUrl(`/treks/${slug}`);
+  const canonical = absoluteUrl(seo.canonicalPath || `/treks/${slug}`);
   const rating = aggregateRating(trek);
+  const faq = faqPageNode(parseFaq(trek?.faq || trek?.faqs));
   const trip = {
     "@type": "TouristTrip",
     name,
@@ -311,7 +364,7 @@ export function buildTrekPageSeo({ slug = "", trek = null, pricing = null } = {}
   if (rating) trip.aggregateRating = rating;
 
   return {
-    title: trekTitle(name),
+    title: seoTitle(seo, name),
     description,
     canonical,
     image: image.url,
@@ -331,6 +384,87 @@ export function buildTrekPageSeo({ slug = "", trek = null, pricing = null } = {}
           ],
         },
         trip,
+        ...(faq ? [faq] : []),
+      ],
+    },
+  };
+}
+
+/** Tour (/tours/:slug) and camping (/camping/:slug) detail pages. */
+export function buildProductPageSeo({ section = "tours", slug = "", item = null } = {}) {
+  const seo = productSeo(item);
+  const sectionName = section === "camping" ? "Camping" : "Tours";
+  const name = item?.name || slug.replace(/-/g, " ");
+  const prices = [];
+  const pushPrice = (v) => {
+    const n = asNumber(v);
+    if (n > 0) prices.push(n);
+  };
+  pushPrice(item?.price);
+  String(item?.pricingOptions || "")
+    .split("\n")
+    .forEach((line) => pushPrice(line.split("|")[1]));
+  const plans = parseJson(item?.departurePlans, null);
+  if (plans && typeof plans === "object" && !Array.isArray(plans)) {
+    Object.values(plans).forEach((p) => pushPrice(p?.price));
+  }
+  const lowPrice = prices.length ? Math.min(...prices) : null;
+  const highPrice = prices.length ? Math.max(...prices) : null;
+  const plain = (v) => String(v || "").replace(/\s+/g, " ").trim();
+  const fallbackDesc = plain(item?.shortDescription || item?.subtitle || item?.description || "");
+  const description =
+    seo.description ||
+    (fallbackDesc
+      ? `${fallbackDesc.slice(0, 120).trim()}${lowPrice ? ` From ₹${lowPrice.toLocaleString("en-IN")}.` : ""}`
+      : `${name} with Gadvede Trekkers. Book on WhatsApp.`);
+  const canonical = absoluteUrl(seo.canonicalPath || `/${section}/${slug}`);
+  const imageUrl = item?.image ? absoluteUrl(item.image) : absoluteUrl(DEFAULT_OG.path);
+  const faq = faqPageNode(parseFaq(item?.faq || item?.faqs));
+  const today = new Date().toISOString().slice(0, 10);
+  const batches = parseJson(item?.tourDateBatches || item?.trekDateBatches, []);
+  const hasUpcoming =
+    Array.isArray(batches) &&
+    batches.some((b) => b?.date && b.date >= today && b.status !== "CANCELLED" && b.status !== "CLOSED");
+  const trip = {
+    "@type": "TouristTrip",
+    name,
+    description,
+    image: imageUrl,
+    url: canonical,
+    touristType: section === "camping" ? "Camping group" : "Group tour",
+    provider: { "@type": "TravelAgency", name: SITE_NAME, url: `${SITE_ORIGIN}/`, telephone: PHONE_DISPLAY },
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "INR",
+      ...(lowPrice != null ? { lowPrice } : {}),
+      ...(highPrice != null && highPrice !== lowPrice ? { highPrice } : {}),
+      ...(hasUpcoming ? { availability: "https://schema.org/InStock" } : {}),
+      url: canonical,
+    },
+  };
+  return {
+    title: seoTitle(seo, name),
+    description,
+    canonical,
+    image: imageUrl,
+    imageWidth: undefined,
+    imageHeight: undefined,
+    imageAlt: name,
+    type: "website",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@graph": [
+        organizationNode,
+        {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_ORIGIN}/` },
+            { "@type": "ListItem", position: 2, name: sectionName, item: `${SITE_ORIGIN}/${section}` },
+            { "@type": "ListItem", position: 3, name, item: canonical },
+          ],
+        },
+        trip,
+        ...(faq ? [faq] : []),
       ],
     },
   };
