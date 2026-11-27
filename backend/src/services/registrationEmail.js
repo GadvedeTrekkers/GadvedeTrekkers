@@ -6,8 +6,12 @@
  * Sender: "Gadvede Trekkers" <GMAIL_USER>. Recipient: ONLY the email the customer typed (validated server-side).
  * Optional admin notice to ADMIN_NOTIFY_EMAIL (comma-separated; unset = off).
  * Everything the customer typed is HTML-escaped. Callers must not await this in the request path.
+ * Profile Setup (t84u): when a business profile is passed, the display name is its company name and Reply-To is its
+ * booking-confirmation email (falls back to the public support email, then to no Reply-To = old behaviour).
+ * The sending account stays GMAIL_USER.
  */
 import { createTransporter } from "./emailService.js";
+import { emailRouting } from "./businessProfile.js";
 
 export const SENDER_NAME = "Gadvede Trekkers";
 export const WHATSAPP_DISPLAY = "+91 98561 12727";
@@ -166,7 +170,7 @@ export function adminNotifyRecipients(env = process.env) {
  * Returns { customer: "sent"|"skipped"|"failed", admin: "sent"|"off"|"skipped"|"failed" }.
  * Logs only the reference and an error code — no names, emails or phone numbers.
  */
-export async function sendRegistrationEmails(row, { env = process.env, transporter, log = console.warn } = {}) {
+export async function sendRegistrationEmails(row, { env = process.env, transporter, log = console.warn, profile = null } = {}) {
   const out = { customer: "skipped", admin: adminNotifyRecipients(env).length ? "skipped" : "off" };
   const ref = oneLine(row?.reference, 40);
   if (!isConfigured(env)) {
@@ -180,13 +184,15 @@ export async function sendRegistrationEmails(row, { env = process.env, transport
     if (out.admin !== "off") out.admin = "failed";
     return out;
   }
-  const from = { name: SENDER_NAME, address: env.GMAIL_USER };
+  const routing = emailRouting(profile, { fallbackName: SENDER_NAME });
+  const from = { name: profile ? routing.senderName : SENDER_NAME, address: env.GMAIL_USER };
+  const replyTo = profile ? routing.replyTo.bookingConfirmation : null;
 
   const to = String(row?.email || "").trim();
   if (EMAIL_RE.test(to)) {
     try {
       const mail = buildRegistrationEmail(row);
-      await tx.sendMail({ from, to, subject: mail.subject, html: mail.html, text: mail.text });
+      await tx.sendMail({ from, to, ...(replyTo ? { replyTo } : {}), subject: mail.subject, html: mail.html, text: mail.text });
       out.customer = "sent";
     } catch (e) {
       out.customer = "failed";
