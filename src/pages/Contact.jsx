@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CONTACT, telHref, whatsappHref } from "../config/contact";
 import { enquiryService } from "../services/enquiry.service";
+import PaidRegisterLink from "../components/PaidRegisterLink";
 
 const INTERESTS = ["Trek", "Tour", "Camping", "Corporate Outing", "Industrial Visit", "Rentals", "Other"];
 
@@ -173,6 +174,8 @@ function Contact() {
                   <p className="gt-contact-meta">Fastest way to check dates, availability and booking.</p>
                 </div>
               </div>
+
+              <PaidRegisterLink />
 
               <div className="gt-contact-card">
                 <div className="gt-contact-icon">✉️</div>
