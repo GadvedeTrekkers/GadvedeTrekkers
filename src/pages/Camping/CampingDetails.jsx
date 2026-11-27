@@ -17,6 +17,10 @@ import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import { productService } from "../../services/product.service";
 import { useSeo } from "../../seo/useSeo";
 import { trackViewItem } from "../../analytics/tracking";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
+import InstagramFeed from "../../components/social/InstagramFeed";
+import { pickupLabels } from "../../config/whatsappTrip";
+import { pickupGroups } from "../../utils/tripDisplay";
 import { buildProductPageSeo, productSeo } from "../../seo/publicSeo";
 
 const CAMPING_PREVIEW_KEY = "gt_camping_preview";
@@ -162,6 +166,11 @@ export default function CampingDetails() {
     trackViewItem({ slug: id, name: camp?.name, productType: "camping", price: offers?.lowPrice });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewItemKey]);
+  useWhatsappTrip(camp ? {
+    id, name: camp.name, type: "camping",
+    dates: (camp.nextDates || []).map(String), // same labels as the "Next dates" list on the page
+    pickups: pickupLabels(pickupGroups(camp.departurePlans)),
+  } : null);
   const seoCopy = productSeo(camp);
 
   if (!camp) {
@@ -509,6 +518,8 @@ export default function CampingDetails() {
           </div>
         </div>
       </div>
+
+      <InstagramFeed placement="trip_page" limit={4} title="On our Instagram" subtitle="Photos and reels from recent batches." />
 
       <style>{`
         @media (max-width: 900px) {
