@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { findTrekBySlug } from "../../data/treks";
 import BookingCTA from "../../components/BookingCTA";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
 
 const HERO_IMG = "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=1600&q=80";
 
@@ -154,7 +155,10 @@ const routeInfo = [
   { icon: "⚡", label: "Difficulty",      value: "Moderate to Difficult" },
 ];
 
+const WHATSAPP_TRIP = { id: "sandhan-valley-trek", name: "Sandhan Valley Trek", type: "trek" };
+
 export default function SandhanValley() {
+  useWhatsappTrip(WHATSAPP_TRIP);
   const trek = findTrekBySlug("sandhan-valley-trek");
   const [activeTab, setActiveTab]     = useState("overview");
   const [lightboxImg, setLightboxImg] = useState(null);

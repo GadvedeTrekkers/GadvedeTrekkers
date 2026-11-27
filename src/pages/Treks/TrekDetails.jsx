@@ -30,6 +30,9 @@ import {
 } from "../../utils/tripDisplay";
 import { useSeo } from "../../seo/useSeo";
 import { trackViewItem } from "../../analytics/tracking";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
+import InstagramFeed from "../../components/social/InstagramFeed";
+import { departureLabels, pickupLabels } from "../../config/whatsappTrip";
 import { realRating } from "../../utils/rating";
 import { buildTrekPageSeo, parseFaq, productSeo } from "../../seo/publicSeo";
 
@@ -387,6 +390,9 @@ function TrekDetails() {
     trackViewItem({ slug: id, name: trek?.name, productType: "trek", price: prices?.lowPrice });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewItemKey]);
+  useWhatsappTrip(trek ? {
+    id, name: trek.name, type: "trek", dates: departureLabels(departures), pickups: pickupLabels(pickupGroups(trek.departurePlans)),
+  } : null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -981,6 +987,8 @@ function TrekDetails() {
           </div>
         )}
       </div>
+
+      <InstagramFeed placement="trip_page" limit={4} title="On our Instagram" subtitle="Photos and reels from recent batches." />
 
       {lightboxImg && (
         <div className="td-lightbox" onClick={() => setLightboxImg(null)}>

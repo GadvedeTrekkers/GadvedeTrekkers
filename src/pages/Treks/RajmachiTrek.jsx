@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { findTrekBySlug } from "../../data/treks";
 import BookingCTA from "../../components/BookingCTA";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
 
 const HERO_IMG = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80";
 
@@ -185,7 +186,10 @@ const routeInfo = [
   { icon: "⚡", label: "Difficulty",      value: "Easy to Medium" },
 ];
 
+const WHATSAPP_TRIP = { id: "rajmachi-fort-trek", name: "Rajmachi Fort Trek", type: "trek" };
+
 export default function RajmachiTrek() {
+  useWhatsappTrip(WHATSAPP_TRIP);
   const trek = findTrekBySlug("rajmachi-trek");
   const [activeTab, setActiveTab]       = useState("overview");
   const [lightboxImg, setLightboxImg]   = useState(null);

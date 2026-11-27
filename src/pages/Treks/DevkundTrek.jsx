@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { findTrekBySlug } from "../../data/treks";
 import BookingCTA from "../../components/BookingCTA";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
 
 const HERO_IMG = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80";
 
@@ -211,7 +212,10 @@ const routeInfo = [
   { icon: "⚡", label: "Difficulty",        value: "Moderate" },
 ];
 
+const WHATSAPP_TRIP = { id: "devkund-waterfall-trek", name: "Devkund Waterfall Trek", type: "trek" };
+
 export default function DevkundTrek() {
+  useWhatsappTrip(WHATSAPP_TRIP);
   const trek = findTrekBySlug("devkund-waterfall-trek");
   const [activeTab, setActiveTab]     = useState("overview");
   const [lightboxImg, setLightboxImg] = useState(null);
