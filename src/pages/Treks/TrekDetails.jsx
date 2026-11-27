@@ -398,7 +398,7 @@ function TrekDetails() {
 
   const formattedName =
     trek?.name ?? (id ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Trek Details");
-  const heroImages = trek?.gallery?.length ? trek.gallery.slice(0, 3) : trek?.image ? [trek.image] : [];
+  const heroImages = trek?.gallery?.length ? trek.gallery : trek?.image ? [trek.image] : [];
 
   if (!isRich) {
     return (
