@@ -3,6 +3,8 @@ import { FALLBACK_IMAGE, handleImageError } from "../../utils/imageFallback";
 import { Link, useLocation } from "react-router-dom";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { getPrimaryCampingImage, parseJsonValue } from "../../data/campingDetailsData";
+import { useSeo } from "../../seo/useSeo";
+import { CAMPING_TITLE, CAMPING_DESCRIPTION, SITE_ORIGIN, DEFAULT_OG, absoluteUrl, organizationNode } from "../../seo/publicSeo";
 import { selectPublicTrips } from "../../data/publicTrips";
 import { syncProductsFromApi } from "../../api/getAll";
 import BookingCTA from "../../components/BookingCTA";
@@ -30,10 +32,25 @@ export default function Camping() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [activeSort, setActiveSort] = useState("popular");
   const [campingItems, setCampingItems] = useState([]);
+  useSeo({
+    title: CAMPING_TITLE,
+    description: CAMPING_DESCRIPTION,
+    canonical: `${SITE_ORIGIN}/camping`,
+    image: absoluteUrl(DEFAULT_OG.path),
+    imageWidth: DEFAULT_OG.width,
+    imageHeight: DEFAULT_OG.height,
+    imageAlt: "Lake and beach camping near Pune and Mumbai",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@graph": [
+        organizationNode,
+        { "@type": "CollectionPage", name: CAMPING_TITLE, url: `${SITE_ORIGIN}/camping`, description: CAMPING_DESCRIPTION },
+      ],
+    },
+  });
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
-    document.title = "Camping | Group Discount Available | Starting From Rs 1000 | Gadvede Trekkers";
     if (location.state) window.history.replaceState({}, document.title);
   }, [location.state]);
 

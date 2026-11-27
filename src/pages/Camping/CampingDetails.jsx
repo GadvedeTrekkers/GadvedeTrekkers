@@ -14,6 +14,8 @@ import {
 import BookingCTA from "../../components/BookingCTA";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import { productService } from "../../services/product.service";
+import { useSeo } from "../../seo/useSeo";
+import { buildProductPageSeo, productSeo } from "../../seo/publicSeo";
 
 const CAMPING_PREVIEW_KEY = "gt_camping_preview";
 
@@ -80,7 +82,7 @@ function normalizeCampingEntry(item) {
     thingsToCarry: parseLineItems(item.thingsToCarry),
     fees: feeOptions(item),
     offers: parseOfferItems(item.offers),
-    faqs: parseFaqItems(item.faqs),
+    faqs: parseFaqItems(item.faqs || item.faq),
     cancellationPolicy: parseLineItems(item.cancellationPolicy),
     rules: parseLineItems(item.rules),
   };
@@ -143,8 +145,14 @@ export default function CampingDetails() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
-    document.title = camp ? `${camp.shortName || camp.name} | Gadvede Trekkers` : "Camping Details | Gadvede Trekkers";
-  }, [camp]);
+  }, [id]);
+
+  const pageSeo = useMemo(
+    () => buildProductPageSeo({ section: "camping", slug: id, item: camp ? { ...camp, faq: camp.faq || camp.faqs?.map((f) => `${f.q}|${f.a}`).join("\n") } : null }),
+    [id, camp]
+  );
+  useSeo(pageSeo);
+  const seoCopy = productSeo(camp);
 
   if (!camp) {
     return (
@@ -188,7 +196,7 @@ export default function CampingDetails() {
           </div>
 
           <h1 style={{ fontWeight: 900, fontSize: "clamp(1.6rem,3.5vw,2.5rem)", lineHeight: 1.2, marginBottom: 8 }}>
-            {camp.name}
+            {seoCopy.h1 || camp.name}
           </h1>
           <p style={{ opacity: 0.88, fontSize: "0.95rem", marginBottom: 20 }}>📍 {camp.location}</p>
 
@@ -263,7 +271,7 @@ export default function CampingDetails() {
             )}
 
             <section style={{ background: "#fff", borderRadius: 18, padding: "24px 28px", border: "1px solid #e5e7eb", marginBottom: 24 }}>
-              <h3 style={{ fontWeight: 800, color: "#1f2937", marginBottom: 14, fontSize: "1.08rem" }}>About This Campsite</h3>
+              <h2 style={{ fontWeight: 800, color: "#1f2937", marginBottom: 14, fontSize: "1.08rem" }}>About This Campsite</h2>
               {camp.overviewParagraphs.length > 0 ? (
                 camp.overviewParagraphs.map((paragraph, index) => (
                   <p key={index} style={{ color: "#374151", lineHeight: 1.8, marginBottom: index === camp.overviewParagraphs.length - 1 ? 0 : 12 }}>
@@ -363,7 +371,7 @@ export default function CampingDetails() {
 
             {camp.faqs.length > 0 ? (
               <section style={{ background: "#fff", borderRadius: 18, padding: "24px 28px", border: "1px solid #e5e7eb", marginBottom: 24 }}>
-                <h3 style={{ fontWeight: 800, color: "#1f2937", marginBottom: 14, fontSize: "1.08rem" }}>FAQs</h3>
+                <h2 style={{ fontWeight: 800, color: "#1f2937", marginBottom: 14, fontSize: "1.08rem" }}>FAQs</h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {camp.faqs.map((faq, index) => (
                     <div key={`${faq.q}_${index}`} style={{ border: "1px solid #e5e7eb", borderRadius: 14, overflow: "hidden" }}>
