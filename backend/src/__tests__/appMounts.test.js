@@ -31,4 +31,18 @@ describe("app.js wiring", () => {
     const bad = await fetch(srv.url + "/api/v1/webhooks/meta", { method: "POST", headers: { "Content-Type": "application/json" }, body: raw });
     expect(bad.status).toBe(403);
   });
+  it("mounts the MCP server at /api/mcp, OFF (404) by default", async () => {
+    delete process.env.MCP_ENABLED;
+    const r = await fetch(`${srv.url}/api/mcp`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    expect(r.status).toBe(404);
+  });
+  it("mounts /api/ai (admin only, AI off by default) and /api/blog (public list = published only)", async () => {
+    const h = { Origin: "https://www.gadvede.com" };
+    expect((await fetch(`${srv.url}/api/ai/status`, { headers: h })).status).toBe(401);
+    expect((await fetch(`${srv.url}/api/ai/reply-draft`, { method: "POST", headers: { ...h, "Content-Type": "application/json" }, body: "{}" })).status).toBe(401);
+    const b = await fetch(`${srv.url}/api/blog/posts`, { headers: h });
+    expect(b.status).toBe(200);
+    expect((await b.json()).data).toEqual([]);
+    expect((await fetch(`${srv.url}/api/blog/admin/posts`, { headers: h })).status).toBe(401);
+  });
 });
