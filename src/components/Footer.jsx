@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import logo from "../assets/gadvedelogo.png";
 import { CONTACT, telHref, whatsappHref } from "../config/contact";
+import { DESTINATION_HUBS } from "../../shared/destinationHubs.js";
 // Footer updated: FAQ moved here from Header nav
 
 function Footer() {
@@ -110,6 +111,24 @@ function Footer() {
           </div>
 
         </div>
+
+        {/* POPULAR COLLECTIONS (destination hubs) */}
+        <nav aria-label="Popular trip collections" className="mt-2">
+          <h5 className="fw-bold mb-2" style={{ fontSize: 15 }}>Popular collections</h5>
+          <ul className="list-unstyled d-flex flex-wrap gap-2 mb-0">
+            {DESTINATION_HUBS.map((hub) => (
+              <li key={hub.slug}>
+                <Link
+                  className="footer-link"
+                  to={hub.path}
+                  style={{ fontSize: 13, border: "1px solid rgba(255,255,255,0.3)", padding: "3px 10px", borderRadius: 999, display: "inline-block" }}
+                >
+                  {hub.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         {/* COPYRIGHT */}
         <div className="text-center mt-4 pt-3 border-top border-light">
