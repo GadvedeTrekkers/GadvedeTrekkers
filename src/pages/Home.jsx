@@ -13,6 +13,7 @@ import { collectSellingPrices, genuineCompareAt, resolveTripGallery } from "../u
 import { tripDetailPath } from "../data/publicTrips";
 import { FEATURED_TRIPS, mergeFeaturedTrips } from "../data/featuredTrips";
 import { useSeo } from "../seo/useSeo";
+import TripRating from "../components/TripRating";
 import { waBase } from "../config/whatsappSetting";
 import {
   DEFAULT_OG,
@@ -57,7 +58,6 @@ function HomeTrekCard({ trek }) {
   const compareAt = genuineCompareAt(trek.originalPrice, trek.price, collectSellingPrices(trek));
   const discountPct = compareAt ? Math.round(((compareAt - trek.price) / compareAt) * 100) : 0;
   const detailPath = tripDetailPath(trek);
-  const rating = Number(trek.rating);
 
   const handleMouseEnter = () => {
     if (images.length < 2) return;
@@ -141,13 +141,7 @@ function HomeTrekCard({ trek }) {
             <h2 className="trek-card-title">{trek.name}</h2>
             <p className="trek-location">📍 {trek.location}</p>
           </div>
-          {rating > 0 && (
-            <div className="trek-rating">
-              <span className="trek-rating-star" aria-hidden="true">★</span>
-              <span>{rating.toFixed(1)}</span>
-              <span className="trek-rating-count">({trek.reviews || 0})</span>
-            </div>
-          )}
+          <TripRating item={trek} />
         </div>
 
         <div className="trek-chip-row">

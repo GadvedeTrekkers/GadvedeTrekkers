@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CONTACT, telHref, whatsappHref } from "../config/contact";
 import { enquiryService } from "../services/enquiry.service";
+import { trackEvent } from "../analytics/tracking";
+import { useSeo } from "../seo/useSeo";
+import { SITE_ORIGIN } from "../seo/publicSeo";
 import PaidRegisterLink from "../components/PaidRegisterLink";
 
 const INTERESTS = ["Trek", "Tour", "Camping", "Corporate Outing", "Industrial Visit", "Rentals", "Other"];
@@ -10,6 +13,11 @@ const BRAND = "#198754";
 const BRAND_DARK = "#146c43";
 
 function Contact() {
+  useSeo({
+    title: "Contact Gadvede Trekkers | Call or WhatsApp 9856112727",
+    description: "Contact Gadvede Trekkers for treks, tours, camping and group trips from Pune and Mumbai. Call or WhatsApp +91 9856112727 or email info@gadvede.com.",
+    canonical: `${SITE_ORIGIN}/contact`,
+  });
   const [form, setForm] = useState({ name: "", phone: "", email: "", interest: "Trek", message: "" });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -59,6 +67,7 @@ function Contact() {
 
     setWaMessage(message);
     setSubmitted(true);
+    trackEvent("enquiry_submit", { form_name: "contact", item_name: form.interest });
     setSubmitting(true);
     try {
       await enquiryService.create({
