@@ -1,3 +1,5 @@
+// Must stay first: clears staff/customer data older builds left in localStorage.
+import './utils/clientDataHygiene.js'
 import { Fragment, StrictMode, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
