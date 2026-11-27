@@ -317,9 +317,9 @@ function Dashboard() {
 
       {/* ── Quick Add ── */}
       <h5 className="mt-4 mb-3 fw-semibold">Quick Add</h5>
-      <div className="d-flex flex-wrap gap-2 mb-4">
+      <div className="adm-quick-add mb-4">
         {SECTIONS.map((s) => (
-          <Link key={s.key} to={s.path} className="btn btn-outline-success btn-sm">{s.icon} Add {s.label}</Link>
+          <Link key={s.key} to={s.path} className="btn btn-outline-success adm-quick-add-btn">Add {s.label}</Link>
         ))}
       </div>
     </div>

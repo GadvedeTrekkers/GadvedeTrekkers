@@ -73,15 +73,40 @@ function AdminLayout() {
     navigate("/admin");
   };
 
+  /* Mobile slide-in menu: close on Escape and stop the page behind it scrolling. */
+  useEffect(() => {
+    if (!mobileNavOpen) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") setMobileNavOpen(false); };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [mobileNavOpen]);
+
   return (
     <div className="adm-shell">
-      <aside className={`adm-sidebar ${mobileNavOpen ? "adm-sidebar--open" : ""}`}>
+      <aside
+        id="adm-sidebar"
+        className={`adm-sidebar ${mobileNavOpen ? "adm-sidebar--open" : ""}`}
+        aria-label="Admin menu"
+      >
         <div className="adm-brand">
           <span className="adm-brand-icon">🏔</span>
           <div>
             <div className="adm-brand-name">Gadvede Trekkers</div>
             <div className="adm-brand-sub">Admin Panel</div>
           </div>
+          <button
+            type="button"
+            className="adm-sidebar-close"
+            aria-label="Close menu"
+            onClick={() => setMobileNavOpen(false)}
+          >
+            ✕
+          </button>
         </div>
 
         {/* Current logged-in user */}
@@ -123,6 +148,9 @@ function AdminLayout() {
           <button
             type="button"
             className="adm-mobile-toggle"
+            aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
+            aria-controls="adm-sidebar"
+            aria-expanded={mobileNavOpen}
             onClick={() => setMobileNavOpen((value) => !value)}
           >
             {mobileNavOpen ? "✕" : "☰"}
