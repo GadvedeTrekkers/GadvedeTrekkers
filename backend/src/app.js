@@ -18,6 +18,7 @@ import trekPaymentsRoutes   from "./routes/trekPayments.routes.js";
 import adminToolsRoutes     from "./routes/admin-tools.routes.js";
 import createMetaWebhookRouter from "./routes/metaWebhook.routes.js";
 import createSettingsRouter    from "./routes/settings.routes.js";
+import createPaymentRegistrationsRouter from "./routes/paymentRegistrations.routes.js";
 import supabasePublic   from "./config/supabasePublicClient.js";
 import supabaseAdmin    from "./config/supabaseAdminClient.js";
 
@@ -137,6 +138,8 @@ app.use("/api/admin-tools",   adminToolsRoutes);
 const settingsRoutes = createSettingsRouter();
 app.use("/api/settings",      settingsRoutes);   // FR-FE-89 WhatsApp setting
 app.use("/api/v1/settings",   settingsRoutes);
+// t81u: customers who paid by bank transfer / UPI register the payment; admin verifies. No delete route.
+app.use("/api/payment-registrations", createPaymentRegistrationsRouter());
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, status: "ok" });
