@@ -5826,3 +5826,567 @@ html {
 @media (max-width: 576px) {
   .adm-quick-add { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ADMIN — 3D look (depth, glass cards, tilt) + 3D dashboard
+   Everything is scoped to `.adm-shell`, so the public website is untouched.
+   The mobile slide-in menu rules above (.adm-sidebar--open, close button,
+   z-index, transform, visibility) are NOT overridden here.
+   prefers-reduced-motion turns off tilt, lifts and bar growth.
+═══════════════════════════════════════════════════════════ */
+.adm-shell {
+  --adm-depth-1: 0 1px 2px rgba(15, 40, 25, 0.06), 0 2px 6px rgba(15, 40, 25, 0.05);
+  --adm-depth-2: 0 1px 1px rgba(15, 40, 25, 0.05), 0 4px 10px rgba(15, 40, 25, 0.07), 0 12px 28px rgba(15, 40, 25, 0.08);
+  --adm-depth-3: 0 2px 4px rgba(15, 40, 25, 0.06), 0 10px 20px rgba(15, 40, 25, 0.10), 0 24px 48px rgba(15, 40, 25, 0.12);
+  --adm-glass-bg: rgba(255, 255, 255, 0.72);
+  --adm-glass-border: rgba(255, 255, 255, 0.85);
+  --adm-glass-edge: rgba(25, 135, 84, 0.10);
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(25, 135, 84, 0.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, rgba(13, 110, 253, 0.06), transparent 60%),
+    linear-gradient(180deg, #f2f7f4 0%, #eef3f7 100%);
+  background-attachment: fixed;
+}
+
+/* ── Glass surfaces ── */
+.adm-shell .adm-glass,
+.adm-shell .adm-form-card,
+.adm-shell .adm-table-wrap,
+.adm-shell .adm-stat-card,
+.adm-shell .adm-quote-card,
+.adm-shell .adm-safety-card,
+.adm-shell .adm-report-card,
+.adm-shell .adm-kpi,
+.adm-shell .adm-booking-detail,
+.adm-shell .adm-fin-card {
+  background: var(--adm-glass-bg);
+  border: 1px solid var(--adm-glass-border);
+  box-shadow: var(--adm-depth-2), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px var(--adm-glass-edge);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+.adm-shell .adm-table-wrap { border-radius: 14px; overflow: auto; }
+.adm-shell .adm-table thead th {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.9));
+}
+
+/* Payment Registrations rows are inline-styled; give them the same depth (CSS only) */
+.adm-shell [data-testid="preg-admin-row"] {
+  background: var(--adm-glass-bg) !important;
+  border-color: var(--adm-glass-border) !important;
+  box-shadow: var(--adm-depth-2), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px var(--adm-glass-edge) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.adm-shell [data-testid="preg-admin-row"]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--adm-depth-3), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px var(--adm-glass-edge) !important;
+}
+
+/* Profile Setup (ProfileSetup.css) in the 3D/glass look — styling only, no logic change */
+.adm-shell .ps-card,
+.adm-shell .ps-savebar {
+  background: var(--adm-glass-bg);
+  border-color: var(--adm-glass-border);
+  box-shadow: var(--adm-depth-2), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px var(--adm-glass-edge);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+.adm-shell .ps-card { border-radius: 18px; }
+.adm-shell .ps-savebar { border-radius: 16px; box-shadow: var(--adm-depth-3), inset 0 1px 0 rgba(255, 255, 255, 0.9); }
+.adm-shell .ps-chips { background: linear-gradient(rgba(242, 247, 244, 0.95) 75%, transparent); }
+.adm-shell .ps-chip {
+  box-shadow: 0 2px 0 rgba(15, 40, 25, 0.10), 0 4px 10px rgba(15, 40, 25, 0.06);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.15s, border-color 0.15s;
+}
+.adm-shell .ps-chip:hover { transform: translateY(-1px); }
+.adm-shell .ps-chip:active { transform: translateY(1px); box-shadow: 0 0 0 rgba(15, 40, 25, 0.1); }
+.adm-shell .ps-input { box-shadow: inset 0 1px 2px rgba(15, 40, 25, 0.06); }
+.adm-shell .ps-btn { transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.adm-shell .ps-btn--primary {
+  background: linear-gradient(180deg, #16935a, #0c6e44);
+  box-shadow: 0 3px 0 #08502f, 0 8px 18px rgba(12, 110, 68, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.adm-shell .ps-btn--ghost { box-shadow: 0 2px 0 #cbd5e1, 0 4px 10px rgba(15, 40, 25, 0.06); }
+.adm-shell .ps-btn:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(8, 80, 47, 0.6), 0 2px 6px rgba(12, 110, 68, 0.2); }
+.adm-shell .ps-preview {
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08), 0 16px 36px rgba(15, 23, 42, 0.18);
+  transform: perspective(900px) rotateY(-4deg) rotateX(2deg);
+  transition: transform 0.4s ease;
+}
+.adm-shell .ps-preview:hover { transform: perspective(900px) rotateY(0deg) rotateX(0deg); }
+.adm-shell .ps-preset,
+.adm-shell .ps-toggle { box-shadow: 0 2px 0 rgba(15, 40, 25, 0.08); }
+@media (max-width: 640px) {
+  .adm-shell .ps-card, .adm-shell .ps-savebar { -webkit-backdrop-filter: none; backdrop-filter: none; background-color: rgba(255, 255, 255, 0.94); }
+  .adm-shell .ps-preview { transform: none; }
+}
+
+/* ── Tilt + lift (cards opt in with data-tilt; JS only sets the variables on mouse devices) ── */
+.adm-shell [data-tilt] {
+  position: relative;
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(0);
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(.2, .8, .2, 1), box-shadow 0.35s ease;
+  will-change: transform;
+}
+.adm-shell [data-tilt]:hover,
+.adm-shell [data-tilt]:focus-visible {
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(-4px);
+  box-shadow: var(--adm-depth-3), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px var(--adm-glass-edge);
+}
+.adm-shell [data-tilt].is-tilting { transition: transform 0.08s linear, box-shadow 0.35s ease; }
+.adm-shell [data-tilt]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(240px circle at var(--tilt-glare, 50%) 0%, rgba(255, 255, 255, 0.45), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.adm-shell [data-tilt].is-tilting::after { opacity: 1; }
+
+/* ── Stat cards ── */
+.adm-shell .adm-stat-card {
+  border-left: 4px solid var(--card-accent, #198754);
+  border-radius: 16px;
+}
+.adm-shell .adm-stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 1.5rem;
+  background: linear-gradient(145deg, #ffffff, #e9f1ec);
+  box-shadow: 4px 4px 10px rgba(15, 40, 25, 0.10), -3px -3px 8px rgba(255, 255, 255, 0.9);
+  transform: translateZ(20px);
+  flex-shrink: 0;
+}
+.adm-shell .adm-stat-body { transform: translateZ(14px); min-width: 0; }
+
+/* ── Financial health cards (were inline styles) ── */
+.adm-fin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.adm-shell .adm-fin-card {
+  display: block;
+  text-decoration: none;
+  border-radius: 16px;
+  border-left: 4px solid var(--fin-color);
+  padding: 14px 16px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.85), color-mix(in srgb, var(--fin-bg) 80%, transparent));
+}
+.adm-fin-icon { font-size: 18px; margin-bottom: 4px; transform: translateZ(18px); }
+.adm-fin-value { font-size: 20px; font-weight: 800; color: var(--fin-color); transform: translateZ(14px); }
+.adm-fin-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+/* ── Total banner + quote: layered depth ── */
+.adm-shell .adm-total-banner {
+  box-shadow: 0 4px 10px rgba(10, 61, 31, 0.25), 0 14px 32px rgba(10, 61, 31, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, #0a3d1f 0%, #157347 55%, #20a464 100%);
+}
+.adm-shell .adm-total-num { text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18), 0 6px 14px rgba(0, 0, 0, 0.25); }
+.adm-shell .adm-quote-card { border-left: 4px solid #198754; border-radius: 16px; }
+
+/* ── 3D-feel sidebar ── */
+.adm-shell .adm-sidebar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 30%),
+    linear-gradient(165deg, #12351f 0%, #0d2416 45%, #081a10 100%);
+}
+@media (min-width: 901px) {
+  .adm-shell .adm-sidebar {
+    box-shadow: 1px 0 0 rgba(255, 255, 255, 0.06) inset, 6px 0 24px rgba(8, 26, 16, 0.18), 2px 0 6px rgba(8, 26, 16, 0.12);
+    z-index: 2;
+  }
+}
+.adm-shell .adm-brand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #1f7a4a, #0f4a2a);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.adm-shell .adm-link {
+  position: relative;
+  transition: background 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.adm-shell .adm-link:hover {
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 10px rgba(0, 0, 0, 0.18);
+  transform: translateX(3px);
+}
+.adm-shell .adm-link--active,
+.adm-shell .adm-link--active:hover {
+  background: linear-gradient(135deg, #22a565 0%, #198754 55%, #13693f 100%);
+  box-shadow: 0 6px 14px rgba(25, 135, 84, 0.45), 0 2px 4px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateX(2px);
+}
+.adm-shell .adm-link-icon { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); }
+.adm-shell .adm-link:focus-visible,
+.adm-shell .adm-sidebar-close:focus-visible,
+.adm-shell .adm-mobile-toggle:focus-visible {
+  outline: 2px solid #86efac;
+  outline-offset: 2px;
+}
+.adm-shell .adm-logout {
+  box-shadow: 0 3px 0 rgba(120, 20, 30, 0.45), 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Mobile top bar: glass ── */
+@media (max-width: 900px) {
+  .adm-shell .adm-mobile-topbar {
+    background: rgba(255, 255, 255, 0.78);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 6px 18px rgba(15, 40, 25, 0.08);
+  }
+  .adm-shell .adm-mobile-toggle {
+    box-shadow: 0 2px 0 #cbd5e1, 0 4px 10px rgba(15, 40, 25, 0.10);
+  }
+  .adm-shell .adm-mobile-toggle:active { transform: translateY(2px); box-shadow: 0 0 0 #cbd5e1, 0 2px 4px rgba(15, 40, 25, 0.1); }
+  .adm-shell .adm-mobile-backdrop {
+    background: rgba(8, 26, 16, 0.38);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
+}
+
+/* ── 3D buttons (admin only) ── */
+.adm-shell .btn {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+.adm-shell .btn:not(.btn-link):not(.btn-close) {
+  box-shadow: 0 2px 0 rgba(15, 40, 25, 0.12), 0 4px 10px rgba(15, 40, 25, 0.06);
+}
+.adm-shell .btn:not(.btn-link):not(.btn-close):hover { transform: translateY(-1px); box-shadow: 0 3px 0 rgba(15, 40, 25, 0.14), 0 8px 16px rgba(15, 40, 25, 0.10); }
+.adm-shell .btn:not(.btn-link):not(.btn-close):active { transform: translateY(2px); box-shadow: 0 0 0 rgba(15, 40, 25, 0.12), 0 1px 3px rgba(15, 40, 25, 0.10); }
+.adm-shell .btn-success,
+.adm-shell .btn-primary {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0));
+}
+/* Quick Add: still text-only, now raised keys */
+.adm-shell .adm-quick-add .adm-quick-add-btn {
+  background: linear-gradient(180deg, #ffffff, #f0f7f3);
+  box-shadow: 0 3px 0 #9fd3b5, 0 8px 16px rgba(25, 135, 84, 0.10);
+}
+.adm-shell .adm-quick-add .adm-quick-add-btn:hover {
+  background: linear-gradient(180deg, #22a565, #198754);
+  color: #fff;
+  box-shadow: 0 3px 0 #0f5132, 0 10px 18px rgba(25, 135, 84, 0.25);
+}
+
+/* ── 3D dashboard hero: chart panel + batches carousel ── */
+.adm3d-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.adm3d-panel {
+  border-radius: 20px;
+  padding: 16px 16px 14px;
+  min-width: 0;
+  overflow: hidden;
+}
+.adm3d-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.adm3d-panel-title { margin: 0; font-weight: 800; font-size: 1.05rem; color: #0f2a1a; }
+.adm3d-panel-sub { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+.adm3d-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm3d-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(15, 40, 25, 0.06);
+  box-shadow: inset 0 1px 3px rgba(15, 40, 25, 0.12);
+}
+.adm3d-seg button {
+  border: 0;
+  background: transparent;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  min-height: 32px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.adm3d-seg button.is-on {
+  background: linear-gradient(180deg, #22a565, #198754);
+  color: #fff;
+  box-shadow: 0 2px 0 #0f5132, 0 4px 10px rgba(25, 135, 84, 0.3);
+}
+.adm3d-seg button:focus-visible,
+.adm3d-dots button:focus-visible { outline: 2px solid #22c55e; outline-offset: 2px; }
+.adm-shell .adm3d-pause,
+.adm-shell .adm3d-nav {
+  flex-shrink: 0;
+  min-height: 36px;
+  min-width: 36px;
+  border: 1px solid #cfe3d7;
+  background: #fff;
+  color: #14532d;
+  font-weight: 700;
+  font-size: 12px;
+}
+.adm-shell .adm3d-nav { font-size: 18px; line-height: 1; padding: 0 10px; }
+.adm3d-scene {
+  position: relative;
+  height: 320px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #eef6f1 70%, #e3efe8 100%);
+  box-shadow: inset 0 2px 8px rgba(15, 40, 25, 0.10), inset 0 -1px 0 rgba(255, 255, 255, 0.7);
+}
+.adm3d-stage { position: absolute; inset: 0; outline: none; cursor: grab; }
+.adm3d-stage:active { cursor: grabbing; }
+.adm3d-stage:focus-visible { box-shadow: inset 0 0 0 3px #22c55e; border-radius: 16px; }
+.adm3d-canvas { display: block; width: 100% !important; height: 100% !important; opacity: 0; transition: opacity 0.5s ease; }
+.adm3d-stage.is-ready .adm3d-canvas { opacity: 1; }
+.adm3d-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.adm3d-label { position: absolute; left: 0; top: 0; white-space: nowrap; line-height: 1; will-change: transform; }
+.adm3d-label--value {
+  font-size: 12px; font-weight: 800; color: #0f172a;
+  background: rgba(255, 255, 255, 0.85); padding: 3px 6px; border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
+}
+.adm3d-label--axis {
+  font-size: 11px; font-weight: 600; color: #475569; margin-top: 4px;
+  max-width: 96px; overflow: hidden; text-overflow: ellipsis;
+}
+.adm3d-tip {
+  position: absolute; right: 12px; top: 12px;
+  font-size: 12px; font-weight: 700; color: #fff;
+  background: rgba(15, 42, 26, 0.88); padding: 6px 10px; border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); pointer-events: none;
+}
+.adm3d-loading {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  font-size: 12px; font-weight: 600; color: #14532d;
+  background: rgba(255, 255, 255, 0.8); padding: 4px 10px; border-radius: 999px;
+}
+.adm3d-chart--bare { margin: 0; padding: 8px 4px 0; }
+
+/* ── CSS-3D carousel ── */
+.adm3d-carousel {
+  --card-w: 240px;
+  position: relative;
+  height: 300px;
+  perspective: 1100px;
+  perspective-origin: 50% 35%;
+  overflow: hidden;
+  border-radius: 16px;
+  background: radial-gradient(120% 90% at 50% 100%, #e3efe8 0%, rgba(255, 255, 255, 0) 70%);
+}
+.adm3d-ring {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  width: var(--card-w);
+  height: 260px;
+  margin-left: calc(var(--card-w) / -2);
+  transform-style: preserve-3d;
+  transition: transform 0.9s cubic-bezier(.2, .8, .2, 1);
+}
+/* opacity/filter go on the card, not the <li>: on the <li> they would flatten the 3D and show mirrored backs */
+.adm3d-batch { position: absolute; inset: 0; transform-style: preserve-3d; }
+.adm3d-batch .adm3d-batch-card { transition: opacity 0.6s ease, filter 0.6s ease, box-shadow 0.6s ease; }
+.adm3d-batch.is-near .adm3d-batch-card { opacity: 0.8; filter: saturate(0.85); }
+.adm3d-batch.is-back .adm3d-batch-card { opacity: 0.25; filter: saturate(0.5); }
+.adm3d-batch.is-back { pointer-events: none; }
+.adm3d-batch-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 4px rgba(15, 40, 25, 0.08), 0 14px 30px rgba(15, 40, 25, 0.16);
+  backface-visibility: hidden;
+}
+.adm3d-batch.is-front .adm3d-batch-card { box-shadow: 0 4px 8px rgba(15, 40, 25, 0.10), 0 22px 44px rgba(15, 40, 25, 0.22); }
+.adm3d-batch-card:focus-visible { outline: 3px solid #22c55e; outline-offset: 2px; }
+.adm3d-batch-cover { width: 100%; height: 120px; object-fit: cover; display: block; background: #dfeee4; }
+.adm3d-batch-cover--empty {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 34px; font-weight: 800; color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(135deg, #0a3d1f, #198754 60%, #34c47c);
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+.adm3d-batch-when {
+  position: absolute; top: 10px; left: 10px;
+  font-size: 11px; font-weight: 800; color: #14532d;
+  background: rgba(255, 255, 255, 0.92); padding: 4px 9px; border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+.adm3d-batch-when.is-soon { color: #fff; background: #ea580c; }
+.adm3d-batch-body { padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.adm3d-batch-name { font-weight: 800; font-size: 14px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adm3d-batch-date { font-size: 12px; color: #475569; font-weight: 600; }
+.adm3d-batch-stats { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #64748b; }
+.adm3d-batch-stats strong { display: block; font-size: 15px; color: #198754; }
+.adm3d-carousel--flat { perspective: none; height: auto; }
+.adm3d-carousel--flat .adm3d-ring {
+  position: static; margin: 0; width: auto; height: auto;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 1fr)); gap: 14px; padding: 8px;
+}
+.adm3d-carousel--flat .adm3d-batch { position: relative; height: 260px; }
+.adm3d-dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.adm3d-dots { gap: 2px; }
+.adm-shell .adm3d-dots button {
+  /* 24px tap target, small visual dot drawn by ::before */
+  position: relative;
+  width: 22px; height: 24px; min-width: 22px; min-height: 24px; padding: 0;
+  border: 0; border-radius: 6px; background: transparent; cursor: pointer;
+  box-shadow: none; transform: none;
+}
+.adm-shell .adm3d-dots button::before {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 9px; height: 9px; border-radius: 5px; transform: translate(-50%, -50%);
+  background: #cbd5e1; transition: width 0.25s, background 0.25s;
+}
+.adm-shell .adm3d-dots button.is-on::before { width: 20px; background: #198754; }
+
+@media (min-width: 1200px) {
+  .adm3d-hero-grid { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+}
+
+/* ── CSS 3D bar charts ── */
+.adm3d-chart { margin: 0; border-radius: 18px; padding: 16px 18px 12px; }
+.adm3d-chart-title { font-weight: 700; font-size: 14px; color: #0f2a1a; margin-bottom: 8px; }
+.adm3d-chart-empty { color: #94a3b8; font-size: 13px; margin: 24px 0; text-align: center; }
+.adm3d-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 10px;
+  height: 200px;
+  padding: 0 12px 0 4px;
+  border-bottom: 2px solid rgba(15, 40, 25, 0.08);
+  background: repeating-linear-gradient(0deg, transparent 0 39px, rgba(15, 40, 25, 0.05) 39px 40px);
+}
+.adm3d-bar-col {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.adm3d-bar-value { font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 12px; }
+.adm3d-bar {
+  --depth: 10px;
+  position: relative;
+  width: calc(100% - var(--depth));
+  max-width: 34px;
+  height: calc(var(--h, 0) * 130px + 4px);
+  margin-right: var(--depth);
+  background: linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 82%, #000));
+  border-radius: 2px 0 0 0;
+  transform-origin: bottom;
+  animation: adm3d-grow 0.9s cubic-bezier(.2, .8, .2, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+  box-shadow: 6px 8px 14px rgba(15, 40, 25, 0.18);
+}
+.adm3d-bar::before { /* lit top face */
+  content: "";
+  position: absolute;
+  left: 0; bottom: 100%;
+  width: 100%; height: var(--depth);
+  background: color-mix(in srgb, var(--c) 60%, #fff);
+  transform-origin: bottom left;
+  transform: skewX(-45deg);
+}
+.adm3d-bar::after { /* shaded side face */
+  content: "";
+  position: absolute;
+  left: 100%; top: 0;
+  width: var(--depth); height: 100%;
+  background: color-mix(in srgb, var(--c) 62%, #000);
+  transform-origin: top left;
+  transform: skewY(-45deg);
+}
+.adm3d-bar-label {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #475569;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@keyframes adm3d-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+@media (max-width: 640px) {
+  .adm3d-panel { padding: 12px 12px 10px; border-radius: 16px; }
+  .adm3d-scene { height: 250px; }
+  .adm3d-carousel { height: 290px; }
+  .adm3d-bars { height: 180px; gap: 6px; }
+  .adm-fin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .adm-fin-value { font-size: 17px; }
+  /* glass blur is expensive on phones: keep the look, cut the blur */
+  .adm-shell .adm-glass,
+  .adm-shell .adm-stat-card,
+  .adm-shell .adm-fin-card,
+  .adm-shell .adm-table-wrap,
+  .adm-shell .adm-form-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: rgba(255, 255, 255, 0.92);
+  }
+}
+
+/* No backdrop-filter support: solid cards */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .adm-shell .adm-glass,
+  .adm-shell .adm-stat-card,
+  .adm-shell .adm-fin-card,
+  .adm-shell .adm-form-card,
+  .adm-shell .adm-table-wrap { background-color: #fff; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-shell [data-tilt],
+  .adm-shell [data-tilt]:hover,
+  .adm-shell [data-tilt]:focus-visible,
+  .adm-shell .adm-link,
+  .adm-shell .adm-link:hover,
+  .adm-shell .adm-link--active,
+  .adm-shell .btn,
+  .adm-shell .btn:hover,
+  .adm-shell .btn:active,
+  .adm-shell [data-testid="preg-admin-row"]:hover,
+  .adm-shell .ps-preview,
+  .adm-shell .ps-chip,
+  .adm-shell .ps-btn {
+    transform: none !important;
+    transition: none !important;
+  }
+  .adm-shell [data-tilt]::after { display: none; }
+  .adm3d-bar { animation: none; }
+  .adm3d-canvas { transition: none; }
+  .adm3d-ring, .adm3d-batch .adm3d-batch-card, .adm3d-seg button, .adm3d-dots button::before { transition: none !important; }
+}
