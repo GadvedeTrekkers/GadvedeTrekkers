@@ -4,6 +4,7 @@ import { getAdminItems } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { waUrl } from "../../config/whatsappSetting";
+import { villaStayTotal } from "../../utils/villaPricing";
 
 export const villasList = [
   {
@@ -223,7 +224,12 @@ const amenityIcons = {
   "Private Pool": "🏊", "Air Conditioning": "❄️", "Kitchen": "🍳",
   "Farm-to-Table Dining": "🥗", "Hammocks": "🌴", "Entire Place": "🏡",
   "Nature Views": "🌲",
+  "Private Pool (14 × 24 ft)": "🏊", "Private Parking for 5 Cars": "🅿️", "2 AC Bedrooms": "❄️", "Wi-Fi": "📶", "Smart LED TV": "📺", "Sound System": "🔊",
+  "Fridge": "🧊", "Extra Beds": "🛏️", "Poolside Gazebo": "⛱️",
+  "Open Terrace with Mountain View": "⛰️", "Outdoor Seating by the Pool": "🪑",
+  "2 Bathrooms with Geyser": "🚿", "Aquaguard Drinking Water": "💧",
 };
+
 
 function StarRating({ score }) {
   const filled = Math.round(score / 2);
@@ -257,10 +263,11 @@ function VillaDetail({ villa, onClose }) {
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  const nights = checkIn && checkOut
-    ? Math.max(0, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000))
-    : 1;
-  const totalPrice = villa.price * nights;
+  const stay = villaStayTotal(villa, checkIn, checkOut);
+  const nights = stay.nights;
+  const totalPrice = stay.total;
+  const hasWeekendPrice = Number(villa.weekendPrice) > 0;
+  const thumbs = villa.galleryThumbs?.length === villa.gallery.length ? villa.galleryThumbs : villa.gallery;
   const bookingUrl = buildBookingWhatsAppUrl({
     name: villa.name,
     location: villa.location,
@@ -310,8 +317,8 @@ function VillaDetail({ villa, onClose }) {
           />
           {/* Thumbnail strip */}
           {villa.gallery.length > 1 && (
-            <div style={{ position: "absolute", bottom: 12, left: 12, display: "flex", gap: 6 }}>
-              {villa.gallery.map((img, i) => (
+            <div style={{ position: "absolute", bottom: 12, left: 12, right: 12, display: "flex", gap: 6, overflowX: "auto" }}>
+              {thumbs.map((img, i) => (
                 <div
                   key={i}
                   onClick={() => setActiveImg(i)}
@@ -321,17 +328,17 @@ function VillaDetail({ villa, onClose }) {
                     cursor: "pointer", flexShrink: 0,
                   }}
                 >
-                  <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={img} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
               ))}
               <div
                 style={{
                   background: "rgba(0,0,0,0.6)", color: "#fff", borderRadius: 6,
                   padding: "0 10px", fontSize: "0.75rem", fontWeight: 600,
-                  display: "flex", alignItems: "center",
+                  display: "flex", alignItems: "center", flexShrink: 0,
                 }}
               >
-                +{51 - villa.gallery.length} photos
+                {activeImg + 1} / {villa.gallery.length} photos
               </div>
             </div>
           )}
@@ -360,14 +367,29 @@ function VillaDetail({ villa, onClose }) {
                 📍 {villa.location}
               </p>
             </div>
+            {villa.rating > 0 && (
             <div style={{ textAlign: "right" }}>
               <RatingBadge score={villa.rating} />
               <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#374151", marginTop: 4 }}>{villa.ratingLabel}</div>
               <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{villa.reviews} reviews</div>
             </div>
+            )}
           </div>
 
+          {/* Weekday / weekend price */}
+          {hasWeekendPrice && (
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+              <span style={{ background: "#eef2ff", color: "#1e1b4b", borderRadius: 8, padding: "6px 12px", fontSize: "0.85rem", fontWeight: 700 }}>
+                Weekday (Sun–Thu night): ₹{villa.price.toLocaleString()} / night
+              </span>
+              <span style={{ background: "#fef3c7", color: "#92400e", borderRadius: 8, padding: "6px 12px", fontSize: "0.85rem", fontWeight: 700 }}>
+                Weekend (Fri–Sat night): ₹{Number(villa.weekendPrice).toLocaleString()} / night
+              </span>
+            </div>
+          )}
+
           {/* Location score */}
+          {villa.locationScore > 0 && (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#f0fdf4", borderRadius: 8, padding: "6px 12px", marginBottom: 16 }}>
             <span style={{ fontWeight: 700, color: "#059669", fontSize: "0.9rem" }}>Excellent location</span>
             <span style={{ background: "#059669", color: "#fff", fontWeight: 800, fontSize: "0.8rem", padding: "2px 8px", borderRadius: 6 }}>
@@ -375,14 +397,17 @@ function VillaDetail({ villa, onClose }) {
             </span>
             <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>score from {villa.reviews} reviews</span>
           </div>
+          )}
 
           {/* Guest review */}
+          {villa.guestReview && (
           <div style={{ background: "#f8fafc", borderRadius: 12, padding: "14px 16px", marginBottom: 20, borderLeft: "3px solid #059669" }}>
             <p style={{ fontSize: "0.85rem", color: "#374151", fontStyle: "italic", margin: "0 0 6px", lineHeight: 1.6 }}>
               "{villa.guestReview}"
             </p>
             <span style={{ fontSize: "0.78rem", color: "#6b7280", fontWeight: 600 }}>— {villa.reviewerName}</span>
           </div>
+          )}
 
           {/* Quick facts */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
@@ -391,8 +416,8 @@ function VillaDetail({ villa, onClose }) {
               { label: villa.size, icon: "📐" },
               { label: `${villa.bedrooms} Bedrooms`, icon: "🛏️" },
               { label: `${villa.bathrooms} Bathrooms`, icon: "🛁" },
-              { label: `Up to ${villa.accommodation[0]?.maxGuests || 6} guests`, icon: "👥" },
-            ].map((f) => (
+              { label: villa.accommodation[0]?.maxGuests ? `Up to ${villa.accommodation[0].maxGuests} guests` : "", icon: "👥" },
+            ].filter((f) => f.label && !/^0 /.test(f.label)).map((f) => (
               <span
                 key={f.label}
                 style={{
@@ -439,14 +464,16 @@ function VillaDetail({ villa, onClose }) {
 
           {/* About */}
           <h4 style={{ fontWeight: 700, color: "#1e293b", marginBottom: 10 }}>About This Property</h4>
-          <p style={{ fontSize: "0.88rem", color: "#374151", lineHeight: 1.8, marginBottom: 24 }}>
+          <p style={{ fontSize: "0.88rem", color: "#374151", lineHeight: 1.8, marginBottom: 24, whiteSpace: "pre-line" }}>
             {villa.about}
           </p>
 
           {/* Distance */}
+          {villa.distance && (
           <p style={{ fontSize: "0.82rem", color: "#6b7280", marginBottom: 24 }}>
             📍 {villa.distance}
           </p>
+          )}
 
           {/* Accommodation types */}
           <h4 style={{ fontWeight: 700, color: "#1e293b", marginBottom: 12 }}>Accommodation</h4>
@@ -456,7 +483,7 @@ function VillaDetail({ villa, onClose }) {
               style={{ background: "#f8fafc", borderRadius: 12, padding: "16px 18px", marginBottom: 12, border: "1px solid #e2e8f0" }}
             >
               <div style={{ fontWeight: 700, color: "#065f46", marginBottom: 8, fontSize: "0.9rem" }}>
-                🏠 {acc.type} · Max {acc.maxGuests} guests
+                🏠 {acc.type}{acc.maxGuests ? ` · Max ${acc.maxGuests} guests` : ""}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {acc.beds.map((b) => (
@@ -532,10 +559,18 @@ function VillaDetail({ villa, onClose }) {
 
                 {/* Price summary */}
                 <div style={{ background: "#fff", borderRadius: 10, padding: "12px 14px", marginBottom: 14, border: "1px solid #e2e8f0" }}>
+                  {stay.weekdayNights > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: "0.82rem", color: "#6b7280" }}>₹{villa.price.toLocaleString()} × {nights} night{nights !== 1 ? "s" : ""}</span>
-                    <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>₹{totalPrice.toLocaleString()}</span>
+                    <span style={{ fontSize: "0.82rem", color: "#6b7280" }}>₹{villa.price.toLocaleString()} × {stay.weekdayNights} {hasWeekendPrice ? "weekday " : ""}night{stay.weekdayNights !== 1 ? "s" : ""}</span>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>₹{(stay.weekdayNights * villa.price).toLocaleString()}</span>
                   </div>
+                  )}
+                  {stay.weekendNights > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: "0.82rem", color: "#6b7280" }}>₹{Number(villa.weekendPrice).toLocaleString()} × {stay.weekendNights} weekend night{stay.weekendNights !== 1 ? "s" : ""}</span>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>₹{(stay.weekendNights * Number(villa.weekendPrice)).toLocaleString()}</span>
+                  </div>
+                  )}
                   <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #f1f5f9", paddingTop: 8, marginTop: 4 }}>
                     <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1e293b" }}>Total</span>
                     <span style={{ fontSize: "1rem", fontWeight: 800, color: "#059669" }}>₹{totalPrice.toLocaleString()}</span>
@@ -620,7 +655,7 @@ export default function Villas() {
           let gallery;
           try { gallery = JSON.parse(v.imageGallery || "[]").filter(Boolean); } catch { gallery = []; }
           const amenitiesArr = String(v.amenities || "").split("\n").map((s) => s.trim()).filter(Boolean);
-          const maxG = Number(v.maxGuests) || 6;
+          const maxG = Number(v.maxGuests) || 0;
           const rating = Number(v.rating) || 0;
           const ratingLbl = v.ratingLabel || (rating >= 8.5 ? "Fabulous" : rating >= 8 ? "Very good" : "Good");
           return {
@@ -638,8 +673,10 @@ export default function Villas() {
             bedrooms: Number(v.bedrooms) || 0,
             bathrooms: Number(v.bathrooms) || 0,
             badge: v.badge || null,
-            image: gallery[0] || "",
-            gallery: gallery.length ? gallery : [],
+            weekendPrice: Number(v.weekendPrice) || 0,
+            image: v.image || gallery[0] || "",
+            gallery: gallery.length ? gallery : (v.image ? [v.image] : []),
+            galleryThumbs: Array.isArray(v.galleryThumbs) ? v.galleryThumbs : [],
             locationScore: Number(v.locationScore) || 0,
             description: v.description || "",
             about: v.about || v.description || "",
@@ -647,13 +684,20 @@ export default function Villas() {
             reviewerName: v.reviewerName || "",
             amenities: amenitiesArr,
             activities: [],
-            accommodation: [{ type: `${v.bedrooms || "?"}-Bedroom Villa`, beds: [], maxGuests: maxG }],
+            accommodation: [{ type: `${v.bedrooms || "?"}-Bedroom Villa`, beds: Array.isArray(v.beds) ? v.beds : [], maxGuests: maxG }],
             distance: v.distance || v.nearbyAttractions || "",
           };
         })
-    : villasList;
+    : [];
+  // Villas added from the admin/DB are shown first; the built-in list stays below
+  // (an admin entry with the same id/name replaces its built-in twin).
+  const _dbKeys = new Set(activeVillas.flatMap((v) => [v.id, String(v.name).toLowerCase()]));
+  const allVillas = [
+    ...activeVillas,
+    ...villasList.filter((v) => !_dbKeys.has(v.id) && !_dbKeys.has(v.name.toLowerCase())),
+  ];
 
-  const sorted = [...activeVillas]
+  const sorted = [...allVillas]
     .filter((v) => v.rating >= minScore)
     .sort((a, b) => {
       if (sort === "price-asc") return a.price - b.price;
@@ -764,8 +808,9 @@ export default function Villas() {
               {/* Image */}
               <div style={{ position: "relative", overflow: "hidden" }}>
                 <img
-                  src={villa.image}
+                  src={villa.galleryThumbs?.[0] && villa.image === villa.gallery[0] ? villa.galleryThumbs[0] : villa.image}
                   alt={villa.name}
+                  loading="lazy"
                   style={{ width: "100%", height: "100%", minHeight: 200, objectFit: "cover", display: "block" }}
                 />
                 {villa.badge && (
@@ -789,6 +834,7 @@ export default function Villas() {
                     <h3 style={{ fontWeight: 800, fontSize: "1.05rem", color: "#111827", lineHeight: 1.3, margin: 0 }}>
                       {villa.name}
                     </h3>
+                    {villa.rating > 0 && (
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#374151" }}>{villa.ratingLabel}</div>
@@ -796,6 +842,7 @@ export default function Villas() {
                       </div>
                       <RatingBadge score={villa.rating} />
                     </div>
+                    )}
                   </div>
                   <p style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: 6 }}>📍 {villa.location}</p>
                   <p style={{ fontSize: "0.85rem", color: "#374151", lineHeight: 1.6, marginBottom: 10 }}>
@@ -814,16 +861,22 @@ export default function Villas() {
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
                   <div>
-                    <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>Price from</div>
+                    <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>{villa.weekendPrice > 0 ? "Weekday price" : "Price from"}</div>
                     <div>
                       <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1e1b4b" }}>
                         ₹{villa.price.toLocaleString()}
                       </span>
+                      {villa.originalPrice > villa.price && (
                       <span style={{ fontSize: "0.78rem", color: "#9ca3af", textDecoration: "line-through", marginLeft: 6 }}>
                         ₹{villa.originalPrice.toLocaleString()}
                       </span>
+                      )}
                     </div>
-                    <div style={{ fontSize: "0.72rem", color: "#6b7280" }}>1 night, 2 adults</div>
+                    {villa.weekendPrice > 0 ? (
+                      <div style={{ fontSize: "0.78rem", color: "#92400e", fontWeight: 700 }}>Weekend ₹{villa.weekendPrice.toLocaleString()} / night</div>
+                    ) : (
+                      <div style={{ fontSize: "0.72rem", color: "#6b7280" }}>1 night, 2 adults</div>
+                    )}
                   </div>
                   <button
                     style={{
