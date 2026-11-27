@@ -12,6 +12,8 @@ import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 import { CATALOG_HUBS, hubBySlug, inferHubSlug } from "../../data/catalogHubs";
 import { collectSellingPrices, genuineCompareAt, resolveTripGallery } from "../../utils/tripDisplay";
 import { useSeo } from "../../seo/useSeo";
+import TripRating from "../../components/TripRating";
+import { realRating } from "../../utils/rating";
 import { waUrl } from "../../config/whatsappSetting";
 import {
   SITE_ORIGIN,
@@ -210,10 +212,10 @@ function Trek() {
     }
     if (activeSort === "price-asc") result.sort((a, b) => a.price - b.price);
     else if (activeSort === "price-desc") result.sort((a, b) => b.price - a.price);
-    else if (activeSort === "rating") result.sort((a, b) => b.rating - a.rating);
+    else if (activeSort === "rating") result.sort((a, b) => (realRating(b)?.value || 0) - (realRating(a)?.value || 0));
     else result.sort((a, b) => Number(a._sortOrder ?? 999) - Number(b._sortOrder ?? 999));
     return result;
-  }, [treks, activeFilter, activeSort, searchQuery, activeHub]);
+  }, [treks, activeFilter, activeSort, searchQuery, isSearchActive, activeHub]);
 
   const visibleTreks = showAllTreks
     ? filteredTreks
@@ -480,13 +482,7 @@ function Trek() {
                       </p>
                     </div>
 
-                    <div className="trek-rating" itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
-                      <span className="trek-rating-star" aria-hidden="true">★</span>
-                      <span itemProp="ratingValue">{trek.rating.toFixed(1)}</span>
-                      <span className="trek-rating-count" itemProp="reviewCount">
-                        ({trek.reviews})
-                      </span>
-                    </div>
+                    <TripRating item={trek} />
                   </div>
 
                   <div className="trek-chip-row">

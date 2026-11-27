@@ -29,6 +29,8 @@ import {
   upcomingDepartures,
 } from "../../utils/tripDisplay";
 import { useSeo } from "../../seo/useSeo";
+import { trackViewItem } from "../../analytics/tracking";
+import { realRating } from "../../utils/rating";
 import { buildTrekPageSeo, parseFaq, productSeo } from "../../seo/publicSeo";
 
 
@@ -370,14 +372,21 @@ function TrekDetails() {
   const pageSeo = useMemo(() => {
     const cards = trek ? pricingCards(trek) : [];
     const cardPricing = Object.fromEntries(cards.map((card) => [card.key, { price: card.price }]));
-    const rated = remoteTrek || adminTrek || previewTrek;
     return buildTrekPageSeo({
       slug: id,
-      trek: rated ? trek : { ...(trek || {}), rating: undefined, reviews: undefined },
+      trek,
       pricing: { ...(staticRichTrek?.pricing || {}), ...cardPricing },
     });
-  }, [id, trek, staticRichTrek, remoteTrek, adminTrek, previewTrek]);
+  }, [id, trek, staticRichTrek]);
   useSeo(pageSeo);
+
+  const viewItemKey = trek ? `${id}|${trek.name || ""}` : "";
+  useEffect(() => {
+    if (!viewItemKey) return;
+    const prices = (pageSeo?.jsonLd?.["@graph"] || []).find((n) => n?.offers)?.offers;
+    trackViewItem({ slug: id, name: trek?.name, productType: "trek", price: prices?.lowPrice });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewItemKey]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -424,9 +433,9 @@ function TrekDetails() {
                     { icon: "⏱", label: trek.duration },
                     { icon: "🏔", label: trek.altitude },
                     { icon: "⚡", label: trek.difficulty },
-                    { icon: "⭐", label: `${trek.rating} (${trek.reviews} reviews)` },
+                    { icon: "⭐", label: realRating(trek)?.label },
                     { icon: "💰", label: `From ₹${trek.price}` },
-                  ].map((stat) => (
+                  ].filter((stat) => stat.label).map((stat) => (
                     <div className="td-stat" key={stat.label}>
                       <span className="td-stat-icon">{stat.icon}</span>
                       <span>{stat.label}</span>
@@ -604,9 +613,9 @@ function TrekDetails() {
               { icon: "⏱", label: trek.duration },
               { icon: "🏔", label: trek.altitude },
               { icon: "⚡", label: trek.difficulty },
-              { icon: "⭐", label: `${trek.rating} (${trek.reviews} reviews)` },
+              { icon: "⭐", label: realRating(trek)?.label },
               { icon: "💰", label: `From ₹${trek.price}` },
-            ].map((stat) => (
+            ].filter((stat) => stat.label).map((stat) => (
               <div className="td-stat" key={stat.label}>
                 <span className="td-stat-icon">{stat.icon}</span>
                 <span>{stat.label}</span>
