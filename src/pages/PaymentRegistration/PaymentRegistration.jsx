@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { paymentRegistrationsApi } from "../../api/paymentRegistrations.api";
 import { compressImageToJpeg } from "../../utils/compressImage";
+import { trackEvent } from "../../analytics/tracking";
 import { waUrl } from "../../config/whatsappSetting";
 import {
   GENDERS,
@@ -227,6 +228,15 @@ export default function PaymentRegistration() {
         website: form.website, formOpenMs: Date.now() - openedAt.current,
       });
       setResult({ ...data, fullName: form.fullName.trim(), email: form.email.trim() });
+      // GA4: event + package only. Never the name, phone, email, UTR or reference number.
+      trackEvent("payment_registration_submit", {
+        form_name: "payment_registration",
+        item_id: form.eventSlug,
+        item_name: event?.name || "",
+        participants: Number(form.participantsCount) || 1,
+        currency: "INR",
+        ...(Number(form.amountPaid) > 0 ? { value: Number(form.amountPaid) } : {}),
+      });
       document.documentElement.scrollTop = 0; // the site scrolls <body>, not window (see ScrollToTop.jsx)
       document.body.scrollTop = 0;
     } catch (e) {
