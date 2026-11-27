@@ -6,6 +6,7 @@ import { richTrekDetails, richTrekFor } from "../../data/richTrekDetails";
 import { FEATURED_TRIPS } from "../../data/featuredTrips";
 import { getTrekDates } from "../../data/trekDatesStorage";
 import BookingCTA from "../../components/BookingCTA";
+import PaidRegisterLink from "../../components/PaidRegisterLink";
 import { buildShareWhatsAppUrl } from "../../config/bookingConfig";
 import { productService } from "../../services/product.service";
 import { cleanDisplayText, isPromptLike, stripPromptFields } from "../../utils/contentSanitizer";
@@ -447,6 +448,7 @@ function TrekDetails() {
                     Choose a date and tap <strong>Book Now</strong> — it opens WhatsApp so we can confirm your spot.
                   </p>
                   <DepartureRows departures={departures} trek={trek} />
+                  <PaidRegisterLink slug={trek.slug || id} style={{ marginTop: 12 }} />
                 </div>
               </div>
             )}
@@ -713,6 +715,8 @@ function TrekDetails() {
                   </div>
                 )}
 
+                <PaidRegisterLink slug={trek.slug || id} style={{ marginBottom: 16 }} />
+
                 {highlights.length > 0 && (
                 <div className="td-card td-highlights-card">
                   <h3 className="td-section-title">Trek Highlights</h3>
@@ -854,6 +858,7 @@ function TrekDetails() {
                 </ol>
                 <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <BookingCTA trek={trek} selectedDate={activeBookingDate} className="btn td-book-btn" />
+                  <PaidRegisterLink slug={trek.slug || id} style={{ flexBasis: "100%" }} />
                   <a
                     href={buildShareWhatsAppUrl(trek, referralUrl, activeBookingDate)}
                     target="_blank"
