@@ -66,6 +66,7 @@ function Footer() {
             <ul className="list-unstyled">
               <li><Link className="footer-link" to="/about">About Us</Link></li>
               <li><Link className="footer-link" to="/contact">Contact</Link></li>
+              <li><Link className="footer-link" to="/register">Paid by bank / UPI? Register</Link></li>
               <li><Link className="footer-link" to="/faq">FAQ</Link></li>
               <li><span className="footer-link" style={{ cursor: "default" }}>Privacy Policy</span></li>
               <li><Link className="footer-link" to="/cancellation-policy">Cancellation Policy</Link></li>
