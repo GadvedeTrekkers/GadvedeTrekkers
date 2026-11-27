@@ -19,6 +19,7 @@ import adminToolsRoutes     from "./routes/admin-tools.routes.js";
 import createMetaWebhookRouter from "./routes/metaWebhook.routes.js";
 import createSettingsRouter    from "./routes/settings.routes.js";
 import createPaymentRegistrationsRouter from "./routes/paymentRegistrations.routes.js";
+import createCrmAutomationsRouter from "./routes/crmAutomations.routes.js";
 import supabasePublic   from "./config/supabasePublicClient.js";
 import supabaseAdmin    from "./config/supabaseAdminClient.js";
 
@@ -140,6 +141,7 @@ app.use("/api/settings",      settingsRoutes);   // FR-FE-89 WhatsApp setting
 app.use("/api/v1/settings",   settingsRoutes);
 // t81u: customers who paid by bank transfer / UPI register the payment; admin verifies. No delete route.
 app.use("/api/payment-registrations", createPaymentRegistrationsRouter());
+app.use("/api/crm", createCrmAutomationsRouter());   // CRM automations (all OFF by default; cron needs CRON_SECRET)
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, status: "ok" });
