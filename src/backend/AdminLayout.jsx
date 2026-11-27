@@ -24,6 +24,7 @@ const NAV = [
   { path: "/admin/vendors",             icon: "🏪",  label: "Vendors" },
   { path: "/admin/bookings",     icon: "📋",  label: "Bookings" },
   { path: "/admin/enquiries",    icon: "📬",  label: "Enquiries" },
+  { path: "/admin/payment-registrations", icon: "🧾", label: "Payment Registrations" },
   { path: "/admin/booking-form", icon: "🧾",  label: "Booking Desk" },
   { path: "/admin/transactions", icon: "💳",  label: "Transactions" },
   { path: "/admin/customers",    icon: "👤",  label: "Customers" },
