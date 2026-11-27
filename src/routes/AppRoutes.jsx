@@ -49,6 +49,7 @@ import ManagePropertyListings  from "../backend/ManagePropertyListings";
 import ManageCampsiteListings  from "../backend/ManageCampsiteListings";
 import ManageVillas            from "../backend/ManageVillas";
 import ManagePaymentRegistrations from "../backend/ManagePaymentRegistrations";
+import ProfileSetup from "../backend/ProfileSetup";
 import ManageIV               from "../backend/ManageIV";
 
 /* ================= TREK PAGES ================= */
@@ -224,6 +225,7 @@ function AppRoutes() {
         <Route path="campsite-listings" element={<ManageCampsiteListings />} />
         <Route path="villas"            element={<ManageVillas />} />
         <Route path="payment-registrations" element={<ManagePaymentRegistrations />} />
+        <Route path="profile-setup" element={<ProfileSetup />} />
         <Route path="industrial-visits" element={<ManageIV />} />
       </Route>
     </Routes>
