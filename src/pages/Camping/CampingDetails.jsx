@@ -16,6 +16,7 @@ import PaidRegisterLink from "../../components/PaidRegisterLink";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import { productService } from "../../services/product.service";
 import { useSeo } from "../../seo/useSeo";
+import { trackViewItem } from "../../analytics/tracking";
 import { buildProductPageSeo, productSeo } from "../../seo/publicSeo";
 
 const CAMPING_PREVIEW_KEY = "gt_camping_preview";
@@ -153,6 +154,14 @@ export default function CampingDetails() {
     [id, camp]
   );
   useSeo(pageSeo);
+
+  const viewItemKey = camp ? `${id}|${camp.name || ""}` : "";
+  useEffect(() => {
+    if (!viewItemKey) return;
+    const offers = (pageSeo?.jsonLd?.["@graph"] || []).find((n) => n?.offers)?.offers;
+    trackViewItem({ slug: id, name: camp?.name, productType: "camping", price: offers?.lowPrice });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewItemKey]);
   const seoCopy = productSeo(camp);
 
   if (!camp) {
