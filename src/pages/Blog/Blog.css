@@ -1,0 +1,50 @@
+/* Public /blog and /blog/:slug. Scoped with .blog- */
+.blog-page { background: #f7faf8; min-height: 60vh; }
+.blog-hero { background: linear-gradient(135deg, #0f4c2a 0%, #198754 100%); color: #fff; padding: 40px 0 32px; }
+.blog-hero h1 { font-weight: 700; font-size: clamp(1.6rem, 4vw, 2.4rem); margin: 8px 0 10px; line-height: 1.2; }
+.blog-hero p { max-width: 760px; opacity: .92; margin: 0; font-size: 1.05rem; }
+.blog-crumbs { font-size: .85rem; opacity: .9; }
+.blog-crumbs a { color: #fff; text-decoration: underline; }
+.blog-byline { margin-top: 12px; font-size: .9rem; opacity: .9; }
+.blog-body { padding-top: 28px; padding-bottom: 36px; }
+.blog-narrow { max-width: 820px; }
+.blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+.blog-card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(15, 76, 42, .08); display: flex; flex-direction: column; }
+.blog-card--skeleton { min-height: 300px; background: linear-gradient(90deg, #eef3ef 25%, #f7faf8 50%, #eef3ef 75%); background-size: 200% 100%; animation: blogShimmer 1.2s infinite; }
+@keyframes blogShimmer { to { background-position: -200% 0; } }
+.blog-card-img { display: block; aspect-ratio: 16 / 10; background: #dfe9e2; }
+.blog-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.blog-card-body { padding: 16px; display: flex; flex-direction: column; flex: 1; }
+.blog-card-meta { font-size: .8rem; color: #198754; font-weight: 600; margin-bottom: 4px; }
+.blog-card-body h2 { font-size: 1.15rem; font-weight: 700; margin: 0 0 6px; line-height: 1.3; }
+.blog-card-body h2 a { color: #13261b; text-decoration: none; }
+.blog-card-body p { color: #4b5b51; font-size: .93rem; margin: 0 0 12px; }
+.blog-more { margin-top: auto; color: #198754; font-weight: 600; text-decoration: none; }
+.blog-empty { background: #fff; border-radius: 14px; padding: 28px; text-align: center; color: #4b5b51; }
+.blog-empty a, .blog-back a, .blog-toc a, .blog-prose a { color: #198754; }
+.blog-cover { width: 100%; height: auto; border-radius: 14px; margin-bottom: 20px; }
+.blog-toc { background: #fff; border: 1px solid #dfe9e2; border-radius: 12px; padding: 14px 18px; margin-bottom: 22px; }
+.blog-toc ol { margin: 6px 0 0; padding-left: 20px; }
+.blog-prose { font-size: 1.05rem; line-height: 1.75; color: #1f2d24; overflow-wrap: anywhere; }
+.blog-prose h2 { font-size: 1.45rem; font-weight: 700; margin: 30px 0 10px; color: #0f4c2a; scroll-margin-top: 90px; }
+.blog-prose h3 { font-size: 1.15rem; font-weight: 700; margin: 22px 0 8px; scroll-margin-top: 90px; }
+.blog-prose ul, .blog-prose ol { padding-left: 22px; }
+.blog-prose blockquote { border-left: 4px solid #198754; margin: 16px 0; padding: 6px 14px; background: #fff; border-radius: 0 10px 10px 0; color: #34463b; }
+.blog-faq { margin-top: 28px; }
+.blog-faq h2 { font-size: 1.35rem; font-weight: 700; color: #0f4c2a; }
+.blog-faq details { background: #fff; border: 1px solid #dfe9e2; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.blog-faq summary { font-weight: 650; cursor: pointer; }
+.blog-faq p { margin: 8px 0 0; }
+.blog-cta { margin-top: 28px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; background: #e8f5ee; border: 1px solid #b7dfc7; border-radius: 14px; padding: 16px 18px; }
+.blog-cta strong { display: block; font-size: 1.05rem; color: #0f4c2a; }
+.blog-cta span { color: #34463b; font-size: .95rem; }
+.blog-cta-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.blog-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 10px; background: #198754; color: #fff; font-weight: 600; text-decoration: none; border: 1px solid #198754; }
+.blog-btn:hover { background: #0f4c2a; color: #fff; }
+.blog-btn--ghost { background: #fff; color: #198754; }
+.blog-back { margin-top: 20px; }
+@media (max-width: 576px) {
+  .blog-hero { padding: 28px 0 24px; }
+  .blog-prose { font-size: 1rem; }
+  .blog-cta-actions { width: 100%; } .blog-cta-actions .blog-btn { flex: 1; }
+}
