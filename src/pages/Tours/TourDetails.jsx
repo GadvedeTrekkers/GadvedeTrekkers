@@ -8,6 +8,8 @@ import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { toursList } from "../../data/toursData";
 import { ADDITIONAL_TOUR_SEEDS } from "../../data/additionalTourDetails";
 import { productService } from "../../services/product.service";
+import { useSeo } from "../../seo/useSeo";
+import { buildProductPageSeo, productSeo } from "../../seo/publicSeo";
 import { formatWhatsappDisplay, waUrl } from "../../config/whatsappSetting";
 import {
   MANALI_TOUR_SEED,
@@ -244,6 +246,9 @@ function TourDetails() {
     return () => window.clearInterval(timer);
   }, [tour?.imageGallery]);
 
+  const pageSeo = useMemo(() => buildProductPageSeo({ section: "tours", slug: id, item: tour }), [id, tour]);
+  useSeo(pageSeo);
+
   if (!tour) {
     return (
       <div className="container py-5">
@@ -257,6 +262,10 @@ function TourDetails() {
     ? tour.imageGallery.filter(Boolean)
     : parseJsonValue(tour.imageGallery, []).filter(Boolean);
   const overviewBlocks = String(tour.overview || "").split("\n\n").filter(Boolean);
+  const seoCopy = productSeo(tour);
+  const introBlocks = seoCopy.intro && seoCopy.intro !== String(tour.overview || "").trim()
+    ? seoCopy.intro.split("\n\n").filter(Boolean)
+    : [];
   const highlights = parseRowObjects(tour.keyHighlights, ["title", "desc"]);
   const briefItinerary = parseRowObjects(tour.briefItinerary, ["day", "summary"]);
   const delhiDates = parseRowObjects(tour.departureDatesDelhi, ["month", "dates"]);
@@ -302,7 +311,7 @@ function TourDetails() {
               <span>{tour.heroBadge || "🏔 Premium Group Tour"}</span>
             </div>
             <h1 style={{ color: "#fff", fontSize: "clamp(2.5rem, 8vw, 5rem)", lineHeight: 0.96, fontWeight: 900, marginBottom: 18, fontFamily: "Georgia, 'Times New Roman', serif" }}>
-              {tour.name}
+              {seoCopy.h1 || tour.name}
             </h1>
             <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "1.15rem", maxWidth: 680, lineHeight: 1.7, marginBottom: 26 }}>
               {tour.subtitle}
@@ -402,6 +411,9 @@ function TourDetails() {
                 </p>
               </div>
               <h2 style={sectionTitleStyle}>About {tour.name}</h2>
+              {introBlocks.map((block) => (
+                <p key={`seo-${block.slice(0, 30)}`} style={bodyStyle}>{block}</p>
+              ))}
               {overviewBlocks.map((block) => (
                 <p key={block.slice(0, 30)} style={bodyStyle}>{block}</p>
               ))}

@@ -6,6 +6,8 @@ import { toursData as defaultToursData } from "../../data/toursData";
 import { parseJsonValue } from "../../data/manaliTourDetails";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
+import { useSeo } from "../../seo/useSeo";
+import { TOURS_TITLE, TOURS_DESCRIPTION, SITE_ORIGIN, DEFAULT_OG, absoluteUrl, organizationNode } from "../../seo/publicSeo";
 import { FALLBACK_IMAGE, handleImageError } from "../../utils/imageFallback";
 
 const REGION_ORDER = [
@@ -55,6 +57,22 @@ function Tours() {
   const location = useLocation();
   const selectedRegion = location.state?.region || null;
   const [, setSyncKey] = useState(0);
+  useSeo({
+    title: TOURS_TITLE,
+    description: TOURS_DESCRIPTION,
+    canonical: `${SITE_ORIGIN}/tours`,
+    image: absoluteUrl(DEFAULT_OG.path),
+    imageWidth: DEFAULT_OG.width,
+    imageHeight: DEFAULT_OG.height,
+    imageAlt: "Group tours from Pune and Mumbai with Gadvede Trekkers",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@graph": [
+        organizationNode,
+        { "@type": "CollectionPage", name: TOURS_TITLE, url: `${SITE_ORIGIN}/tours`, description: TOURS_DESCRIPTION },
+      ],
+    },
+  });
 
   // Sync from backend on mount so admin changes reflect on all devices
   useEffect(() => {
@@ -127,7 +145,10 @@ function Tours() {
 
   return (
     <div className="container py-5">
-      <h2 className="fw-bold text-center mb-5 text-success">
+      <h1 className="fw-bold text-center mb-2 text-success" style={{ fontSize: "clamp(1.8rem,4vw,2.6rem)" }}>
+        Group Tours from Pune &amp; Mumbai
+      </h1>
+      <h2 className="fw-bold text-center mb-5 text-success" style={{ fontSize: "1.25rem" }}>
         Explore Tours by Region
       </h2>
 
