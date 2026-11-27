@@ -4,6 +4,7 @@ import { getTourDates } from "../../data/tourDatesStorage";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
+import PaidRegisterLink from "../../components/PaidRegisterLink";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { toursList } from "../../data/toursData";
 import { ADDITIONAL_TOUR_SEEDS } from "../../data/additionalTourDetails";
@@ -680,6 +681,7 @@ function TourDetails() {
               >
                 💬 WhatsApp Enquiry
               </a>
+              <PaidRegisterLink slug={tour.slug || id} style={{ marginBottom: 12 }} />
               <div style={{ color: "#31483d", fontSize: ".95rem", lineHeight: 1.7 }}>
                 <strong>{tour.pickupPointLabel}</strong> <span style={{ color: "#0a6a47", fontWeight: 700 }}>{tour.pickupPointMapLabel}</span>
               </div>
