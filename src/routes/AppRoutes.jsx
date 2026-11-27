@@ -37,7 +37,7 @@ import EmployeeLogin  from "../pages/Employee/EmployeeLogin";
 import EmployeePortal from "../pages/Employee/EmployeePortal";
 import DirectBookingForm from "../pages/Employee/DirectBookingForm";
 import AddNew           from "../backend/AddNew";
-import ManageBlogs      from "../backend/ManageBlogs";
+import ManageBlogPosts  from "../backend/blog/ManageBlogPosts";   // AI blog/SEO writer (replaces the old browser-only ManageBlogs)
 import ManageEnquiries  from "../backend/ManageEnquiries";
 import ActivityLogs     from "../backend/ActivityLogs";
 import ManageDocs       from "../backend/ManageDocs";
@@ -51,6 +51,7 @@ import ManageVillas            from "../backend/ManageVillas";
 import ManagePaymentRegistrations from "../backend/ManagePaymentRegistrations";
 import ProfileSetup from "../backend/ProfileSetup";
 import AutomationSettings from "../backend/settings/sections/AutomationSettings";
+import IntegrationSettings from "../backend/settings/sections/IntegrationSettings";
 import ManageIV               from "../backend/ManageIV";
 
 /* ================= TREK PAGES ================= */
@@ -107,6 +108,8 @@ import Trips from "../pages/Trips/Trips";
 import CancellationPolicy from "../pages/CancellationPolicy";
 import PrivacyPolicy from "../pages/Privacy/PrivacyPolicy";
 import PaymentRegistration from "../pages/PaymentRegistration/PaymentRegistration";
+import BlogList from "../pages/Blog/BlogList";
+import BlogPost from "../pages/Blog/BlogPost";
 import DestinationHub from "../pages/Hubs/DestinationHub";
 import { DESTINATION_HUBS } from "../../shared/destinationHubs.js";
 import { SEO_REDIRECTS } from "../../shared/seoRedirects.js";
@@ -142,6 +145,8 @@ function AppRoutes() {
       <Route path="/booking/success"  element={<BookingSuccess />} />
       {/* t81u: customers who paid by bank transfer / UPI register the payment */}
       <Route path="/register"              element={<PaymentRegistration />} />
+      <Route path="/blog"                  element={<BlogList />} />
+      <Route path="/blog/:slug"            element={<BlogPost />} />
       <Route path="/payment-registration"  element={<PaymentRegistration />} />
 
       {/* ================= TOURS ================= */}
@@ -210,7 +215,7 @@ function AppRoutes() {
       <Route path="/admin/*" element={<AdminLayout />}>
         <Route path="dashboard"    element={<Dashboard />} />
         <Route path="add-new"      element={<AddNew />} />
-        <Route path="blogs"        element={<ManageBlogs />} />
+        <Route path="blogs"        element={<ManageBlogPosts />} />
         <Route path="treks"        element={<ManageTreks />} />
         <Route path="tours"        element={<ManageTours />} />
         <Route path="heritage"     element={<ManageHeritage />} />
@@ -240,6 +245,7 @@ function AppRoutes() {
         <Route path="payment-registrations" element={<ManagePaymentRegistrations />} />
         <Route path="profile-setup" element={<ProfileSetup />} />
         <Route path="automations" element={<AutomationSettings />} />
+        <Route path="integrations" element={<IntegrationSettings />} />
         <Route path="industrial-visits" element={<ManageIV />} />
       </Route>
     </Routes>
