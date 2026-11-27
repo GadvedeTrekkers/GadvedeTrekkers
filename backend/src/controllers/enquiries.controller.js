@@ -66,6 +66,10 @@ function toFrontend(r) {
     bookedEventName:          r.booked_event_name || "",
     bookedBookingId:          r.booked_booking_id || "",
     createdAt:                r.created_at,
+    // Lead source (migration 021). Read-only here: toRow never writes it, so admin edits can't change a lead's source.
+    source:                   r.source || "website",
+    sourceHandle:             r.source_handle || "",
+    lastMessageAt:            r.last_message_at || "",
   };
 }
 

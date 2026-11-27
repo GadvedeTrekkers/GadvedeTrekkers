@@ -297,5 +297,12 @@ export async function updateBookingStatus(req, res) {
     return res.status(500).json({ success: false, error: error.message });
   }
 
+  // WhatsApp Cloud API booking confirmation (once per booking; dry run unless WHATSAPP_API_LIVE=true). Never blocks.
+  if (data && status === "CONFIRMED") {
+    import("../services/whatsappCloud.js")
+      .then(({ notifyBookingConfirmed }) => notifyBookingConfirmed(supabaseAdmin, data.id, { by: req.admin?.username }))
+      .catch(() => {});
+  }
+
   return res.json({ success: true, data });
 }
