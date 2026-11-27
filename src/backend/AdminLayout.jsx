@@ -38,7 +38,10 @@ const NAV = [
   { path: "/admin/logs",         icon: "📋",  label: "Activity Logs" },
   { path: "/admin/docs",         icon: "📖",  label: "How It Works" },
   { path: "/admin/email-templates", icon: "✉️", label: "Email Templates" },
+  { path: "/admin/profile-setup", icon: "🏢", label: "Profile Setup", adminOnly: true },
 ];
+/* Profile Setup (t84u) is only listed for Super Admin / Admin; the backend enforces the same roles. */
+const canSeeAdminOnly = (u) => u?.username === "admin" || ["superadmin", "admin"].includes(String(u?.role || "").toLowerCase().replace(/[\s_-]/g, ""));
 
 function AdminLayout() {
   const navigate = useNavigate();
@@ -121,7 +124,7 @@ function AdminLayout() {
         </div>
 
         <nav className="adm-nav">
-          {NAV.map(({ path, icon, label }) => (
+          {NAV.filter((n) => !n.adminOnly || canSeeAdminOnly(user)).map(({ path, icon, label }) => (
             <NavLink
               key={path}
               to={path}
