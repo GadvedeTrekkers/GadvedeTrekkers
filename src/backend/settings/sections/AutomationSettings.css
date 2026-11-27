@@ -70,6 +70,7 @@
 .au-pill { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: #334155; margin-left: 4px; white-space: nowrap; }
 .au-pill.email { background: #eff6ff; color: #1d4ed8; margin-left: 0; }
 .au-pill.whatsapp { background: #dcfce7; color: #166534; margin-left: 0; }
+.au-pill.whatsapp_api { background: #ccfbf1; color: #115e59; margin-left: 0; }
 .au-pill.off { background: #f1f5f9; color: #64748b; }
 .au-pill.ok, .au-pill.st-sent, .au-pill.st-sent_manual { background: #dcfce7; color: #166534; margin-left: 0; }
 .au-pill.held, .au-pill.st-skipped { background: #fef3c7; color: #92400e; margin-left: 0; white-space: normal; }

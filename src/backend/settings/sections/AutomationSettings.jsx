@@ -5,13 +5,14 @@
  *
  * Tabs: Automations (toggles + timings + templates) · Preview (dry run: who WOULD get what) · WhatsApp queue
  * (prefilled wa.me links a person sends by hand) · Sent log · Opt-outs.
- * Every automation is OFF by default. The server sends nothing unless CRM_AUTOMATIONS_LIVE=true on Render.
+ * Every automation is OFF by default. The server sends nothing unless CRM_AUTOMATIONS_LIVE=true on Render
+ * (and, for the optional automatic WhatsApp pre-trip reminder, WHATSAPP_API_LIVE=true as well).
  * No delete buttons and no export.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { crmAutomationsApi } from "../../../api/crmAutomations.api";
 import {
-  AUTOMATION_LABELS, MAX_FOLLOWUP_STEPS, defaultCrmSettings, placeholdersFor, validateCrmSettings, withCrmDefaults,
+  AUTOMATION_LABELS, EVENT_MESSAGE_LABELS, MAX_FOLLOWUP_STEPS, defaultCrmSettings, placeholdersFor, validateCrmSettings, withCrmDefaults,
 } from "../../../../shared/crmAutomations.js";
 import "./AutomationSettings.css";
 
@@ -22,6 +23,8 @@ const TABS = [
   { id: "log", label: "Sent log" },
   { id: "optouts", label: "Opt-outs" },
 ];
+const CHANNEL_LABEL = { email: "Email", whatsapp: "WhatsApp", whatsapp_api: "WhatsApp API" };
+const LOG_LABELS = { ...AUTOMATION_LABELS, ...EVENT_MESSAGE_LABELS };
 const STATUS_LABEL = { sending: "Sending", sent: "Sent", failed: "Failed", queued: "Queued", sent_manual: "Sent by hand", skipped: "Skipped" };
 const ist = (iso) => (iso ? new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) + " IST" : "—");
 
@@ -66,6 +69,11 @@ function Channels({ id, a, set, errors }) {
     <div className="au-channels">
       <label><input type="checkbox" checked={a.channels.email} onChange={(e) => set(`${id}.channels.email`, e.target.checked)} /> Email</label>
       <label><input type="checkbox" checked={a.channels.whatsapp} onChange={(e) => set(`${id}.channels.whatsapp`, e.target.checked)} /> WhatsApp queue</label>
+      {"whatsappApi" in a.channels && (
+        <label title="Sends the approved template through the WhatsApp Cloud API. Needs WHATSAPP_API_LIVE=true on the server.">
+          <input type="checkbox" checked={a.channels.whatsappApi} onChange={(e) => set(`${id}.channels.whatsappApi`, e.target.checked)} /> WhatsApp automatic (Cloud API)
+        </label>
+      )}
       {errors[`${id}.channels`] && <span className="au-error">{errors[`${id}.channels`]}</span>}
     </div>
   );
@@ -266,10 +274,10 @@ function PreviewRow({ it, open, onToggle }) {
       <tr>
         <td>{label}{!it.automationEnabled && <span className="au-pill off">OFF</span>}</td>
         <td>{it.recipientName || "—"}</td>
-        <td><span className={`au-pill ${it.channel}`}>{it.channel === "email" ? "Email" : "WhatsApp"}</span></td>
+        <td><span className={`au-pill ${it.channel}`}>{CHANNEL_LABEL[it.channel] || it.channel}</span></td>
         <td className="au-mono">{it.channel === "email" ? it.email : `+91 ${it.phone}`}</td>
         <td>{it.context || "—"}</td>
-        <td>{it.skipReason ? <span className="au-pill held">Held: {it.skipReason}</span> : <span className="au-pill ok">{it.channel === "email" ? "Send email" : "Queue WhatsApp"}</span>}</td>
+        <td>{it.skipReason ? <span className="au-pill held">Held: {it.skipReason}</span> : <span className="au-pill ok">{{ email: "Send email", whatsapp: "Queue WhatsApp", whatsapp_api: "Send via WhatsApp API" }[it.channel]}</span>}</td>
         <td><button type="button" className="au-btn ghost sm" onClick={onToggle}>{open ? "Hide" : "View message"}</button></td>
       </tr>
       {open && (
@@ -334,8 +342,8 @@ function LogTab() {
     <section className="au-card">
       <header className="au-card-head"><div><h3>Sent messages</h3><p>Every email sent and every WhatsApp message queued. Each customer gets each message at most once.</p></div></header>
       <div className="au-filters">
-        <select value={f.automation} onChange={(e) => setF({ ...f, automation: e.target.value })}><option value="">All automations</option>{Object.entries(AUTOMATION_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-        <select value={f.channel} onChange={(e) => setF({ ...f, channel: e.target.value })}><option value="">All channels</option><option value="email">Email</option><option value="whatsapp">WhatsApp</option></select>
+        <select value={f.automation} onChange={(e) => setF({ ...f, automation: e.target.value })}><option value="">All automations</option>{Object.entries(LOG_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+        <select value={f.channel} onChange={(e) => setF({ ...f, channel: e.target.value })}><option value="">All channels</option><option value="email">Email</option><option value="whatsapp">WhatsApp</option><option value="whatsapp_api">WhatsApp API</option></select>
         <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}><option value="">All statuses</option>{Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
       </div>
       {error && <div className="au-banner warn">{error}</div>}
@@ -346,8 +354,8 @@ function LogTab() {
           <tbody>{rows.map((r) => (
             <tr key={r.id}>
               <td>{ist(r.sent_at || r.created_at)}</td>
-              <td>{AUTOMATION_LABELS[r.automation] || r.automation}{r.automation === "enquiryFollowup" ? ` #${r.step}` : ""}</td>
-              <td><span className={`au-pill ${r.channel}`}>{r.channel === "email" ? "Email" : "WhatsApp"}</span></td>
+              <td>{LOG_LABELS[r.automation] || r.automation}{r.automation === "enquiryFollowup" ? ` #${r.step}` : ""}</td>
+              <td><span className={`au-pill ${r.channel}`}>{CHANNEL_LABEL[r.channel] || r.channel}</span>{r.delivery_status && <div className="au-muted">{r.delivery_status}</div>}</td>
               <td className="au-mono">{r.recipient_email || (r.recipient_phone ? `+91 ${r.recipient_phone}` : "—")}<div className="au-muted">{r.recipient_name}</div></td>
               <td className="au-snippet">{r.subject || String(r.body || "").slice(0, 90)}</td>
               <td><span className={`au-pill st-${r.status}`}>{STATUS_LABEL[r.status] || r.status}</span>{r.error_code && <div className="au-muted">{r.error_code}</div>}</td>
@@ -435,6 +443,11 @@ export default function AutomationSettings() {
     { ok: meta.cronConfigured, label: meta.cronConfigured ? "Scheduler ready" : "Scheduler not set up" },
     { ok: meta.unsubscribeConfigured, label: meta.unsubscribeConfigured ? "Unsubscribe link ready" : "Unsubscribe link not set up" },
     { ok: meta.reviewUrlSet, label: meta.reviewUrlSet ? "Google review link set" : "Google review link missing" },
+    ...(meta.whatsappApi ? [{
+      ok: meta.whatsappApi.live,
+      label: meta.whatsappApi.live ? "WhatsApp API live" : meta.whatsappApi.configured ? "WhatsApp API dry run" : "WhatsApp API not set up",
+      title: "Server switch WHATSAPP_API_LIVE (only the pre-trip reminder can use it here)",
+    }] : []),
   ] : [];
 
   return (
