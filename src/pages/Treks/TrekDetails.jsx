@@ -28,7 +28,7 @@ import {
   upcomingDepartures,
 } from "../../utils/tripDisplay";
 import { useSeo } from "../../seo/useSeo";
-import { buildTrekPageSeo } from "../../seo/publicSeo";
+import { buildTrekPageSeo, parseFaq, productSeo } from "../../seo/publicSeo";
 
 
 const TABS = [
@@ -399,6 +399,9 @@ function TrekDetails() {
   const formattedName =
     trek?.name ?? (id ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Trek Details");
   const heroImages = trek?.gallery?.length ? trek.gallery : trek?.image ? [trek.image] : [];
+  const seoCopy = productSeo(trek);
+  const pageH1 = seoCopy.h1 || formattedName;
+  const trekFaqs = parseFaq(trek?.faq || trek?.faqs);
 
   if (!isRich) {
     return (
@@ -412,7 +415,7 @@ function TrekDetails() {
                 <button onClick={() => navigate(-1)} className="td-back-btn">← Back</button>
                 <TrekBreadcrumb name={formattedName} />
                 <span className="td-kicker">🥾 Maharashtra Trek Experience</span>
-                <h1 className="td-heading">{formattedName}</h1>
+                <h1 className="td-heading">{pageH1}</h1>
                 <p className="td-subheading">{trek.location} · {trek.duration} · {trek.altitude}</p>
                 <div className="td-stats-bar">
                   {[
@@ -591,7 +594,7 @@ function TrekDetails() {
           </button>
           <TrekBreadcrumb name={trek.name} />
           <span className="td-kicker">{heroKicker}</span>
-          <h1 className="td-heading">{trek.name}</h1>
+          <h1 className="td-heading">{pageH1}</h1>
           {heroTagline && <p className="td-subheading">{heroTagline}</p>}
           <div className="td-stats-bar">
             {[
@@ -649,6 +652,7 @@ function TrekDetails() {
               <div className="td-overview-main">
                 <div className="td-card">
                   <h2 className="td-section-title">About {trek.name}</h2>
+                  {seoCopy.intro && seoCopy.intro !== overview.intro ? <Paragraphs text={seoCopy.intro} /> : null}
                   {overview.intro ? (
                     <Paragraphs text={overview.intro} />
                   ) : (
@@ -685,6 +689,18 @@ function TrekDetails() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {trekFaqs.length > 0 && (
+                  <div className="td-card td-faq-card">
+                    <h2 className="td-section-title">Frequently Asked Questions</h2>
+                    {trekFaqs.map((item) => (
+                      <div className="td-faq-item" key={item.question} style={{ borderBottom: "1px solid #edf4ef", padding: "10px 0" }}>
+                        <h3 className="td-subsection-title" style={{ marginBottom: 6 }}>{item.question}</h3>
+                        <p className="td-para" style={{ margin: 0 }}>{item.answer}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
