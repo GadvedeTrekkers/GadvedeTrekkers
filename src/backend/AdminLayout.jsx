@@ -10,7 +10,7 @@ import { hydrateBookings } from "../data/bookingStorage";
 const NAV = [
   { path: "/admin/dashboard",    icon: "📊", label: "Dashboard" },
   { path: "/admin/add-new",      icon: "➕", label: "Add New" },
-  { path: "/admin/blogs",        icon: "📝", label: "Blogs" },
+  { path: "/admin/blogs",        icon: "📝", label: "Blog & AI Writer" },
   { path: "/admin/treks",        icon: "🥾", label: "Treks" },
   { path: "/admin/tours",        icon: "🗺",  label: "Tours" },
   { path: "/admin/heritage",     icon: "🏛",  label: "Heritage Walks" },
@@ -40,6 +40,7 @@ const NAV = [
   { path: "/admin/email-templates", icon: "✉️", label: "Email Templates" },
   { path: "/admin/profile-setup", icon: "🏢", label: "Profile Setup", adminOnly: true },
   { path: "/admin/automations",  icon: "🤖", label: "Automations", adminOnly: true }, /* Settings › Automations (CRM follow-ups / reminders / reviews) */
+  { path: "/admin/integrations", icon: "🔌", label: "Integrations", adminOnly: true }, /* Settings › Integrations (Instagram + WhatsApp status, read only) */
 ];
 /* Profile Setup (t84u) is only listed for Super Admin / Admin; the backend enforces the same roles. */
 const canSeeAdminOnly = (u) => u?.username === "admin" || ["superadmin", "admin"].includes(String(u?.role || "").toLowerCase().replace(/[\s_-]/g, ""));
