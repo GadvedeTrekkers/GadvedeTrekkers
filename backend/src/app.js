@@ -20,6 +20,11 @@ import createMetaWebhookRouter from "./routes/metaWebhook.routes.js";
 import createSettingsRouter    from "./routes/settings.routes.js";
 import createPaymentRegistrationsRouter from "./routes/paymentRegistrations.routes.js";
 import createCrmAutomationsRouter from "./routes/crmAutomations.routes.js";
+import createSocialRouter from "./routes/social.routes.js";
+import createIntegrationsRouter from "./routes/integrations.routes.js";
+import createMcpRouter from "./routes/mcp.routes.js";
+import createAiRouter from "./routes/ai.routes.js";
+import createBlogRouter from "./routes/blog.routes.js";
 import supabasePublic   from "./config/supabasePublicClient.js";
 import supabaseAdmin    from "./config/supabaseAdminClient.js";
 
@@ -136,12 +141,17 @@ app.use("/api/employees",     employeesRoutes);
 app.use("/api/vendors",       vendorsRoutes);
 app.use("/api/trek-payments", trekPaymentsRoutes);
 app.use("/api/admin-tools",   adminToolsRoutes);
+app.use("/api/settings/integrations", createIntegrationsRouter()); // Instagram + WhatsApp status (admin, read only)
 const settingsRoutes = createSettingsRouter();
 app.use("/api/settings",      settingsRoutes);   // FR-FE-89 WhatsApp setting
 app.use("/api/v1/settings",   settingsRoutes);
 // t81u: customers who paid by bank transfer / UPI register the payment; admin verifies. No delete route.
 app.use("/api/payment-registrations", createPaymentRegistrationsRouter());
 app.use("/api/crm", createCrmAutomationsRouter());   // CRM automations (all OFF by default; cron needs CRON_SECRET)
+app.use("/api/social", createSocialRouter());       // public Instagram feed (cached; empty until IG_* env vars are set)
+app.use("/api/mcp", createMcpRouter());   // read-only MCP server for AI bots (OFF unless MCP_ENABLED=true; bearer MCP_API_TOKEN)
+app.use("/api/ai", createAiRouter());     // Gemini drafts for staff (AI_ENABLED off by default; drafts only, never sent)
+app.use("/api/blog", createBlogRouter()); // blog: public = published only; admin = drafts/publish/archive, no delete
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, status: "ok" });
