@@ -34,6 +34,8 @@ const ALLOWED_PARAMS = new Set([
   "item_id", "item_name", "item_category", "item_list_name", "currency", "value", "price",
   "items", "link_location", "link_type", "form_name", "trip_type", "departure_city",
   "participants", "page_path", "page_title", "hub",
+  // Instagram feed + WhatsApp button (trip names/ids are catalogue data, never personal)
+  "placement", "trip_name", "trip_id", "media_type", "position",
 ]);
 const ALLOWED_ITEM_KEYS = new Set(["item_id", "item_name", "item_category", "price", "quantity", "item_variant"]);
 
