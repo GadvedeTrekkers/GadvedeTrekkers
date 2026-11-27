@@ -50,6 +50,7 @@ import ManageCampsiteListings  from "../backend/ManageCampsiteListings";
 import ManageVillas            from "../backend/ManageVillas";
 import ManagePaymentRegistrations from "../backend/ManagePaymentRegistrations";
 import ProfileSetup from "../backend/ProfileSetup";
+import AutomationSettings from "../backend/settings/sections/AutomationSettings";
 import ManageIV               from "../backend/ManageIV";
 
 /* ================= TREK PAGES ================= */
@@ -106,6 +107,10 @@ import Trips from "../pages/Trips/Trips";
 import CancellationPolicy from "../pages/CancellationPolicy";
 import PrivacyPolicy from "../pages/Privacy/PrivacyPolicy";
 import PaymentRegistration from "../pages/PaymentRegistration/PaymentRegistration";
+import DestinationHub from "../pages/Hubs/DestinationHub";
+import { DESTINATION_HUBS } from "../../shared/destinationHubs.js";
+import { SEO_REDIRECTS } from "../../shared/seoRedirects.js";
+import SeoRedirect from "../components/SeoRedirect";
 
 function AppRoutes() {
   return (
@@ -118,6 +123,14 @@ function AppRoutes() {
       {/* ================= TREKS ================= */}
       <Route path="/trips"                    element={<Trips />} />
       <Route path="/trips/:hubSlug"           element={<Trips />} />
+      {/* Destination hubs (SEO landing pages, data-driven) */}
+      {DESTINATION_HUBS.map((hub) => (
+        <Route key={hub.slug} path={hub.path} element={<DestinationHub slug={hub.slug} />} />
+      ))}
+      {/* Duplicate URLs → their main page (client-side, canonical + noindex) */}
+      {Object.entries(SEO_REDIRECTS).map(([from, to]) => (
+        <Route key={from} path={from} element={<SeoRedirect to={to} />} />
+      ))}
       <Route path="/treks"                    element={<Trek />} />
       <Route path="/treks/andharban-trek-2025"        element={<AndharbanTrek />} />
       <Route path="/treks/rajmachi-fort-trek"         element={<RajmachiTrek />} />
@@ -226,6 +239,7 @@ function AppRoutes() {
         <Route path="villas"            element={<ManageVillas />} />
         <Route path="payment-registrations" element={<ManagePaymentRegistrations />} />
         <Route path="profile-setup" element={<ProfileSetup />} />
+        <Route path="automations" element={<AutomationSettings />} />
         <Route path="industrial-visits" element={<ManageIV />} />
       </Route>
     </Routes>
