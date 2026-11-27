@@ -11,6 +11,7 @@
      • customerId  – links transaction to customer module
      • dateTime    – ISO timestamp alias (same value as createdAt)
 ───────────────────────────────────────────────────────────── */
+import { isStaffArea } from "../utils/clientDataHygiene";
 
 import { apiRequest } from "../api/backendClient";
 
@@ -293,6 +294,7 @@ const _SEED_AMOUNTS = [
 ];
 
 (function seedTransactionsIfEmpty() {
+  if (!isStaffArea()) return; // demo data only inside admin/employee pages
   try {
     if (getAllTransactions().length > 0) return;
 

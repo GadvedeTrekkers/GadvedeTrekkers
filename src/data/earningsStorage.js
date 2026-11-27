@@ -2,6 +2,7 @@
    Earnings Storage  — localStorage
    Supports: Trek, Tent Rental, Villa, Camping, College IV
 ───────────────────────────────────────────── */
+import { isStaffArea } from "../utils/clientDataHygiene";
 
 const KEY = "gt_earnings";
 
@@ -148,6 +149,7 @@ export function getEarningsSummary() {
 
 /* ── Seed 10 sample earnings ── */
 (function seed() {
+  if (!isStaffArea()) return; // demo data only inside admin/employee pages
   if (_load().length > 0) return;
   const samples = [
     { revenueType: "Trek / Tour", clientName: "Rohan Patil", trekName: "Rajmachi Fort", date: "2026-01-10", trekRevenue: 28000, transportCost: 8000, foodCost: 4000, trekOtherExpenses: 1000, trekLeaderPay: 2000, vendorCosts: 500, paymentStatus: "PAID" },

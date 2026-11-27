@@ -2,6 +2,7 @@
    employeeStorage.js  —  Gadvede Trekkers
    Handles: Employees · Assignments · Expenses · Availability
 ══════════════════════════════════════════════════ */
+import { isStaffArea } from "../utils/clientDataHygiene";
 
 const EMPLOYEES_KEY   = "gt_employees";
 const ASSIGNMENTS_KEY = "gt_assignments";
@@ -430,6 +431,7 @@ const SEED_ASSIGNMENTS = [
 ];
 
 (function _seedOnce() {
+  if (!isStaffArea()) return; // demo data only inside admin/employee pages
   /* Merge employees — preserve existing records, add any missing seed employees */
   try {
     const existing = JSON.parse(localStorage.getItem(EMPLOYEES_KEY) || "[]");
