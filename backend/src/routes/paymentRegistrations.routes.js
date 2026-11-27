@@ -265,7 +265,9 @@ export function createPaymentRegistrationsRouter({
 
   const mailer = sendEmails ?? (async (row) => {
     const { sendRegistrationEmails } = await import("../services/registrationEmail.js");
-    return sendRegistrationEmails(row);
+    const { loadProfileForEmail } = await import("../services/businessProfile.js");
+    // t84u: Reply-To = Profile Setup → booking-confirmation email (unset → unchanged behaviour). Never throws.
+    return sendRegistrationEmails(row, { profile: await loadProfileForEmail(getDb) });
   });
 
   let cache = { at: 0, items: null };
