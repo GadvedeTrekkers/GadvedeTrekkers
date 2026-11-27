@@ -9,6 +9,7 @@ import { ConfirmProvider } from "./components/ConfirmModal";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
 import AnalyticsTracker from "./analytics/AnalyticsTracker";
+import FloatingWhatsApp from "./components/social/FloatingWhatsApp";
 import { syncAllProductCatalogs } from "./services/productCatalogSync.service";
 import { startRealtimeSync, stopRealtimeSync } from "./services/realtimeSync.service";
 
@@ -113,6 +114,7 @@ function AppInner() {
         )}
       </ErrorBoundary>
       {!hideChrome && <Footer />}
+      {!hideChrome && <FloatingWhatsApp />}
     </div>
   );
 }
