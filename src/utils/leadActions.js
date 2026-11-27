@@ -1,5 +1,6 @@
 import { saveEnquiry } from "../data/enquiryStorage";
 import { waSendUrl } from "../config/whatsappSetting";
+import { trackEvent } from "../analytics/tracking";
 
 export const DEFAULT_SALES_SMS =
   "Hi, I’m interested in outing packages near Pune/Mumbai.\nPlease share details.";
@@ -90,6 +91,7 @@ export function openSmsWithMessage(phone, message = DEFAULT_SALES_SMS) {
  */
 export function openWhatsAppUrl(url) {
   if (typeof window === "undefined" || !url) return;
+  trackEvent("whatsapp_click", { link_location: "lead_form", page_path: window.location.pathname });
   window.location.assign(url);
 }
 
@@ -150,6 +152,8 @@ export async function handleWhatsAppLead({
       source,
       pageUrl: payload.pageUrl,
     });
+
+    trackEvent("enquiry_submit", { form_name: String(source || "website").toLowerCase(), item_name: packageName, item_category: category });
 
     if (window.dataLayer?.push) {
       window.dataLayer.push({
