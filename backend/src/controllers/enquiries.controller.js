@@ -145,6 +145,41 @@ export async function listEnquiries(req, res) {
 }
 
 /* ── POST /api/enquiries  (upsert by id) ── */
+/* Create the customer for a public enquiry server-side (POST /api/customers/upsert
+   is staff-only). Never overwrites an existing customer's name or contact details. */
+async function ensureEnquiryCustomer(enquiry) {
+  const phone = String(enquiry.phone || enquiry.contact || "").replace(/\D/g, "").slice(-10);
+  const email = String(enquiry.email || "").trim().toLowerCase();
+  if (!phone && !email) return;
+
+  let existing = null;
+  if (phone) {
+    const { data } = await supabaseAdmin.from("customers").select("id").eq("phone", phone).maybeSingle();
+    existing = data || null;
+  }
+  if (!existing && email) {
+    const { data } = await supabaseAdmin.from("customers").select("id").eq("email", email).maybeSingle();
+    existing = data || null;
+  }
+
+  const activity = {
+    last_contact_at: new Date().toISOString(),
+    latest_enquiry_event: enquiry.eventName || enquiry.tour || null,
+    latest_enquiry_status: enquiry.status || "NEW_LEAD",
+  };
+
+  if (existing) {
+    await supabaseAdmin.from("customers").update(activity).eq("id", existing.id);
+  } else {
+    await supabaseAdmin.from("customers").insert({
+      full_name: enquiry.name || "Unknown",
+      phone: phone || null,
+      email: email || null,
+      ...activity,
+    });
+  }
+}
+
 export async function upsertEnquiry(req, res) {
   const enquiry = req.body || {};
   if (!enquiry.id) return res.status(400).json({ success: false, error: "Enquiry id is required" });
@@ -156,6 +191,13 @@ export async function upsertEnquiry(req, res) {
     .single();
 
   if (error) return res.status(500).json({ success: false, error: error.message });
+
+  try {
+    await ensureEnquiryCustomer(enquiry);
+  } catch (customerError) {
+    console.warn("Enquiry customer upsert failed", customerError?.message);
+  }
+
   return res.status(201).json({ success: true, data: toFrontend(data) });
 }
 

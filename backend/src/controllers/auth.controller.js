@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 /**
  * Parse the ADMIN_USERS env var.
  * Expected format (set in Railway / .env):
- *   ADMIN_USERS=[{"username":"admin","password":"gadvede@123","name":"Admin","role":"Super Admin"},...]
+ *   ADMIN_USERS=[{"username":"admin","password":"<set-in-render-env>","name":"Admin","role":"Super Admin"},...]
  */
 function getAdminUsers() {
   const raw = process.env.ADMIN_USERS;
