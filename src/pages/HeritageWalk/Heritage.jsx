@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
 import { createWhatsAppInquiryUrl, handleWhatsAppLead } from "../../utils/leadActions";
+import { realRating } from "../../utils/rating";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { getWhatsappNumber } from "../../config/whatsappSetting";
 
@@ -83,6 +84,7 @@ function BookNowButton({ item }) {
 function HeritageCard({ item }) {
   const pct    = discountPct(item.price, item.originalPrice);
   const saving = item.originalPrice - item.price;
+  const rating = realRating(item);
 
   return (
     <div
@@ -155,13 +157,13 @@ function HeritageCard({ item }) {
           📍 {item.location} &nbsp;·&nbsp; ⏱ {item.duration}
         </p>
 
-        {/* Rating */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-          <StarRating rating={item.rating} />
-          <span style={{ fontSize: 12, color: "#6b7280" }}>
-            {item.rating} ({item.reviews} reviews)
-          </span>
-        </div>
+        {/* Rating (only when the walk has real ratings) */}
+        {rating && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+            <StarRating rating={rating.value} />
+            <span style={{ fontSize: 12, color: "#6b7280" }}>{rating.label}</span>
+          </div>
+        )}
 
         {/* Pricing */}
         <div style={{ marginBottom: 8 }}>
@@ -288,8 +290,6 @@ function Heritage() {
         price: 499,
         originalPrice: 799,
         nextDate: "20 Sept 2025",
-        rating: 4.8,
-        reviews: 120,
         image: "https://images.unsplash.com/photo-1599661046827-dacff0c0f09c",
       },
       {
@@ -300,8 +300,6 @@ function Heritage() {
         price: 399,
         originalPrice: 699,
         nextDate: "22 Sept 2025",
-        rating: 4.7,
-        reviews: 90,
         image: "https://images.unsplash.com/photo-1581091215367-59ab6b2d6c2d",
       },
       {
@@ -312,8 +310,6 @@ function Heritage() {
         price: 399,
         originalPrice: 699,
         nextDate: "25 Sept 2025",
-        rating: 4.6,
-        reviews: 75,
         image: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1",
       },
     ],
@@ -326,8 +322,6 @@ function Heritage() {
         price: 799,
         originalPrice: 1199,
         nextDate: "21 Sept 2025",
-        rating: 4.9,
-        reviews: 210,
         image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
       },
       {
@@ -338,8 +332,6 @@ function Heritage() {
         price: 999,
         originalPrice: 1399,
         nextDate: "28 Sept 2025",
-        rating: 4.8,
-        reviews: 150,
         image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
       },
       {
@@ -350,8 +342,6 @@ function Heritage() {
         price: 699,
         originalPrice: 999,
         nextDate: "24 Sept 2025",
-        rating: 4.7,
-        reviews: 130,
         image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff",
       },
     ],
@@ -364,8 +354,6 @@ function Heritage() {
         price: 299,
         originalPrice: 599,
         nextDate: "19 Sept 2025",
-        rating: 4.9,
-        reviews: 300,
         image: "https://images.unsplash.com/photo-1587474260584-136574528ed5",
       },
       {
@@ -376,8 +364,6 @@ function Heritage() {
         price: 399,
         originalPrice: 699,
         nextDate: "23 Sept 2025",
-        rating: 4.8,
-        reviews: 180,
         image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
       },
       {
@@ -388,8 +374,6 @@ function Heritage() {
         price: 299,
         originalPrice: 599,
         nextDate: "26 Sept 2025",
-        rating: 4.7,
-        reviews: 140,
         image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
       },
     ],
