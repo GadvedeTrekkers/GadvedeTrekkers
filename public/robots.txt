@@ -1,12 +1,19 @@
 User-agent: *
 Allow: /
 
-# Private portals stay out of the index. Public pages, including /treks and /trips, stay allowed.
+# Private portals and customer-only forms stay out of the index.
+# Public pages (treks, tours, camping, villas, destination hubs) stay allowed.
 Disallow: /admin
 Disallow: /admin/
 Disallow: /employee
 Disallow: /employee/
 Disallow: /employee-login
+Disallow: /leader-training
 Disallow: /qa/
+Disallow: /register
+Disallow: /payment-registration
+Disallow: /ticket
+Disallow: /book
+Disallow: /booking/
 
 Sitemap: https://www.gadvede.com/sitemap.xml
