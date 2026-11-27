@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { getAdminItems } from "../data/adminStorage";
 import InfoTooltip from "../components/InfoTooltip";
@@ -9,6 +9,10 @@ import { getAllEmergencyContacts, saveEmergencyContact, deleteEmergencyContact }
 import { getAllTrekPayments, hydrateTrekPaymentsFromBackend } from "../data/trekPaymentStorage";
 import { getAllIncentives } from "../data/incentiveStorage";
 import { syncFromTrekPayments, getMissingActions, STAGE_LABELS, STAGE_COLORS } from "../data/trekEventStorage";
+import Chart3DPanel from "./admin3d/Chart3DPanel";
+import BatchCarousel3D from "./admin3d/BatchCarousel3D";
+import { upcomingBatches } from "./admin3d/dashboardData";
+import { useTilt } from "./admin3d/env3d";
 
 const SECTIONS = [
   { label: "Treks",          icon: "🥾", key: "gt_treks",    path: "/admin/treks",    color: "#198754" },
@@ -73,6 +77,12 @@ function Dashboard() {
     .slice(0, 6);
   const alertCount = trekEvents.filter(e => getMissingActions(e).some(a => a.severity === "high")).length;
 
+  /* ── 3D upcoming-batches carousel ── */
+  const batches = useMemo(() => upcomingBatches(bookings, trekEvents), [bookings, trekEvents]);
+
+  const pageRef = useRef(null);
+  useTilt(pageRef);
+
   /* ── Quote rotation ── */
   const [quoteIdx, setQuoteIdx] = useState(0);
   useEffect(() => {
@@ -118,12 +128,18 @@ function Dashboard() {
   };
 
   return (
-    <div className="adm-page">
+    <div className="adm-page adm-dashboard-3d" ref={pageRef}>
       <h3 className="adm-page-title">
         Dashboard
         <InfoTooltip text="Real-time overview of bookings, revenue, trek events, and all listings. Financial figures pull from transactions and trek payment records." />
       </h3>
       <p className="text-muted mb-4">Overview of all your listings on the website.</p>
+
+      {/* ── 3D bookings & revenue chart (three.js, lazy-loaded) + 3D upcoming batches ── */}
+      <div className="adm3d-hero-grid">
+        <Chart3DPanel bookings={bookings} />
+        <BatchCarousel3D batches={batches} />
+      </div>
 
       {/* ── Motivational Quote ── */}
       <div className="adm-quote-card mb-4">
@@ -142,7 +158,7 @@ function Dashboard() {
 
       <div className="adm-stat-grid">
         {stats.map((s) => (
-          <Link key={s.key} to={s.path} className="adm-stat-card" style={{ "--card-accent": s.color }}>
+          <Link key={s.key} to={s.path} className="adm-stat-card" data-tilt style={{ "--card-accent": s.color }}>
             <span className="adm-stat-icon">{s.icon}</span>
             <div className="adm-stat-body">
               <div className="adm-stat-count">{s.count}</div>
@@ -158,7 +174,7 @@ function Dashboard() {
         💰 Financial Health
         <InfoTooltip text="Revenue = sum of all confirmed booking payments. Expenses = leader fees + food + transport + entry costs. GST is calculated at 5% of revenue. Net Profit = Revenue − Expenses − GST − Incentives." />
       </h5>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 24 }}>
+      <div className="adm-fin-grid">
         {[
           { icon: "💰", label: "Revenue Collected", value: fmt(revenue), color: "#16a34a", bg: "#f0fdf4" },
           { icon: "💸", label: "Total Expenses", value: fmt(totalExpenses), color: "#dc2626", bg: "#fef2f2" },
@@ -166,12 +182,10 @@ function Dashboard() {
           { icon: netProfit >= 0 ? "📈" : "📉", label: netProfit >= 0 ? "Net Profit" : "Net Loss", value: fmt(Math.abs(netProfit)), color: netProfit >= 0 ? "#16a34a" : "#dc2626", bg: netProfit >= 0 ? "#f0fdf4" : "#fef2f2" },
           { icon: "🔗", label: "Referral Incentives", value: fmt(incentiveAmt), color: "#0284c7", bg: "#f0f9ff" },
         ].map(w => (
-          <Link key={w.label} to="/admin/earnings" style={{ textDecoration: "none" }}>
-            <div style={{ background: w.bg, border: `1px solid ${w.color}25`, borderLeft: `4px solid ${w.color}`, borderRadius: 12, padding: "14px 16px", cursor: "pointer" }}>
-              <div style={{ fontSize: 18, marginBottom: 4 }}>{w.icon}</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: w.color }}>{w.value}</div>
-              <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{w.label}</div>
-            </div>
+          <Link key={w.label} to="/admin/earnings" className="adm-fin-card" data-tilt style={{ "--fin-color": w.color, "--fin-bg": w.bg }}>
+            <div className="adm-fin-icon">{w.icon}</div>
+            <div className="adm-fin-value">{w.value}</div>
+            <div className="adm-fin-label">{w.label}</div>
           </Link>
         ))}
       </div>
@@ -236,22 +250,22 @@ function Dashboard() {
       {/* ── Bookings & Revenue ── */}
       <h5 className="mt-4 mb-3 fw-semibold">Bookings & Revenue</h5>
       <div className="adm-stat-grid">
-        <Link to="/admin/bookings" className="adm-stat-card" style={{ "--card-accent": "#0891b2" }}>
+        <Link to="/admin/bookings" className="adm-stat-card" data-tilt style={{ "--card-accent": "#0891b2" }}>
           <span className="adm-stat-icon">📋</span>
           <div className="adm-stat-body"><div className="adm-stat-count">{bookingCount}</div><div className="adm-stat-label">Bookings</div></div>
           <span className="adm-stat-arrow">→</span>
         </Link>
-        <Link to="/admin/customers" className="adm-stat-card" style={{ "--card-accent": "#7c3aed" }}>
+        <Link to="/admin/customers" className="adm-stat-card" data-tilt style={{ "--card-accent": "#7c3aed" }}>
           <span className="adm-stat-icon">👤</span>
           <div className="adm-stat-body"><div className="adm-stat-count">{customerCount}</div><div className="adm-stat-label">Customers</div></div>
           <span className="adm-stat-arrow">→</span>
         </Link>
-        <Link to="/admin/transactions" className="adm-stat-card" style={{ "--card-accent": "#059669" }}>
+        <Link to="/admin/transactions" className="adm-stat-card" data-tilt style={{ "--card-accent": "#059669" }}>
           <span className="adm-stat-icon">💳</span>
           <div className="adm-stat-body"><div className="adm-stat-count">₹{txnStats.revenue.toLocaleString("en-IN")}</div><div className="adm-stat-label">Revenue ({txnStats.success} txns)</div></div>
           <span className="adm-stat-arrow">→</span>
         </Link>
-        <Link to="/admin/transactions" className="adm-stat-card" style={{ "--card-accent": "#dc2626" }}>
+        <Link to="/admin/transactions" className="adm-stat-card" data-tilt style={{ "--card-accent": "#dc2626" }}>
           <span className="adm-stat-icon">↩️</span>
           <div className="adm-stat-body"><div className="adm-stat-count">{txnStats.refunded}</div><div className="adm-stat-label">Refunded Txns</div></div>
           <span className="adm-stat-arrow">→</span>
