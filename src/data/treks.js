@@ -9,8 +9,6 @@ export const trekData = {
       price: 1099,
       originalPrice: 1499,
       nextDate: "3 Apr 2026",
-      rating: 4.8,
-      reviews: 132,
       image: "https://static.toiimg.com/thumb/msid-122145020%2Cwidth-1280%2Cheight-720%2Cresizemode-4/122145020.jpg",
     },
     {
@@ -22,8 +20,6 @@ export const trekData = {
       price: 1449,
       originalPrice: 1899,
       nextDate: "28 Sept 2025",
-      rating: 4.9,
-      reviews: 210,
       image: "https://images.openai.com/static-rsc-3/FhvkmQLmul7n4BK66eQcwU08W01U447486fmFPs0B2AYCfDCgo-tXqZf-aikC91nW-tmqCF3w5X0PDznr_wckh1uCKEsdw_SARE3Ah6f_OQ?purpose=fullsize&v=1",
     },
     {
@@ -35,8 +31,6 @@ export const trekData = {
       price: 1399,
       originalPrice: 1399,
       nextDate: "3 Apr 2026",
-      rating: 4.7,
-      reviews: 98,
       image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff",
     },
     {
@@ -48,8 +42,6 @@ export const trekData = {
       price: 1099,
       originalPrice: 1599,
       nextDate: "25 Sept 2025",
-      rating: 4.9,
-      reviews: 340,
       image: "https://images.unsplash.com/photo-1587474260584-136574528ed5",
     },
     {
@@ -61,8 +53,6 @@ export const trekData = {
       price: 1499,
       originalPrice: 1999,
       nextDate: "30 Sept 2025",
-      rating: 4.8,
-      reviews: 150,
       image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
     },
     {
@@ -74,8 +64,6 @@ export const trekData = {
       price: 799,
       originalPrice: 1199,
       nextDate: "21 Sept 2025",
-      rating: 4.6,
-      reviews: 185,
       image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
     },
     {
@@ -87,8 +75,6 @@ export const trekData = {
       price: 1399,
       originalPrice: 1399,
       nextDate: "19 Sept 2025",
-      rating: 4.5,
-      reviews: 75,
       image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff",
     },
     {
@@ -100,8 +86,6 @@ export const trekData = {
       price: 1299,
       originalPrice: 1699,
       nextDate: "15 June 2025",
-      rating: 4.9,
-      reviews: 420,
       image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
     },
     {
@@ -113,8 +97,6 @@ export const trekData = {
       price: 899,
       originalPrice: 1299,
       nextDate: "18 Sept 2025",
-      rating: 4.7,
-      reviews: 210,
       image: "https://images.unsplash.com/photo-1587474260584-136574528ed5",
     },
     {
@@ -126,8 +108,6 @@ export const trekData = {
       price: 999,
       originalPrice: 1499,
       nextDate: "24 Sept 2025",
-      rating: 4.6,
-      reviews: 142,
       image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
     },
     {
@@ -139,8 +119,6 @@ export const trekData = {
       price: 1499,
       originalPrice: 1999,
       nextDate: "10 June 2025",
-      rating: 4.9,
-      reviews: 300,
       image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff",
     },
     {
@@ -152,8 +130,6 @@ export const trekData = {
       price: 1099,
       originalPrice: 1599,
       nextDate: "26 Sept 2025",
-      rating: 4.8,
-      reviews: 115,
       image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
     },
   ],
@@ -167,8 +143,6 @@ export const trekData = {
       price: 1449,
       originalPrice: 1899,
       nextDate: "29 Sept 2025",
-      rating: 4.8,
-      reviews: 190,
       image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
     },
     {
@@ -180,8 +154,6 @@ export const trekData = {
       price: 799,
       originalPrice: 1199,
       nextDate: "21 Sept 2025",
-      rating: 4.6,
-      reviews: 175,
       image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
     },
     {
@@ -193,8 +165,6 @@ export const trekData = {
       price: 1099,
       originalPrice: 1599,
       nextDate: "25 Sept 2025",
-      rating: 4.9,
-      reviews: 330,
       image: "https://images.unsplash.com/photo-1587474260584-136574528ed5",
     },
     {
@@ -206,8 +176,6 @@ export const trekData = {
       price: 1299,
       originalPrice: 1699,
       nextDate: "15 June 2025",
-      rating: 4.9,
-      reviews: 410,
       image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
     },
     {
@@ -219,8 +187,6 @@ export const trekData = {
       price: 1399,
       originalPrice: 1399,
       nextDate: "3 Apr 2026",
-      rating: 4.7,
-      reviews: 90,
       image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff",
     },
     {
@@ -232,8 +198,6 @@ export const trekData = {
       price: 1399,
       originalPrice: 1399,
       nextDate: "19 Sept 2025",
-      rating: 4.5,
-      reviews: 70,
       image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
     },
     {
@@ -245,8 +209,6 @@ export const trekData = {
       price: 1499,
       originalPrice: 1999,
       nextDate: "10 June 2025",
-      rating: 4.9,
-      reviews: 300,
       image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff",
     },
     {
@@ -258,8 +220,6 @@ export const trekData = {
       price: 999,
       originalPrice: 1499,
       nextDate: "24 Sept 2025",
-      rating: 4.6,
-      reviews: 140,
       image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
     },
     {
@@ -271,8 +231,6 @@ export const trekData = {
       price: 1099,
       originalPrice: 1599,
       nextDate: "26 Sept 2025",
-      rating: 4.8,
-      reviews: 110,
       image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
     },
     {
@@ -284,8 +242,6 @@ export const trekData = {
       price: 899,
       originalPrice: 1299,
       nextDate: "18 Sept 2025",
-      rating: 4.7,
-      reviews: 200,
       image: "https://images.unsplash.com/photo-1587474260584-136574528ed5",
     },
     {
@@ -297,8 +253,6 @@ export const trekData = {
       price: 899,
       originalPrice: 1299,
       nextDate: "23 Sept 2025",
-      rating: 4.6,
-      reviews: 88,
       image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
     },
     {
@@ -310,8 +264,6 @@ export const trekData = {
       price: 999,
       originalPrice: 1399,
       nextDate: "27 Sept 2025",
-      rating: 4.7,
-      reviews: 120,
       image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
     },
   ],
@@ -411,7 +363,6 @@ export const uniqueTreks = Array.from(
 ).map((trek, index) => ({
   ...trek,
   gallery: trekImageSets[trek.name] ?? [trek.image, trek.image, trek.image],
-  rating: Number(Math.min(5, 4 + index * 0.1).toFixed(1)),
   seasonalTag: bestsellerTags[index % bestsellerTags.length],
 }));
 

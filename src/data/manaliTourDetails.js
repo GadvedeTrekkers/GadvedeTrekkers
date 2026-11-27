@@ -22,8 +22,6 @@ export const MANALI_TOUR_SEED = {
   instantConfirmation: true,
   bestPriceGuaranteed: true,
   happyCustomers: "1000+ Happy Customers",
-  rating: "4.8",
-  reviews: "187",
   pickupPointLabel: "Himachal Pradesh, India",
   pickupPointMapLabel: "View on Map",
   filters: "Weekend Trips | 5 to 8 Days | Group Tours, Private Tours, Honeymoon Tours, Corporate Tours, College Tours, Kids Tours | Himachal Pradesh | Manali, Kasol, Sissu, Kullu, Manikaran, Rohtang Pass, Solang Valley",
