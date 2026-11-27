@@ -40,6 +40,7 @@ export function fakeCrmDb(tables = {}, { unique = { crm_message_log: "idempotenc
       range: (a, b) => { rng = [a, b]; return q; },
       eq: (c, v) => { filters.push((r) => String(r[c]) === String(v)); return q; },
       in: (c, list) => { const set = new Set(list.map(String)); filters.push((r) => set.has(String(r[c]))); return q; },
+      is: (c, v) => { filters.push((r) => (v === null ? r[c] == null : r[c] === v)); return q; },
       gte: (c, v) => { filters.push((r) => r[c] != null && String(r[c]) >= String(v)); return q; },
       lte: (c, v) => { filters.push((r) => r[c] != null && String(r[c]) <= String(v)); return q; },
       insert: (list) => { op = "insert"; payload = list; return q; },
