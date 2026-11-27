@@ -10,6 +10,8 @@ import { toursList } from "../../data/toursData";
 import { ADDITIONAL_TOUR_SEEDS } from "../../data/additionalTourDetails";
 import { productService } from "../../services/product.service";
 import { useSeo } from "../../seo/useSeo";
+import { realRating } from "../../utils/rating";
+import { trackViewItem } from "../../analytics/tracking";
 import { buildProductPageSeo, productSeo } from "../../seo/publicSeo";
 import { formatWhatsappDisplay, waUrl } from "../../config/whatsappSetting";
 import {
@@ -59,8 +61,6 @@ function buildFallbackTour(id) {
     heroBadge: "Instant Confirmation",
     subtitle: `${baseTour.name} is available as a separate tour package. Explore dates, pricing, and booking details below.`,
     taxPercent: 5,
-    rating: "4.8",
-    reviews: "1000+",
     happyCustomers: "1000+ Happy Customers",
     pickupPointLabel: "Pickup point",
     pickupPointMapLabel: baseTour.state || baseTour.region || "India",
@@ -149,6 +149,8 @@ function TourDetails() {
     return () => window.removeEventListener("storage", syncLocal);
   }, [id, previewSlug]);
 
+  const rating = realRating(tour);
+
   const downloadItinerary = () => {
     if (!tour) return;
     const css = `body{font-family:Arial,sans-serif;max-width:820px;margin:0 auto;padding:32px;color:#1a1a1a}
@@ -182,7 +184,6 @@ function TourDetails() {
       .faq-a{color:#385145;line-height:1.7;margin-bottom:12px}
       @media print{body{padding:16px}.highlight-grid,.inc-grid,.carry-grid{break-inside:avoid}}`;
 
-    const gallery = Array.isArray(tour.imageGallery) ? tour.imageGallery : parseJsonValue(tour.imageGallery, []);
     const overviewHtml = String(tour.overview || "").split("\n\n").filter(Boolean).map((b) => `<p style="line-height:1.75;color:#374151">${b}</p>`).join("");
     const highlightItems = highlights.map((h) => `<li><strong style="color:#065f46">${h.title}</strong>${h.desc ? ` — ${h.desc}` : ""}</li>`).join("");
     const briefRows = briefItinerary.map((item) => `<div class="brief-row"><div class="brief-day">${item.day}</div><div>${item.summary}</div></div>`).join("");
@@ -211,7 +212,7 @@ function TourDetails() {
         ${tour.duration ? `<div class="stat"><span>Duration</span>${tour.duration}</div>` : ""}
         ${tour.state || tour.destinationLine ? `<div class="stat"><span>Destination</span>${tour.state || tour.destinationLine}</div>` : ""}
         ${tour.price ? `<div class="stat"><span>Starting Price</span>₹${tour.price}</div>` : ""}
-        ${tour.rating ? `<div class="stat"><span>Rating</span>${tour.rating} ★ (${tour.reviews} reviews)</div>` : ""}
+        ${rating ? `<div class="stat"><span>Rating</span>★ ${rating.label}</div>` : ""}
       </div>
       <hr>
       ${overviewHtml ? `<h2>About</h2>${overviewHtml}` : ""}
@@ -249,6 +250,14 @@ function TourDetails() {
 
   const pageSeo = useMemo(() => buildProductPageSeo({ section: "tours", slug: id, item: tour }), [id, tour]);
   useSeo(pageSeo);
+
+  const viewItemKey = tour ? `${id}|${tour.name || ""}` : "";
+  useEffect(() => {
+    if (!viewItemKey) return;
+    const offers = (pageSeo?.jsonLd?.["@graph"] || []).find((n) => n?.offers)?.offers;
+    trackViewItem({ slug: id, name: tour?.name, productType: "tour", price: offers?.lowPrice });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewItemKey]);
 
   if (!tour) {
     return (
@@ -322,9 +331,9 @@ function TourDetails() {
               {[
                 ["📍", tour.state || tour.destinationLine],
                 ["🕒", tour.duration],
-                ["⭐", `${tour.rating || "4.8"} (${tour.reviews || "100+"} reviews)`],
+                rating ? ["⭐", rating.label] : null,
                 ["💰", `From ₹${tour.price}`],
-              ].map(([icon, label]) => (
+              ].filter((stat) => stat && stat[1]).map(([icon, label]) => (
                 <div key={label} style={{ padding: "14px 20px", color: "#fff", fontWeight: 600, fontSize: "1rem", borderRight: "1px solid rgba(255,255,255,0.12)" }}>
                   <span style={{ marginRight: 10 }}>{icon}</span>
                   {label}
