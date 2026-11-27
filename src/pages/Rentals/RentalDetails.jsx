@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
+import { realRating } from "../../utils/rating";
 
 const RENTAL_PREVIEW_KEY = "gt_rental_preview";
 
@@ -12,8 +13,6 @@ const catalogue = [
     name: "Coleman Sundome 4 Person Tent",
     category: "Tents",
     location: "Pune & Mumbai",
-    rating: 4.8,
-    reviews: 134,
     deposit: 1500,
     availability: "Available",
     badge: "Most Rented",
@@ -49,8 +48,6 @@ const catalogue = [
     name: "2 Person Camping Tent",
     category: "Tents",
     location: "Pune",
-    rating: 4.7,
-    reviews: 98,
     deposit: 800,
     availability: "Available",
     badge: null,
@@ -79,8 +76,6 @@ const catalogue = [
     name: "Coleman Event Shelter UV & Water Protected",
     category: "Tents",
     location: "Pune & Mumbai",
-    rating: 4.6,
-    reviews: 67,
     deposit: 2000,
     availability: "Available",
     badge: "Group Pick",
@@ -109,8 +104,6 @@ const catalogue = [
     name: "Sleeping Bag — Mummy Style",
     category: "Gear",
     location: "Pune",
-    rating: 4.6,
-    reviews: 88,
     deposit: 500,
     availability: "Available",
     badge: null,
@@ -136,8 +129,6 @@ const catalogue = [
     name: "Rucksack 60L",
     category: "Gear",
     location: "Pune",
-    rating: 4.8,
-    reviews: 115,
     deposit: 700,
     availability: "Available",
     badge: "Top Rated",
@@ -164,8 +155,6 @@ const catalogue = [
     name: "Prestige Barbeque Grill",
     category: "Gear",
     location: "Pune & Mumbai",
-    rating: 4.7,
-    reviews: 74,
     deposit: 600,
     availability: "Available",
     badge: null,
@@ -191,8 +180,6 @@ const catalogue = [
     name: "2 Seconds Camping Shower Cubicle",
     category: "Gear",
     location: "Pune",
-    rating: 4.4,
-    reviews: 42,
     deposit: 400,
     availability: "Available",
     badge: null,
@@ -218,8 +205,6 @@ const catalogue = [
     name: "SkyFloat Foldable Hammock Chair",
     category: "Gear",
     location: "Pune & Mumbai",
-    rating: 4.5,
-    reviews: 59,
     deposit: 350,
     availability: "Available",
     badge: null,
@@ -245,8 +230,6 @@ const catalogue = [
     name: "Trekking Poles (Pair)",
     category: "Gear",
     location: "Pune",
-    rating: 4.7,
-    reviews: 103,
     deposit: 300,
     availability: "Available",
     badge: null,
@@ -307,6 +290,7 @@ export default function RentalDetails() {
     location.state?.item ||
     adminItem ||
     catalogue.find((c) => c.id === id);
+  const rating = realRating(item);
 
   const [activeImage, setActiveImage] = useState(0);
   const [startDate, setStartDate] = useState("");
@@ -412,8 +396,7 @@ export default function RentalDetails() {
               {item.name}
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
-              <span style={{ fontSize: "0.9rem", color: "#374151" }}>⭐ {item.rating}</span>
-              <span style={{ color: "#9ca3af", fontSize: "0.82rem" }}>({item.reviews} reviews)</span>
+              {rating && <span style={{ fontSize: "0.9rem", color: "#374151" }}>⭐ {rating.label}</span>}
               <span style={{ color: "#059669", fontWeight: 600, fontSize: "0.82rem" }}>📍 {item.location}</span>
             </div>
 
@@ -539,8 +522,8 @@ export default function RentalDetails() {
               { key: "about",   label: "About the Product" },
               { key: "specs",   label: "Product Specifications" },
               { key: "rules",   label: "Rental Rules" },
-              { key: "reviews", label: `Reviews (${item.reviews})` },
-            ].map((tab) => (
+              rating && { key: "reviews", label: `Reviews (${rating.count})` },
+            ].filter(Boolean).map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
@@ -587,11 +570,11 @@ export default function RentalDetails() {
               </ul>
             )}
 
-            {activeTab === "reviews" && (
+            {activeTab === "reviews" && rating && (
               <div style={{ textAlign: "center", padding: "32px 0", color: "#6b7280" }}>
                 <div style={{ fontSize: 40, marginBottom: 10 }}>⭐</div>
-                <div style={{ fontSize: "2rem", fontWeight: 800, color: "#111827" }}>{item.rating}</div>
-                <div style={{ fontSize: "0.88rem", marginBottom: 20 }}>Based on {item.reviews} reviews</div>
+                <div style={{ fontSize: "2rem", fontWeight: 800, color: "#111827" }}>{rating.value.toFixed(1)}</div>
+                <div style={{ fontSize: "0.88rem", marginBottom: 20 }}>Based on {rating.count} reviews</div>
                 <p style={{ fontSize: "0.85rem" }}>Individual review display coming soon.</p>
               </div>
             )}
