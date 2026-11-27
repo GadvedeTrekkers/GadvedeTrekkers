@@ -12,6 +12,8 @@ import { productService } from "../../services/product.service";
 import { useSeo } from "../../seo/useSeo";
 import { realRating } from "../../utils/rating";
 import { trackViewItem } from "../../analytics/tracking";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
+import InstagramFeed from "../../components/social/InstagramFeed";
 import { buildProductPageSeo, productSeo } from "../../seo/publicSeo";
 import { formatWhatsappDisplay, waUrl } from "../../config/whatsappSetting";
 import {
@@ -258,6 +260,13 @@ function TourDetails() {
     trackViewItem({ slug: id, name: tour?.name, productType: "tour", price: offers?.lowPrice });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewItemKey]);
+  useWhatsappTrip(tour ? {
+    id, name: tour.name, type: "tour",
+    dates: [
+      ...parseRowObjects(tour.departureDatesDelhi, ["month", "dates"]).map((d) => `From Delhi: ${[d.month, d.dates].filter(Boolean).join(" ")}`),
+      ...parseRowObjects(tour.departureDatesHometown, ["month", "dates"]).map((d) => [d.month, d.dates].filter(Boolean).join(" ")),
+    ],
+  } : null);
 
   if (!tour) {
     return (
@@ -720,6 +729,7 @@ function TourDetails() {
           </aside>
         </div>
       </div>
+      <InstagramFeed placement="trip_page" limit={4} title="On our Instagram" subtitle="Photos and reels from recent batches." />
     </div>
   );
 }

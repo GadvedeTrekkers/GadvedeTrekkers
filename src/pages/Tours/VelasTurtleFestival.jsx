@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { waUrl } from "../../config/whatsappSetting";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
 
 const gallery = [
   "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=900&q=80",
@@ -222,7 +223,10 @@ function Section({ title, children, dark }) {
   );
 }
 
+const WHATSAPP_TRIP = { id: "velas-turtle-festival-2026", name: "Velas Turtle Festival", type: "tour" };
+
 export default function VelasTurtleFestival() {
+  useWhatsappTrip(WHATSAPP_TRIP);
   const [mainImg, setMainImg]           = useState(gallery[0]);
   const [openFaq, setOpenFaq]           = useState(null);
   const [transport, setTransport]       = useState("without");
