@@ -13,7 +13,8 @@ import {
 } from "../../data/trainingData";
 import { getModuleProgress, getBestAttempt, getCertificationLabel } from "../../data/leaderStorage";
 import { getTrainingUpdateEventName } from "../../data/trainingAdminStorage";
-import { getEmployeeSession, clearEmployeeSession, getCredentialsByEmployeeId, updateEmployeePassword } from "../../data/employeePortalStorage";
+import { getEmployeeSession, clearEmployeeSession, getCredentialsByEmployeeId } from "../../data/employeePortalStorage";
+import { getAllBookings, replaceBookings } from "../../data/bookingStorage";
 import { getAllEmployees } from "../../data/employeeStorage";
 import { getEmployeeIncentiveStats, getIncentivesByEmployee, INCENTIVE_AMOUNT_PER_BOOKING } from "../../data/incentiveStorage";
 import { getAllVendors } from "../../data/vendorStorage";
@@ -47,7 +48,7 @@ function getUpcomingTreks() {
 
 function getTrekBookingCount(trekId, trekName) {
   try {
-    const bookings = JSON.parse(localStorage.getItem("gt_bookings")) || [];
+    const bookings = getAllBookings();
     return bookings.filter(b => b.status !== "CANCELLED" && (b.trekId === trekId || b.trekName === trekName)).length;
   } catch { return 0; }
 }
@@ -61,7 +62,7 @@ function getEmployeeRatings(employeeName) {
 
 function getTrekParticipants(trekName) {
   try {
-    const bookings = JSON.parse(localStorage.getItem("gt_bookings")) || [];
+    const bookings = getAllBookings();
     return bookings.filter(b =>
       b.status !== "CANCELLED" &&
       (b.trekName === trekName || b.trekName?.toLowerCase() === trekName?.toLowerCase())
@@ -94,7 +95,7 @@ function downloadParticipantsCSV(trekName, eventDate, participants) {
 
 function savePartialCollection({ bookingId, amount, collectedBy }) {
   try {
-    const bookings = JSON.parse(localStorage.getItem("gt_bookings")) || [];
+    const bookings = getAllBookings();
     const updated = bookings.map(b => {
       if (b.bookingId !== bookingId) return b;
       const newCollected = Number(b.leaderCollected || 0) + Number(amount);
@@ -102,7 +103,7 @@ function savePartialCollection({ bookingId, amount, collectedBy }) {
       const totalPrice = Number(b.totalPrice || b.price || 0);
       return { ...b, leaderCollected: newCollected, pricePaid: totalPaid, paymentStatus: totalPaid >= totalPrice ? "PAID" : "PARTIAL", lastCollectedBy: collectedBy, lastCollectedAt: new Date().toISOString() };
     });
-    localStorage.setItem("gt_bookings", JSON.stringify(updated));
+    replaceBookings(updated);
     return true;
   } catch { return false; }
 }
@@ -243,9 +244,8 @@ export default function EmployeePortal() {
     e.preventDefault();
     if (!pwForm.current || !pwForm.new1) { setPwMsg("Fill all fields."); return; }
     if (pwForm.new1 !== pwForm.new2) { setPwMsg("Passwords don't match."); return; }
-    if (cred?.password !== pwForm.current) { setPwMsg("Current password is incorrect."); return; }
-    updateEmployeePassword(session.employeeId, pwForm.new1);
-    setPwMsg("Password updated successfully!");
+    // Passwords are stored and checked only on the server; there is no self-service change yet.
+    setPwMsg("Passwords are managed by the admin. Please ask Pratik or Akshay to change yours.");
     setPwForm({ current: "", new1: "", new2: "" });
   };
 
