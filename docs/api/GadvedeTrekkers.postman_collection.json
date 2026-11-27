@@ -30,7 +30,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@gadvedetrekkers.com\",\n  \"password\": \"admin123\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@gadvedetrekkers.com\",\n  \"password\": \"<admin-password>\"\n}" },
             "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth","login"] },
             "description": "Authenticate and receive JWT token. Token is auto-saved to {{token}} variable."
           }
