@@ -38,5 +38,3 @@ backend/.env.*.local
 
 # Instagram token refresh output (backend/scripts/refresh-instagram-token.js)
 ig-token.new
-
-
