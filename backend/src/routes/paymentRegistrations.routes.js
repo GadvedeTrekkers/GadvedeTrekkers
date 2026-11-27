@@ -252,6 +252,7 @@ export function createPaymentRegistrationsRouter({
   now = () => new Date(),
   submitLimitPer15Min = 8,
   log = (...a) => console.log(...a),
+  sendEmails, // async (row) => void — default: services/registrationEmail.js (t83u). Never awaited by the request.
 } = {}) {
   const router = express.Router();
   const getDb = db ?? (async () => (await import("../config/supabaseAdminClient.js")).default);
@@ -260,6 +261,11 @@ export function createPaymentRegistrationsRouter({
     const { data, error } = await listActiveProducts();
     if (error) throw new Error(error.message || "catalog read failed");
     return data || [];
+  });
+
+  const mailer = sendEmails ?? (async (row) => {
+    const { sendRegistrationEmails } = await import("../services/registrationEmail.js");
+    return sendRegistrationEmails(row);
   });
 
   let cache = { at: 0, items: null };
@@ -333,6 +339,12 @@ export function createPaymentRegistrationsRouter({
         meta: { reference, module: "payment-registrations" },
       }]);
     } catch { /* ignore */ }
+
+    // t83u: confirmation email to the customer (+ optional admin notice). Fire-and-forget: the registration is
+    // already saved; a mail failure is logged (reference + error code only) and never changes the response.
+    Promise.resolve()
+      .then(() => mailer({ ...row, id: ins.data?.id }))
+      .catch((e) => log(`payment-registration email error (${reference}): ${e?.code || "error"}`));
 
     return res.status(201).json({
       success: true,
