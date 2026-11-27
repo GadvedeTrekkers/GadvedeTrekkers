@@ -12,6 +12,7 @@ import {
   parsePipeItems,
 } from "../../data/campingDetailsData";
 import BookingCTA from "../../components/BookingCTA";
+import PaidRegisterLink from "../../components/PaidRegisterLink";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import { productService } from "../../services/product.service";
 import { useSeo } from "../../seo/useSeo";
@@ -493,6 +494,7 @@ export default function CampingDetails() {
                 >
                   WhatsApp Enquiry
                 </a>
+                <PaidRegisterLink slug={camp.slug} />
               </div>
             </div>
           </div>
