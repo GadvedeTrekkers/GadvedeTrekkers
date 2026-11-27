@@ -12,12 +12,17 @@
  *   - a log row is INSERTED (claimed) before an email is sent; a duplicate key means someone else already handled it.
  *     A failed or interrupted send is never retried automatically (at most once).
  *   - emails always carry an unsubscribe link; without an unsubscribe secret no email is sent.
- *   - WhatsApp is never sent by the server: it only queues prefilled wa.me links for a person to send by hand.
+ *   - The "whatsapp" channel is never sent by the server: it only queues prefilled wa.me links for a person to send.
+ *   - The optional "whatsapp_api" channel (pre-trip reminder only, OFF by default) sends an approved template through
+ *     the WhatsApp Cloud API, and only when CRM_AUTOMATIONS_LIVE=true AND WHATSAPP_API_LIVE=true.
  */
 import crypto from "crypto";
 import {
   AUTOMATION_IDS, CRM_SETTINGS_KEY, DEFAULT_SITE_URL, normEmail, phone10, renderTemplate, waLink, withCrmDefaults,
 } from "../../../shared/crmAutomations.js";
+import { renderWhatsappTemplate } from "../../../shared/whatsappTemplates.js";
+import { whatsappConfig } from "../config/meta.js";
+import { sendLoggedTemplate } from "./whatsappCloud.js";
 
 export const LOG_TABLE = "crm_message_log";
 export const OPT_OUT_TABLE = "crm_opt_outs";
@@ -231,6 +236,7 @@ export async function buildPlan(client, { settings: rawSettings, profile = null,
   const unsubOk = Boolean(unsubscribeSecret(env)) && /^https?:\/\//.test(String(env.BACKEND_URL || ""));
   if (!unsubOk) notes.push("Emails are held: set CRON_SECRET (or CRM_UNSUBSCRIBE_SECRET) and BACKEND_URL so every email can carry an unsubscribe link.");
 
+  const wa = whatsappConfig(env);
   const pushFor = (base, person, vars, tpl) => {
     const contacts = [person.phone, person.email].filter(Boolean);
     const optedOut = contacts.some((c) => optOuts.has(c));
@@ -238,6 +244,7 @@ export async function buildPlan(client, { settings: rawSettings, profile = null,
     const channels = [];
     if (cfg.channels.email && person.email) channels.push("email");
     if (cfg.channels.whatsapp && person.phone) channels.push("whatsapp");
+    if (cfg.channels.whatsappApi && person.phone && base.waTemplate) channels.push("whatsapp_api");
     for (const channel of channels) {
       const allVars = { ...b, ...vars };
       const item = {
@@ -245,13 +252,17 @@ export async function buildPlan(client, { settings: rawSettings, profile = null,
         idempotencyKey: `${base.keyPrefix}:${channel}`,
         recipientName: person.fullName || "", email: person.email || "", phone: person.phone || "",
         subject: channel === "email" ? renderTemplate(tpl.subject, allVars).replace(/[\r\n]+/g, " ").slice(0, 200) : "",
-        text: renderTemplate(channel === "email" ? tpl.body : tpl.waBody, allVars),
+        text: channel === "whatsapp_api"
+          ? renderWhatsappTemplate(base.waTemplate.id, base.waTemplate.params)
+          : renderTemplate(channel === "email" ? tpl.body : tpl.waBody, allVars),
       };
       if (channel === "whatsapp") item.waLink = waLink(person.phone, item.text);
+      if (channel === "whatsapp_api") item.waTemplate = base.waTemplate;
       if (optedOut) item.skipReason = "Customer opted out";
       else if (channel === "email" && !unsubOk) item.skipReason = "Unsubscribe link not configured";
+      else if (channel === "whatsapp_api" && !(wa.configured && wa.templates[base.waTemplate.id])) item.skipReason = "WhatsApp Cloud API or template not set";
       else if (base.requiresReview && !review.url) item.skipReason = "Google review link not set";
-      delete item.keyPrefix; delete item.requiresReview;
+      delete item.keyPrefix; delete item.requiresReview; if (channel !== "whatsapp_api") delete item.waTemplate;
       items.push(item);
     }
   };
@@ -294,14 +305,15 @@ export async function buildPlan(client, { settings: rawSettings, profile = null,
   const pt = settings.preTrip;
   if (pt.enabled || ignoreToggles) {
     const people = await loadTravellers(client, addDays(today, 1), addDays(today, pt.daysBefore));
-    const keys = people.flatMap((p) => ["email", "whatsapp"].map((ch) => `preTrip:${p.personKey}:${ch}`));
+    const keys = people.flatMap((p) => ["email", "whatsapp", "whatsapp_api"].map((ch) => `preTrip:${p.personKey}:${ch}`));
     const logged = await loadExistingKeys(client, keys);
     for (const p of people) {
       const pickup = p.pickupPoint || "As mentioned on your ticket";
       const vars = { name: firstName(p.fullName), fullName: p.fullName, event: p.event, date: prettyDate(p.date), pickupPoint: pickup, pickupTime: pickupTimeFor(p.pickupPoint, pt) };
+      const waTemplate = { id: "preTripReminder", params: [vars.name, vars.event, vars.date, vars.pickupPoint, vars.pickupTime] };
       const before = items.length;
       pushFor({ automation: "preTrip", step: 1, sourceType: p.sourceType, sourceId: p.sourceId, dueAt: `${addDays(p.date, -pt.daysBefore)}T09:00:00+05:30`,
-        context: `${p.event} · ${p.date}`, tripDate: p.date, keyPrefix: `preTrip:${p.personKey}` }, p, vars, pt);
+        context: `${p.event} · ${p.date}`, tripDate: p.date, keyPrefix: `preTrip:${p.personKey}`, waTemplate }, p, vars, pt);
       for (let i = items.length - 1; i >= before; i -= 1) if (logged.has(items[i].idempotencyKey)) items.splice(i, 1);
     }
   }
@@ -343,10 +355,11 @@ export const isLive = (env = process.env) => env.CRM_AUTOMATIONS_LIVE === "true"
  * Returns counts only (no personal data) plus, for dry runs, the planned items.
  */
 export async function processDue(client, {
-  settings, profile = null, now = new Date(), env = process.env, live = isLive(env), sendMail = defaultSendMail, log = () => {},
+  settings, profile = null, now = new Date(), env = process.env, live = isLive(env), sendMail = defaultSendMail, fetchImpl = globalThis.fetch, log = () => {},
 } = {}) {
   const s = withCrmDefaults(settings);
-  const summary = { live, today: istToday(now), considered: 0, emailed: 0, queuedWhatsApp: 0, failed: 0, duplicates: 0, skipped: 0, heldOutsideWindow: 0, heldNoGmail: 0, notes: [] };
+  const summary = { live, today: istToday(now), considered: 0, emailed: 0, queuedWhatsApp: 0, sentWhatsAppApi: 0, failed: 0, duplicates: 0, skipped: 0, heldOutsideWindow: 0, heldNoGmail: 0, heldWhatsAppApiDryRun: 0, notes: [] };
+  const waLive = whatsappConfig(env).live;
   if (!AUTOMATION_IDS.some((id) => s[id].enabled)) { summary.notes.push("All automations are off."); return summary; }
   const plan = await buildPlan(client, { settings: s, profile, now, env });
   summary.notes.push(...plan.notes);
@@ -359,10 +372,23 @@ export async function processDue(client, {
 
   for (const item of plan.items) {
     if (item.skipReason) { summary.skipped += 1; continue; }
-    if (item.channel === "email" && !inWindow) { summary.heldOutsideWindow += 1; continue; }
+    if (item.channel !== "whatsapp" && !inWindow) { summary.heldOutsideWindow += 1; continue; }
     if (item.channel === "email" && !gmailConfigured(env)) { summary.heldNoGmail += 1; continue; }
+    if (item.channel === "whatsapp_api" && !waLive) { summary.heldWhatsAppApiDryRun += 1; continue; } // no write, no send
     if (budget <= 0) { summary.notes.push(`Stopped at ${s.global.maxPerRun} messages for this run; the rest go next run.`); break; }
     budget -= 1;
+    if (item.channel === "whatsapp_api") {
+      const r = await sendLoggedTemplate(client, {
+        idempotencyKey: item.idempotencyKey, automation: item.automation, templateId: item.waTemplate.id, sourceType: item.sourceType,
+        sourceId: item.sourceId, phone: item.phone, name: item.recipientName, params: item.waTemplate.params, tripDate: item.tripDate, createdBy: "cron",
+      }, { env, fetchImpl, log });
+      if (r.status === "sent") summary.sentWhatsAppApi += 1;
+      else if (r.status === "duplicate") summary.duplicates += 1;
+      else if (r.status === "log_unavailable") throw new Error("crm_message_log table missing (migration 020/021 pending)");
+      else if (r.status === "failed") summary.failed += 1;
+      else summary.skipped += 1;
+      continue;
+    }
     const row = {
       idempotency_key: item.idempotencyKey, automation: item.automation, step: item.step, channel: item.channel,
       source_type: item.sourceType, source_id: item.sourceId, recipient_name: item.recipientName || null,
