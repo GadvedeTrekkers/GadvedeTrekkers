@@ -18,7 +18,7 @@ SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
 # Admin Authentication
-ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 ADMIN_USERS=[{"username":"admin","password":"CHANGE_THIS_PASSWORD","name":"Admin","role":"Super Admin"}]
 JWT_SECRET=GENERATE_RANDOM_STRING_HERE
 
@@ -41,7 +41,7 @@ Copy these to your Render frontend service:
 VITE_API_BASE_URL=https://your-backend-name.onrender.com
 
 # Admin API Key (Must match backend)
-VITE_ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+VITE_ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 
 # Supabase Credentials (Same as backend)
 VITE_SUPABASE_URL=

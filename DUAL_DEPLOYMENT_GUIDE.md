@@ -137,7 +137,7 @@ SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # Admin Auth
-ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 ADMIN_USERS=[{"username":"admin","password":"your_password","name":"Admin","role":"Super Admin"}]
 JWT_SECRET=your_jwt_secret_32_chars_min
 
@@ -150,7 +150,7 @@ GMAIL_APP_PASSWORD=your_app_password
 
 # Frontend Build (for admin panel)
 VITE_API_BASE_URL=https://admin.gadvede.com
-VITE_ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+VITE_ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
@@ -162,7 +162,7 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 VITE_API_BASE_URL=https://admin.gadvede.com
 
 # Admin API Key (for API calls)
-VITE_ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+VITE_ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 
 # Supabase
 VITE_SUPABASE_URL=https://your-project.supabase.co

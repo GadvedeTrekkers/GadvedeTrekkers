@@ -71,7 +71,7 @@ Follow: `DEPLOYMENT_CHECKLIST.md`
    ```
 
 2. **Change Admin Password**
-   - Current: `admin123` ❌
+   - Current: `<your-admin-password>` ❌
    - Production: Use strong password ✅
 
 3. **Verify .env Files Not in Git**

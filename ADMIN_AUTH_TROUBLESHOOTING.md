@@ -114,7 +114,7 @@ If you're running on a different port, add it to the list.
 Check `backend/.env` file for correct credentials:
 
 ```env
-ADMIN_USERS=[{"username":"admin","password":"admin123","name":"Admin","role":"Super Admin"}]
+ADMIN_USERS=[{"username":"admin","password":"<set-in-render-dashboard-never-commit>","name":"Admin","role":"Super Admin"}]
 ```
 
 Use these credentials to log in.
@@ -132,7 +132,7 @@ Use these credentials to log in.
 Check `backend/.env` file has JWT_SECRET:
 
 ```env
-JWT_SECRET=local_dev_jwt_secret_key_for_testing_only_12345678
+JWT_SECRET=<set-in-render-dashboard-never-commit>
 ```
 
 If missing, add it and restart the backend.

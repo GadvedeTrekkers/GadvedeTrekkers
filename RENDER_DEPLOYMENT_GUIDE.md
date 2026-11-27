@@ -24,7 +24,7 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Admin Authentication
-ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 ADMIN_USERS=[{"username":"admin","password":"your_secure_password","name":"Admin","role":"Super Admin"}]
 JWT_SECRET=your_long_random_jwt_secret_string_here
 
@@ -52,7 +52,7 @@ Go to your frontend service on Render → Environment tab and set these variable
 VITE_API_BASE_URL=https://gadvedetrekkers.onrender.com
 
 # Admin API Key (must match backend ADMIN_API_KEY)
-VITE_ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+VITE_ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 
 # Supabase Credentials (Get from Supabase Dashboard → Settings → API)
 VITE_SUPABASE_URL=your_supabase_project_url
