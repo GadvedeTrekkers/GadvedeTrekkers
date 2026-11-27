@@ -15,7 +15,7 @@ async function login(page) {
   await page.goto("/employee-login");
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
   await page.getByPlaceholder("e.g. rahul.patil").fill("rahul.patil");
-  await page.locator('input[type="password"]').fill("rahul001");
+  await page.locator('input[type="password"]').fill(process.env.E2E_EMPLOYEE_PASSWORD || "");
   await page.getByRole("button", { name: /Sign In/ }).last().click();
   await page.waitForURL("**/employee/dashboard");
 }
