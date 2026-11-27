@@ -9,7 +9,8 @@
  *   preTrip          reminder N days (default 2) before the trip with the pickup point and time.
  *   postTrip         "Welcome back" N days (default 1) after the trip with the Google review link, feedback link
  *                    and an optional next-trip offer code.
- * Channels: email (existing Gmail mailer) and a WhatsApp queue of prefilled wa.me links that a person sends by hand.
+ * Channels: email (existing Gmail mailer) and a WhatsApp queue of prefilled wa.me links that a person sends by hand;
+ * the pre-trip reminder can also go automatically through the WhatsApp Cloud API (services/whatsappCloud.js).
  * Stored in public.site_settings under key "crm.automations" (table from migration 015). No secrets in here.
  */
 export const CRM_SETTINGS_KEY = "crm.automations";
@@ -19,8 +20,16 @@ export const AUTOMATION_LABELS = {
   preTrip: "Pre-trip reminder",
   postTrip: "Post-trip welcome back + review",
 };
+/** Message-log entries that don't come from a scheduled automation (WhatsApp Cloud API confirmations). */
+export const EVENT_MESSAGE_LABELS = {
+  bookingConfirmation: "Booking confirmed (WhatsApp API)",
+  paymentVerified: "Payment verified (WhatsApp API)",
+};
+export const LOG_AUTOMATIONS = [...AUTOMATION_IDS, ...Object.keys(EVENT_MESSAGE_LABELS)];
 export const MAX_FOLLOWUP_STEPS = 3;
 export const LOG_STATUSES = ["sending", "sent", "failed", "queued", "sent_manual", "skipped"];
+/** email = Gmail; whatsapp = wa.me queue sent by a person; whatsapp_api = automatic WhatsApp Cloud API template. */
+export const LOG_CHANNELS = ["email", "whatsapp", "whatsapp_api"];
 export const DEFAULT_FEEDBACK_URL = "https://www.gadvede.com/feedback";
 export const DEFAULT_SITE_URL = "https://www.gadvede.com/";
 
@@ -75,7 +84,8 @@ export function defaultCrmSettings() {
     preTrip: {
       enabled: false,
       enabledAt: null,
-      channels: { email: true, whatsapp: true },
+      // whatsappApi: automatic send through the WhatsApp Cloud API (approved template, WHATSAPP_API_LIVE=true needed)
+      channels: { email: true, whatsapp: true, whatsappApi: false },
       daysBefore: 2,
       pickupTimes: [],                   // [{ match: "FC Road", time: "7:00 PM" }] — first match on the pickup point wins
       defaultPickupTime: "We'll share the exact pickup time on WhatsApp the day before",
@@ -149,6 +159,7 @@ export function withCrmDefaults(input) {
       a.body = text(src.body ?? def.body, 4000);
       a.waBody = text(src.waBody ?? def.waBody, 1000);
       if (id === "preTrip") {
+        a.channels.whatsappApi = bool(src.channels?.whatsappApi, def.channels.whatsappApi);
         a.daysBefore = int(src.daysBefore, def.daysBefore);
         a.defaultPickupTime = line(src.defaultPickupTime ?? def.defaultPickupTime, 200);
         a.pickupTimes = (Array.isArray(src.pickupTimes) ? src.pickupTimes : def.pickupTimes).slice(0, 50)
@@ -194,7 +205,7 @@ export function validateCrmSettings(input) {
   };
   for (const id of AUTOMATION_IDS) {
     const a = settings[id];
-    if (a.enabled && !a.channels.email && !a.channels.whatsapp) err(`${id}.channels`, "Pick at least one channel (email or WhatsApp).");
+    if (a.enabled && !a.channels.email && !a.channels.whatsapp && !a.channels.whatsappApi) err(`${id}.channels`, "Pick at least one channel (email or WhatsApp).");
     if (id === "enquiryFollowup") {
       if (!a.steps.length) err(`${id}.steps`, "Add at least one follow-up step.");
       let prev = 0;
