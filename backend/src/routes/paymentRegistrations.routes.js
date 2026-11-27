@@ -26,6 +26,8 @@ import {
  *   GET   /api/payment-registrations                 admin JWT. List + filters (status, event, date, search).
  *   GET   /api/payment-registrations/:id/screenshot  admin JWT. Short-lived signed URL of the payment screenshot.
  *   PATCH /api/payment-registrations/:id             admin JWT. { status: verified|rejected|pending_verification, adminNote }.
+ *                                                     On "verified": WhatsApp Cloud API confirmation (services/whatsappCloud.js;
+ *                                                     dry run unless WHATSAPP_API_LIVE=true, once per registration).
  * There is deliberately NO delete route.
  *
  * Storage (migration 017, NOT run yet): table public.payment_registrations (RLS on, no anon access) and the PRIVATE
@@ -253,6 +255,7 @@ export function createPaymentRegistrationsRouter({
   submitLimitPer15Min = 8,
   log = (...a) => console.log(...a),
   sendEmails, // async (row) => void — default: services/registrationEmail.js (t83u). Never awaited by the request.
+  notifyWhatsapp, // async (client, row, { by }) => void — default: services/whatsappCloud.js notifyPaymentVerified.
 } = {}) {
   const router = express.Router();
   const getDb = db ?? (async () => (await import("../config/supabaseAdminClient.js")).default);
@@ -268,6 +271,11 @@ export function createPaymentRegistrationsRouter({
     const { loadProfileForEmail } = await import("../services/businessProfile.js");
     // t84u: Reply-To = Profile Setup → booking-confirmation email (unset → unchanged behaviour). Never throws.
     return sendRegistrationEmails(row, { profile: await loadProfileForEmail(getDb) });
+  });
+
+  const notifyVerified = notifyWhatsapp ?? (async (client, row, opts) => {
+    const { notifyPaymentVerified } = await import("../services/whatsappCloud.js");
+    return notifyPaymentVerified(client, row, opts);
   });
 
   let cache = { at: 0, items: null };
@@ -429,6 +437,10 @@ export function createPaymentRegistrationsRouter({
       }]);
     } catch { /* audit is best effort */ }
     const after = await client.from(TABLE).select("*").eq("id", id).maybeSingle();
+    // WhatsApp Cloud API confirmation on VERIFIED (once per registration; dry run unless WHATSAPP_API_LIVE=true).
+    if (status === "verified" && after.data) {
+      Promise.resolve(notifyVerified(client, after.data, { by })).catch(() => {});
+    }
     return res.json({ success: true, data: after.data ? toAdminView(after.data) : { id, ...patch } });
   });
 

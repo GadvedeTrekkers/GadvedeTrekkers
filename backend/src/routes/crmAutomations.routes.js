@@ -4,8 +4,9 @@ import requireAdminJWT from "../middleware/requireAdminJWT.js";
 import simpleRateLimit from "../utils/simpleRateLimit.js";
 import { isProfileAdmin } from "./settings.routes.js";
 import { readBusinessProfile } from "../services/businessProfile.js";
+import { whatsappConfig } from "../config/meta.js";
 import {
-  AUTOMATION_IDS, CRM_SETTINGS_KEY, LOG_STATUSES, normEmail, phone10, validateCrmSettings, withCrmDefaults,
+  AUTOMATION_IDS, CRM_SETTINGS_KEY, LOG_AUTOMATIONS, LOG_CHANNELS, LOG_STATUSES, normEmail, phone10, validateCrmSettings, withCrmDefaults,
 } from "../../../shared/crmAutomations.js";
 import {
   LOG_TABLE, OPT_OUT_TABLE, buildEmailMessage, buildPlan, escapeHtml, gmailConfigured, isLive, isMissingTable,
@@ -66,6 +67,7 @@ export function createCrmAutomationsRouter({
       unsubscribeConfigured: Boolean(unsubscribeSecret(env)) && /^https?:\/\//.test(String(env.BACKEND_URL || "")),
       reviewUrlSource: review.source,
       reviewUrlSet: Boolean(review.url),
+      whatsappApi: (({ configured, live, templates }) => ({ configured, live, preTripTemplateSet: Boolean(templates.preTripReminder) }))(whatsappConfig(env)),
     };
   }
 
@@ -160,8 +162,8 @@ export function createCrmAutomationsRouter({
     let q = client.from(LOG_TABLE).select("*", { count: "exact" }).order("created_at", { ascending: false }).range(offset, offset + limit - 1);
     if (queueOnly) q = q.eq("channel", "whatsapp").eq("status", "queued");
     else {
-      if (AUTOMATION_IDS.includes(req.query.automation)) q = q.eq("automation", req.query.automation);
-      if (["email", "whatsapp"].includes(req.query.channel)) q = q.eq("channel", req.query.channel);
+      if (LOG_AUTOMATIONS.includes(req.query.automation)) q = q.eq("automation", req.query.automation);
+      if (LOG_CHANNELS.includes(req.query.channel)) q = q.eq("channel", req.query.channel);
       if (LOG_STATUSES.includes(req.query.status)) q = q.eq("status", req.query.status);
     }
     const { data, error, count } = await q;
