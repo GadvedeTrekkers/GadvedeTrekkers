@@ -226,7 +226,7 @@ export default function PaymentRegistration() {
         screenshot: screenshot?.dataUrl || "", notes: form.notes, consent: form.consent === true,
         website: form.website, formOpenMs: Date.now() - openedAt.current,
       });
-      setResult({ ...data, fullName: form.fullName.trim() });
+      setResult({ ...data, fullName: form.fullName.trim(), email: form.email.trim() });
       document.documentElement.scrollTop = 0; // the site scrolls <body>, not window (see ScrollToTop.jsx)
       document.body.scrollTop = 0;
     } catch (e) {
@@ -263,6 +263,7 @@ export default function PaymentRegistration() {
               <div><dt>Amount paid</dt><dd>{inr(result.amountPaid)}</dd></div>
               <div><dt>Status</dt><dd><span className="preg-badge">Pending verification</span></dd></div>
             </dl>
+            <p className="preg-muted">We are emailing a copy to <strong>{result.email}</strong> (check Spam / Promotions if you don't see it in a few minutes).</p>
             <p className="preg-muted">Please keep this reference number. For any query, WhatsApp or call us on <a href={`tel:+91${QUERY_NUMBER}`}>{QUERY_NUMBER_DISPLAY}</a>.</p>
             <div className="preg-actions">
               <a className="preg-btn preg-btn--wa" href={waUrl(waMessage)} target="_blank" rel="noopener noreferrer">WhatsApp {QUERY_NUMBER_DISPLAY}</a>
