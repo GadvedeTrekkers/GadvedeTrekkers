@@ -5,6 +5,9 @@ import { syncProductsFromApi } from "../../api/getAll";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { waUrl } from "../../config/whatsappSetting";
 import { villaStayTotal } from "../../utils/villaPricing";
+import { useSeo } from "../../seo/useSeo";
+import { realRating } from "../../utils/rating";
+import { SITE_ORIGIN } from "../../seo/publicSeo";
 
 // No built-in sample villas: the page lists only real villas from the DB (/api/products?type=villa).
 // Kept as an empty export because the admin page (ManageVillas) imports it as its seed list.
@@ -173,7 +176,7 @@ function VillaDetail({ villa, onClose }) {
                 📍 {villa.location}
               </p>
             </div>
-            {villa.rating > 0 && (
+            {realRating(villa, { max: 10 }) && (
             <div style={{ textAlign: "right" }}>
               <RatingBadge score={villa.rating} />
               <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#374151", marginTop: 4 }}>{villa.ratingLabel}</div>
@@ -201,7 +204,7 @@ function VillaDetail({ villa, onClose }) {
             <span style={{ background: "#059669", color: "#fff", fontWeight: 800, fontSize: "0.8rem", padding: "2px 8px", borderRadius: 6 }}>
               {villa.locationScore}/10
             </span>
-            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>score from {villa.reviews} reviews</span>
+            {villa.reviews > 0 && <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>score from {villa.reviews} reviews</span>}
           </div>
           )}
 
@@ -429,6 +432,11 @@ function VillaDetail({ villa, onClose }) {
 
 /* ── Main Villas Page ── */
 export default function Villas() {
+  useSeo({
+    title: "Villas on Rent | Gadvede Trekkers",
+    description: "Private villas on rent for families and groups, booked through Gadvede Trekkers. See photos, rates and amenities, and book on WhatsApp.",
+    canonical: `${SITE_ORIGIN}/villas`,
+  });
   const [sort, setSort] = useState("top");
   const [minScore, setMinScore] = useState(0);
   const [selectedVilla, setSelectedVilla] = useState(null);
@@ -637,7 +645,7 @@ export default function Villas() {
                     <h3 style={{ fontWeight: 800, fontSize: "1.05rem", color: "#111827", lineHeight: 1.3, margin: 0 }}>
                       {villa.name}
                     </h3>
-                    {villa.rating > 0 && (
+                    {realRating(villa, { max: 10 }) && (
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#374151" }}>{villa.ratingLabel}</div>
