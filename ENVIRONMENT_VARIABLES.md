@@ -28,6 +28,17 @@ CORS_ORIGIN=http://localhost:5173,https://gadvede.com,https://www.gadvede.com,ht
 # Gmail Configuration
 GMAIL_USER=
 GMAIL_APP_PASSWORD=
+
+# AI drafts (Google Gemini). OFF unless AI_ENABLED=true. Drafts only — nothing is ever sent automatically.
+AI_ENABLED=false
+# Free key from https://aistudio.google.com/apikey (backend only — never a VITE_ variable). The Settings hub secret store wins when it exists.
+GEMINI_API_KEY=
+# Optional (defaults shown)
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_BLOG_MODEL=gemini-3.8-flash
+AI_DAILY_LIMIT=100
+AI_USER_DAILY_LIMIT=40
+AI_TIMEOUT_MS=25000
 ```
 
 ---
