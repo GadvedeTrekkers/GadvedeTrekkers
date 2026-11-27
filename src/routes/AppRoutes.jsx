@@ -48,6 +48,7 @@ import AddEventPage            from "../backend/AddEventPage";
 import ManagePropertyListings  from "../backend/ManagePropertyListings";
 import ManageCampsiteListings  from "../backend/ManageCampsiteListings";
 import ManageVillas            from "../backend/ManageVillas";
+import ManagePaymentRegistrations from "../backend/ManagePaymentRegistrations";
 import ManageIV               from "../backend/ManageIV";
 
 /* ================= TREK PAGES ================= */
@@ -103,6 +104,7 @@ import WeekendTrips from "../components/WeekendTrips";
 import Trips from "../pages/Trips/Trips";
 import CancellationPolicy from "../pages/CancellationPolicy";
 import PrivacyPolicy from "../pages/Privacy/PrivacyPolicy";
+import PaymentRegistration from "../pages/PaymentRegistration/PaymentRegistration";
 
 function AppRoutes() {
   return (
@@ -124,6 +126,9 @@ function AppRoutes() {
       <Route path="/treks/:id"                   element={<TrekDetails />} />
       <Route path="/book"             element={<Booking />} />
       <Route path="/booking/success"  element={<BookingSuccess />} />
+      {/* t81u: customers who paid by bank transfer / UPI register the payment */}
+      <Route path="/register"              element={<PaymentRegistration />} />
+      <Route path="/payment-registration"  element={<PaymentRegistration />} />
 
       {/* ================= TOURS ================= */}
       <Route path="/tours"                              element={<Tours />} />
@@ -218,6 +223,7 @@ function AppRoutes() {
         <Route path="property-listings" element={<ManagePropertyListings />} />
         <Route path="campsite-listings" element={<ManageCampsiteListings />} />
         <Route path="villas"            element={<ManageVillas />} />
+        <Route path="payment-registrations" element={<ManagePaymentRegistrations />} />
         <Route path="industrial-visits" element={<ManageIV />} />
       </Route>
     </Routes>
