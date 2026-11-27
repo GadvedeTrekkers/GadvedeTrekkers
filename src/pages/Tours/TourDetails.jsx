@@ -279,7 +279,7 @@ function TourDetails() {
   return (
     <div style={{ background: "#f4faf7", minHeight: "100vh" }}>
       <div style={{ position: "relative", minHeight: "84vh", overflow: "hidden" }}>
-        {gallery.slice(0, 3).map((image, index) => (
+        {gallery.map((image, index) => (
           <div
             key={`${tour.name}-hero-${index}`}
             style={{
@@ -361,7 +361,7 @@ function TourDetails() {
 
           {gallery.length > 1 && (
             <div style={{ position: "absolute", left: "50%", bottom: 24, transform: "translateX(-50%)", display: "flex", gap: 10, zIndex: 3 }}>
-              {gallery.slice(0, 3).map((_, index) => (
+              {gallery.map((_, index) => (
                 <button
                   key={`${tour.name}-dot-${index}`}
                   type="button"
@@ -675,8 +675,8 @@ function TourDetails() {
 
             <div style={{ ...sectionCardStyle, padding: 24 }}>
               <h3 style={{ ...subTitleStyle, marginBottom: 12 }}>Photo Gallery</h3>
-              <div style={{ display: "grid", gap: 10 }}>
-                {gallery.slice(0, 3).map((image, index) => (
+              <div style={{ display: "grid", gridTemplateColumns: gallery.length > 3 ? "repeat(2, 1fr)" : "1fr", gap: 10 }}>
+                {gallery.map((image, index) => (
                   <div key={`${tour.name}-thumb-${index}`} style={{ borderRadius: 14, overflow: "hidden", cursor: "pointer", border: index === activeImage ? "2px solid #0a8456" : "2px solid transparent" }} onClick={() => setActiveImage(index)}>
                     <img src={image} alt={`${tour.name} ${index + 1}`} style={{ width: "100%", height: 92, objectFit: "cover", display: "block" }} />
                   </div>
