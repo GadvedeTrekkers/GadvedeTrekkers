@@ -441,7 +441,7 @@ export default function EmployeeOnboarding() {
               <div style={{flex:1, minWidth:160}}>
                 <div style={{fontWeight:600, fontSize:13}}>{cred.fullName}</div>
                 <div style={{fontSize:11, color:"#78716c", fontFamily:"monospace"}}>
-                  Login: <strong>{cred.username}</strong> / <strong>{cred.password}</strong>
+                  Login: <strong>{cred.username}</strong> (password set on server)
                   <span style={{marginLeft:8, color:"#a16207"}}>Ref: {cred.referralCode}</span>
                 </div>
               </div>
@@ -559,7 +559,7 @@ export default function EmployeeOnboarding() {
                               {showCreds === emp.employeeId && (
                                 <div style={{fontSize:10, fontFamily:"monospace", background:"#f1f5f9", borderRadius:4, padding:"2px 6px", marginTop:2}}>
                                   <div>👤 {cred.username}</div>
-                                  <div>🔑 {cred.password}</div>
+                                  <div>🔑 password set on server</div>
                                   <div style={{color:"#0284c7"}}>🔗 {cred.referralCode}</div>
                                 </div>
                               )}

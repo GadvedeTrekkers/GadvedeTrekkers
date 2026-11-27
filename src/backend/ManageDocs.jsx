@@ -204,7 +204,7 @@ function UserManual() {
     {
       icon: "🔗", title: "Employee Portal", path: "/employee-login",
       desc: "Separate portal for trek leaders. Login with auto-generated credentials. View assigned treks, collect payments, share referral links, track earnings.",
-      steps: ["Open /employee-login in a separate tab", "Login with employee credentials (rahul.patil / rahul001 for demo)", "My Treks: see all assigned events — upcoming and past", "View participant list with emergency contacts", "Enter amount + click Collect to record partial payment", "Copy referral link from Share & Earn tab", "My Earnings: track ₹100/referral incentives"]
+      steps: ["Open /employee-login in a separate tab", "Login with the username and password the admin set up for you on the server", "My Treks: see all assigned events — upcoming and past", "View participant list with emergency contacts", "Enter amount + click Collect to record partial payment", "Copy referral link from Share & Earn tab", "My Earnings: track ₹100/referral incentives"]
     },
   ];
 
@@ -335,7 +335,7 @@ function SRSTab() {
               ["gt_treks", "Trek listings (public content)", "ManageTreks, Booking form, Employee Portal"],
               ["gt_employees", "Employee profiles (role, pay, skills)", "ManageEmployees, Trek Payments form"],
               ["gt_vendors", "Vendor profiles (service type, rate)", "ManageVendors, Trek Payments form"],
-              ["gt_employee_creds", "Portal login credentials + approval status", "Employee login, Onboarding"],
+              ["gt_employee_onboarding", "Portal onboarding approval status (no passwords; login is checked by the backend)", "Onboarding"],
               ["gt_incentives", "Referral incentive records (₹100 each)", "Booking form, ManageEarnings, Employee Portal"],
               ["gt_trek_events", "Trek lifecycle stage tracking + task checklists", "ManageReports → Lifecycle tab, Dashboard"],
               ["gt_earnings", "Manual earnings entries (Tent/Villa/Camping/College IV)", "ManageEarnings, Reports"],
@@ -611,7 +611,7 @@ function EmpCredRow({ cred }) {
       <td style={S.td}><strong>{cred.fullName}</strong><div style={{ fontSize: 10, color: "#94a3b8" }}>{cred.employeeId}</div></td>
       <td style={{ ...S.td, fontFamily: "monospace", color: "#0284c7" }}>{cred.username}</td>
       <td style={S.td}>
-        <span style={{ fontFamily: "monospace", color: showPw ? "#dc2626" : "#94a3b8" }}>{showPw ? cred.password : "••••••••"}</span>
+        <span style={{ fontFamily: "monospace", color: showPw ? "#dc2626" : "#94a3b8" }}>{showPw ? "Stored on server" : "••••••••"}</span>
         <button onClick={() => setShowPw(v => !v)} style={{ marginLeft: 6, background: "none", border: "1px solid #e2e8f0", borderRadius: 4, fontSize: 10, cursor: "pointer", padding: "1px 5px" }}>
           {showPw ? "Hide" : "Show"}
         </button>
@@ -692,10 +692,10 @@ function CredentialsTab() {
         <table style={S.table}>
           <thead><tr>{["Role", "Username", "Password", "Portal", "Notes"].map(h => <th key={h} style={S.th}>{h}</th>)}</tr></thead>
           <tbody>
-            <CredRow role="Super Admin" username="admin" password="gadvede@123" portal="Admin Panel" notes="Full access to all modules" />
-            <CredRow role="Pratik Ubhe – Management" username="pratik.ubhe" password="Pratik@gadvede" portal="Admin Panel" notes="Approve pay rates, initiate vendor payments, approve onboarding" />
-            <CredRow role="Rohit Panhalkar – Management" username="rohit.panhalkar" password="Rohit@gadvede" portal="Admin Panel" notes="Mark vendor payments, financial records" />
-            <CredRow role="Akshay Kangude – Management" username="akshay.kangude" password="Akshay@gadvede" portal="Admin Panel" notes="Approve onboarding, approve pay rates" />
+            <CredRow role="Super Admin" username="admin" password="Stored on server (Render env ADMIN_USERS)" portal="Admin Panel" notes="Full access to all modules" />
+            <CredRow role="Pratik Ubhe – Management" username="pratik.ubhe" password="Stored on server (Render env ADMIN_USERS)" portal="Admin Panel" notes="Approve pay rates, initiate vendor payments, approve onboarding" />
+            <CredRow role="Rohit Panhalkar – Management" username="rohit.panhalkar" password="Stored on server (Render env ADMIN_USERS)" portal="Admin Panel" notes="Mark vendor payments, financial records" />
+            <CredRow role="Akshay Kangude – Management" username="akshay.kangude" password="Stored on server (Render env ADMIN_USERS)" portal="Admin Panel" notes="Approve onboarding, approve pay rates" />
           </tbody>
         </table>
       </div>

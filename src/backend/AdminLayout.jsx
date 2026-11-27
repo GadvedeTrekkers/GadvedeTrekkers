@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { getCurrentAdminUser } from "../data/permissionStorage";
 import { getAlerts } from "../data/notificationStorage";
 import { clearAdminSession, isAdminAuthenticated } from "../data/authStorage";
+import { apiRequest } from "../api/backendClient";
+import { hydrateCustomers } from "../data/customerStorage";
+import { hydrateBookings } from "../data/bookingStorage";
 
 const NAV = [
   { path: "/admin/dashboard",    icon: "📊", label: "Dashboard" },
@@ -42,9 +45,28 @@ function AdminLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const unreadAlerts = getAlerts().slice(0, 20).length;
 
+  const [dataVersion, setDataVersion] = useState(0);
+
   useEffect(() => {
     if (!isAdminAuthenticated()) navigate("/admin");
   }, [navigate]);
+
+  /* Customers and bookings are no longer kept in localStorage: load them from
+     the backend (admin JWT) into memory, then re-mount the current page once. */
+  useEffect(() => {
+    if (!isAdminAuthenticated()) return;
+    let active = true;
+    Promise.allSettled([
+      apiRequest("/api/customers?limit=500", { admin: true }),
+      apiRequest("/api/bookings?limit=500", { admin: true }),
+    ]).then(([customers, bookings]) => {
+      if (!active) return;
+      if (customers.status === "fulfilled" && Array.isArray(customers.value)) hydrateCustomers(customers.value);
+      if (bookings.status === "fulfilled" && Array.isArray(bookings.value)) hydrateBookings(bookings.value);
+      setDataVersion((v) => v + 1);
+    });
+    return () => { active = false; };
+  }, []);
 
   const logout = () => {
     clearAdminSession();
@@ -108,7 +130,7 @@ function AdminLayout() {
           <div className="adm-mobile-title">Admin Panel</div>
           <div className="adm-mobile-alerts">🔔 {unreadAlerts}</div>
         </div>
-        <Outlet />
+        <Outlet key={dataVersion} />
       </main>
       {mobileNavOpen && <div className="adm-mobile-backdrop" onClick={() => setMobileNavOpen(false)} />}
     </div>
