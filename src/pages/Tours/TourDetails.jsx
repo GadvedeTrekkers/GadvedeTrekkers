@@ -6,8 +6,7 @@ import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
 import PaidRegisterLink from "../../components/PaidRegisterLink";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
-import { toursList } from "../../data/toursData";
-import { ADDITIONAL_TOUR_SEEDS } from "../../data/additionalTourDetails";
+import { useSiteContent } from "../../config/siteContent";
 import { productService } from "../../services/product.service";
 import { useSeo } from "../../seo/useSeo";
 import { realRating } from "../../utils/rating";
@@ -15,15 +14,13 @@ import { trackViewItem } from "../../analytics/tracking";
 import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
 import InstagramFeed from "../../components/social/InstagramFeed";
 import { buildProductPageSeo, productSeo } from "../../seo/publicSeo";
+import NotFound from "../NotFound";
 import { formatWhatsappDisplay, waUrl } from "../../config/whatsappSetting";
 import {
-  MANALI_TOUR_SEED,
-  MANALI_GALLERY,
-  TOUR_DETAIL_SEED_BY_SLUG,
   parseJsonValue,
   parseLineItems,
   parsePipeRows,
-} from "../../data/manaliTourDetails";
+} from "../../utils/listingParsers";
 
 const slugifyTourName = (value = "") =>
   String(value)
@@ -48,77 +45,29 @@ function parseRowObjects(value = "", keys = []) {
   );
 }
 
-function buildFallbackTour(id) {
-  const baseTour = toursList.find(
-    (item) => slugifyTourName(item.slug || item.name || "") === id
-  );
-
-  if (!baseTour) return null;
-
-  return {
-    ...baseTour,
-    slug: slugifyTourName(baseTour.name),
-    state: baseTour.state || baseTour.region || "India",
-    destinationLine: baseTour.region || "India",
-    heroBadge: "Instant Confirmation",
-    subtitle: `${baseTour.name} is available as a separate tour package. Explore dates, pricing, and booking details below.`,
-    taxPercent: 5,
-    happyCustomers: "1000+ Happy Customers",
-    pickupPointLabel: "Pickup point",
-    pickupPointMapLabel: baseTour.state || baseTour.region || "India",
-    filters: `${baseTour.region || "tour"}|Group Tours`,
-    overview: `${baseTour.name} is one of our featured group tours.\n\nYou can use this page to review the package price, next departure date, and proceed with booking.`,
-    keyHighlights: `Tour|${baseTour.name}|Duration|${baseTour.duration}|Next Departure|${baseTour.nextDate}`,
-    briefItinerary: `Trip|Package details available on request`,
-    departureDatesDelhi: "",
-    departureDatesHometown: `Upcoming|${baseTour.nextDate}`,
-    pricingOptions: `Base Price|${baseTour.price}|Per person`,
-    addOns: "",
-    bookingNote: "",
-    included: "Tour support",
-    notIncluded: "Items not listed in the package",
-    offerCodes: "",
-    detailedItinerary: `Day 1|Plan|Package information for ${baseTour.name} will be updated soon.`,
-    thingsToCarry: "Valid ID proof",
-    travelInfo: `Destination|${baseTour.name}`,
-    paymentDetails: "",
-    cancellationPolicy: "Standard cancellation policy applies.",
-    policyNotes: "Schedule may change in case of operational or weather conditions.",
-    faq: "",
-    imageGallery: [baseTour.image].filter(Boolean),
-    active: true,
-  };
-}
-
-function buildSeedTour(id) {
-  return (
-    TOUR_DETAIL_SEED_BY_SLUG[id] ||
-    ADDITIONAL_TOUR_SEEDS[id] ||
-    buildFallbackTour(id) ||
-    null
-  );
-}
-
 function TourDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [remoteTour, setRemoteTour] = useState(null);
+  // true once the live catalogue lookup has finished, so an unknown slug shows the 404 page, not a flash of it while loading.
+  const [lookupDone, setLookupDone] = useState(false);
   const previewRaw = typeof window !== "undefined" ? sessionStorage.getItem("gt_tour_preview") : null;
   const previewItem = parseJsonValue(previewRaw, null);
   const previewSlug = previewItem?.slug || slugifyTourName(previewItem?.name || "");
   const adminItem = getAdminItems("gt_tours").find((item) => (item.slug || slugifyTourName(item.name || "")) === id);
-  const seedTour = buildSeedTour(id);
+  // t129u: the tour comes only from the catalogue (API / admin / admin preview). No built-in tour data.
+  const trustBadges = useSiteContent("site.trustBadges")?.items || [];
 
   const tour = useMemo(() => {
-    const source = previewSlug === id ? previewItem : remoteTour || (adminItem ? normaliseItem(adminItem) : seedTour);
+    const source = previewSlug === id ? previewItem : remoteTour || (adminItem ? normaliseItem(adminItem) : null);
     if (!source) return null;
-    const gallery = parseJsonValue(source.imageGallery, [source.image || MANALI_TOUR_SEED.image]).filter(Boolean);
+    const gallery = parseJsonValue(source.imageGallery, [source.image].filter(Boolean)).filter(Boolean);
     return {
       ...source,
       image: gallery[0] || source.image,
-      imageGallery: gallery.length ? gallery : MANALI_GALLERY,
+      imageGallery: gallery,
     };
-  }, [adminItem, id, previewItem, previewSlug, remoteTour, seedTour]);
+  }, [adminItem, id, previewItem, previewSlug, remoteTour]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const upcomingDates = (
@@ -131,7 +80,12 @@ function TourDetails() {
 
   useEffect(() => {
     setRemoteTour(null);
-    if (!id || previewSlug === id) return;
+    setLookupDone(false);
+    if (!id || previewSlug === id) {
+      setLookupDone(true);
+      return;
+    }
+    let cancelled = false;
 
     const syncLocal = () => {
       const latestLocal = getAdminItems("gt_tours").find((item) => (item.slug || slugifyTourName(item.name || "")) === id);
@@ -143,12 +97,18 @@ function TourDetails() {
     productService
       .getBySlug(id)
       .then((item) => {
-        if (item) setRemoteTour(normaliseItem(item));
+        if (!cancelled && item) setRemoteTour(normaliseItem(item));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLookupDone(true);
+      });
 
     window.addEventListener("storage", syncLocal);
-    return () => window.removeEventListener("storage", syncLocal);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("storage", syncLocal);
+    };
   }, [id, previewSlug]);
 
   const rating = realRating(tour);
@@ -269,11 +229,12 @@ function TourDetails() {
   } : null);
 
   if (!tour) {
+    if (!lookupDone) return <div className="container py-5 text-center text-muted" data-testid="product-loading">Loading…</div>;
     return (
-      <div className="container py-5">
-        <h2 className="fw-bold text-center mb-3 text-success">Tour Not Found</h2>
-        <p className="text-center text-muted">This tour detail page is not available yet.</p>
-      </div>
+      <NotFound
+        title="We couldn’t find that tour"
+        message="This tour page is not available. Browse our current tours or message us on WhatsApp."
+      />
     );
   }
 
@@ -327,7 +288,7 @@ function TourDetails() {
         <div className="container" style={{ position: "relative", zIndex: 2, paddingTop: 110, paddingBottom: 70 }}>
           <div style={{ maxWidth: 760 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "10px 18px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.08)", color: "#fff", fontWeight: 700, letterSpacing: 0.5, marginBottom: 22 }}>
-              <span>{tour.heroBadge || "🏔 Premium Group Tour"}</span>
+              {tour.heroBadge && <span>{tour.heroBadge}</span>}
             </div>
             <h1 style={{ color: "#fff", fontSize: "clamp(2.5rem, 8vw, 5rem)", lineHeight: 0.96, fontWeight: 900, marginBottom: 18, fontFamily: "Georgia, 'Times New Roman', serif" }}>
               {seoCopy.h1 || tour.name}
@@ -671,9 +632,11 @@ function TourDetails() {
                 {Number(tour.taxPercent) > 0 && <div style={{ color: "#738b7f", fontWeight: 600 }}>+ {tour.taxPercent}% GST</div>}
               </div>
               <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
-                <div style={miniBadgeStyle}>Instant Confirmation</div>
-                <div style={miniBadgeStyle}>Best Price Guaranteed</div>
-                <div style={miniBadgeStyle}>{tour.happyCustomers}</div>
+                {/* Claims only when switched on for this tour in Admin → Tours, plus site-wide badges from Site Content. */}
+                {tour.instantConfirmation ? <div style={miniBadgeStyle}>Instant Confirmation</div> : null}
+                {tour.bestPriceGuaranteed ? <div style={miniBadgeStyle}>Best Price Guaranteed</div> : null}
+                {tour.happyCustomers ? <div style={miniBadgeStyle}>{tour.happyCustomers}</div> : null}
+                {trustBadges.map((b) => <div key={b.text} style={miniBadgeStyle}>{b.icon ? `${b.icon} ` : ""}{b.text}</div>)}
               </div>
               <div style={{ background: "#f3fbf6", borderRadius: 14, padding: 16, marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { getAdminItems } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
-import { waUrl } from "../../config/whatsappSetting";
+import { formatWhatsappDisplay, getWhatsappNumber, waUrl } from "../../config/whatsappSetting";
 import { villaStayTotal } from "../../utils/villaPricing";
 import { useSeo } from "../../seo/useSeo";
 import { realRating } from "../../utils/rating";
@@ -714,7 +714,7 @@ export default function Villas() {
                 <>
                   <h3 style={{ fontWeight: 800, fontSize: "1.1rem", color: "#1e1b4b", marginBottom: 8 }}>Villas coming soon</h3>
                   <p style={{ color: "#374151", fontSize: "0.92rem", marginBottom: 16 }}>
-                    WhatsApp us on 98561 12727 for villa bookings and availability.
+                    WhatsApp us on {formatWhatsappDisplay(getWhatsappNumber())} for villa bookings and availability.
                   </p>
                   <a
                     href={waUrl("Hi! I'm interested in booking a villa.")}

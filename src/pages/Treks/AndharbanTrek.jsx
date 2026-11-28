@@ -167,7 +167,6 @@ export default function AndharbanTrek() {
               { icon: "⏱", label: "1 Night 1 Day" },
               { icon: "🏔", label: "659m (2160 ft)" },
               { icon: "⚡", label: "Medium" },
-              { icon: "⭐", label: "4.7 (20,000+ trekkers)" },
               { icon: "💰", label: "From ₹1,699" },
             ].map(s => (
               <div className="td-stat" key={s.label}>

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { paymentRegistrationsApi } from "../../api/paymentRegistrations.api";
 import { compressImageToJpeg } from "../../utils/compressImage";
 import { trackEvent } from "../../analytics/tracking";
-import { waUrl } from "../../config/whatsappSetting";
+import { formatWhatsappDisplay, getWhatsappNumber, waUrl } from "../../config/whatsappSetting";
 import {
   GENDERS,
   INDIAN_MOBILE_RE,
@@ -21,8 +21,9 @@ import "./PaymentRegistration.css";
  * trip pages use). Price per person comes from the chosen package; total = price × participants (read-only).
  * The server re-checks everything and recomputes the price. Submissions are saved as "pending verification".
  */
-const QUERY_NUMBER = "9856112727";
-const QUERY_NUMBER_DISPLAY = "+91 98561 12727";
+/* The admin WhatsApp setting (t129u); its default lives in config/whatsappSetting.js. */
+const queryNumber = () => getWhatsappNumber().slice(-10);
+const queryNumberDisplay = () => formatWhatsappDisplay(getWhatsappNumber());
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const UTR_RE = /^[A-Za-z0-9][A-Za-z0-9/-]{3,39}$/;
 const inr = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
@@ -274,9 +275,9 @@ export default function PaymentRegistration() {
               <div><dt>Status</dt><dd><span className="preg-badge">Pending verification</span></dd></div>
             </dl>
             <p className="preg-muted">We are emailing a copy to <strong>{result.email}</strong> (check Spam / Promotions if you don't see it in a few minutes).</p>
-            <p className="preg-muted">Please keep this reference number. For any query, WhatsApp or call us on <a href={`tel:+91${QUERY_NUMBER}`}>{QUERY_NUMBER_DISPLAY}</a>.</p>
+            <p className="preg-muted">Please keep this reference number. For any query, WhatsApp or call us on <a href={`tel:+91${queryNumber()}`}>{queryNumberDisplay()}</a>.</p>
             <div className="preg-actions">
-              <a className="preg-btn preg-btn--wa" href={waUrl(waMessage)} target="_blank" rel="noopener noreferrer">WhatsApp {QUERY_NUMBER_DISPLAY}</a>
+              <a className="preg-btn preg-btn--wa" href={waUrl(waMessage)} target="_blank" rel="noopener noreferrer">WhatsApp {queryNumberDisplay()}</a>
               <Link className="preg-btn preg-btn--ghost" to="/">Back to home</Link>
             </div>
           </div>
@@ -304,7 +305,7 @@ export default function PaymentRegistration() {
             <h2><span className="preg-step">1</span>Event, date &amp; pickup</h2>
             {loadError ? (
               <div className="preg-alert">
-                {loadError} <button type="button" className="preg-link-btn" onClick={loadEvents}>Try again</button> or WhatsApp us on {QUERY_NUMBER_DISPLAY}.
+                {loadError} <button type="button" className="preg-link-btn" onClick={loadEvents}>Try again</button> or WhatsApp us on {queryNumberDisplay()}.
               </div>
             ) : null}
             <div className="preg-grid">
@@ -507,7 +508,7 @@ export default function PaymentRegistration() {
           <button type="submit" className="preg-btn preg-btn--primary preg-submit" disabled={submitting || shotBusy}>
             {submitting ? "Submitting…" : "Submit payment details"}
           </button>
-          <p className="preg-muted preg-center">Questions? WhatsApp / call <a href={`tel:+91${QUERY_NUMBER}`}>{QUERY_NUMBER_DISPLAY}</a></p>
+          <p className="preg-muted preg-center">Questions? WhatsApp / call <a href={`tel:+91${queryNumber()}`}>{queryNumberDisplay()}</a></p>
         </form>
       </div>
     </section>

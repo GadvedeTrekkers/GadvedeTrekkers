@@ -278,7 +278,7 @@ export default function VelasTurtleFestival() {
               <div style={{ color: "#fff", fontWeight: 900, fontSize: "2rem" }}>₹2,599<span style={{ fontSize: "1rem", fontWeight: 400 }}>/person</span></div>
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {["✅ Best Price Guaranteed", "🔒 Secure & Easy Booking", "😊 1000+ Happy Customers"].map(b => (
+              {["✅ Best Price Guaranteed", "🔒 Secure & Easy Booking"].map(b => (
                 <span key={b} style={{ background: "rgba(255,255,255,0.12)", color: "#fff", borderRadius: 20, padding: "5px 14px", fontSize: "0.78rem", fontWeight: 600 }}>{b}</span>
               ))}
             </div>

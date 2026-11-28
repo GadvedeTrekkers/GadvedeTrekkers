@@ -9,12 +9,12 @@ import { productService } from "../../services/product.service";
 import { handleImageError } from "../../utils/imageFallback";
 import { useSeo } from "../../seo/useSeo";
 import {
+  pageSeo,
   SITE_ORIGIN,
-  TRIPS_DESCRIPTION,
-  TRIPS_TITLE,
   listJsonLd,
   ogForSlug,
 } from "../../seo/publicSeo";
+import { useSiteData } from "../../config/siteContent";
 
 function formatBatch(batch) {
   if (!batch?.date) return "";
@@ -48,9 +48,11 @@ async function loadTripCards() {
 export default function Trips() {
   const [trips, setTrips] = useState(() => mergeFeaturedTrips([]));
   const tripsOg = ogForSlug("vasota-fort-trek");
+  useSiteData(); // re-render when admin content (search titles, company name) arrives
+  const seoText = pageSeo("trips"); // Admin → Site Content → Search titles (t129u)
   useSeo({
-    title: TRIPS_TITLE,
-    description: TRIPS_DESCRIPTION,
+    title: seoText.title,
+    description: seoText.description,
     canonical: `${SITE_ORIGIN}/trips`,
     image: tripsOg.url,
     imageWidth: tripsOg.width,
@@ -86,7 +88,7 @@ export default function Trips() {
       </p>
       <h1 className="fw-bold mb-2">Open trips</h1>
       <p className="text-muted mb-4" style={{ maxWidth: 720 }}>
-        Vasota, Harishchandragad, Kalsubai, and New Year beach camping. Each card has the fee, the departure city, and a WhatsApp booking link.
+        Each card has the fee, the departure city, and a WhatsApp booking link.
       </p>
 
       <div className="row g-3">

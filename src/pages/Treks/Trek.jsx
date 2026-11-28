@@ -1,9 +1,9 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
-import { slugifyTrekName } from "../../data/treks";
+import { slugifyTrekName } from "../../utils/slugify";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { tripDetailPath } from "../../data/publicTrips";
-import { FEATURED_TRIPS, mergeFeaturedTrips } from "../../data/featuredTrips";
+import { mergeFeaturedTrips } from "../../data/featuredTrips";
 import BookingCTA from "../../components/BookingCTA";
 import { WhatsAppIcon, ArrowRightIcon } from "../../components/icons";
 import { handleImageError, withFallbackImages } from "../../utils/imageFallback";
@@ -15,13 +15,13 @@ import { useSeo } from "../../seo/useSeo";
 import TripRating from "../../components/TripRating";
 import { realRating } from "../../utils/rating";
 import { waUrl } from "../../config/whatsappSetting";
-import {
+import { pageSeo,
   SITE_ORIGIN,
-  TREKS_DESCRIPTION,
-  TREKS_TITLE,
   listJsonLd,
   ogForSlug,
 } from "../../seo/publicSeo";
+import { useSiteContent } from "../../config/siteContent";
+import { isPastDateLabel } from "../../utils/upcomingDate";
 
 const parseGallery = (value, fallback) => {
   try {
@@ -54,7 +54,7 @@ function parseGalleryBatches(value) {
   }
 }
 
-function buildTreks(rawItems = FEATURED_TRIPS) {
+function buildTreks(rawItems = []) {
   const source = mergeFeaturedTrips(rawItems);
 
   return source
@@ -89,16 +89,7 @@ const DIFFICULTY_FILTERS = ["All", "Easy", "Medium", "Hard"];
  * Falls back to false on parse failures so old dates are never silently hidden.
  */
 function isDateExpired(dateStr) {
-  if (!dateStr) return false;
-  try {
-    // "25 Sept 2025" → normalise to "25 Sep 2025" (some browsers need this)
-    const normalised = String(dateStr).replace(/sept/i, "Sep");
-    const d = new Date(normalised);
-    if (isNaN(d.getTime())) return false; // unparseable → show as-is
-    return d < new Date();
-  } catch {
-    return false;
-  }
+  return isPastDateLabel(dateStr);
 }
 
 const SORT_OPTIONS = [
@@ -121,13 +112,17 @@ function Trek() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [activeSort, setActiveSort] = useState("recommended");
   const [searchQuery, setSearchQuery] = useState("");
-  const [treks, setTreks] = useState(() => buildTreks(FEATURED_TRIPS));
-  const [isLoading, setIsLoading] = useState(false);
+  const [treks, setTreks] = useState([]); // filled from the live catalogue (Admin → Treks)
+  const [isLoading, setIsLoading] = useState(true);
+  const intro = useSiteContent("treks.intro"); // Admin → Site Content → "Treks page intro"
+  const stats = useSiteContent("home.stats")?.items || []; // Admin → Site Content → "Headline numbers"
 
   useEffect(() => {
     let cancelled = false;
     const apply = (treksItems, campItems) => {
-      if (!cancelled) setTreks(buildTreks([...(treksItems || []), ...(campItems || [])]));
+      // /treks lists trek products only; camping has its own page. (campItems kept for the storage listener signature.)
+      void campItems;
+      if (!cancelled) setTreks(buildTreks([...(treksItems || [])]));
     };
     const syncLocal = () => apply(getAdminItems("gt_treks"), getAdminItems("gt_camping"));
 
@@ -159,9 +154,10 @@ function Trek() {
       ),
     [treks]
   );
+  const seoText = pageSeo("treks"); // Admin → Site Content → Search titles (t129u)
   useSeo({
-    title: TREKS_TITLE,
-    description: TREKS_DESCRIPTION,
+    title: seoText.title,
+    description: seoText.description,
     canonical: `${SITE_ORIGIN}/treks`,
     image: treksOg.url,
     imageWidth: treksOg.width,
@@ -233,10 +229,8 @@ function Trek() {
 
   /* ── Hero stats ─────────────────────────────── */
   const heroStats = [
-    { value: `${treks.length}+`, label: "Treks Listed" },
-    { value: "8+", label: "Destinations" },
-    { value: "5000+", label: "Happy Trekkers" },
-    { value: "4.8★", label: "Avg Rating" },
+    ...(treks.length ? [{ value: String(treks.length), label: "Treks Listed" }] : []),
+    ...stats,
   ];
 
   return (
@@ -254,23 +248,8 @@ function Trek() {
         {/* ── HERO ─────────────────────────────────── */}
         <header className="trek-hero" role="banner">
           <div className="trek-hero-copy">
-            <span className="trek-kicker">Maharashtra Trekking Escapes</span>
-            <h1 className="trek-heading">
-              Best Treks In Maharashtra For{" "}
-              <span className="text-nowrap">
-                <span className="trek-heading-highlight">Monsoon</span>,
-              </span>{" "}
-              <span className="text-nowrap">
-                <span className="trek-heading-highlight trek-heading-highlight-alt">Weekend</span>,
-              </span>{" "}
-              and{" "}
-              <span className="trek-heading-highlight">Adventure</span> Lovers
-            </h1>
-            <p className="trek-subheading">
-              Discover scenic forts, waterfall trails, jungle routes, and
-              bestselling hiking experiences near Pune, Mumbai, Nashik, and
-              Bhandardara.
-            </p>
+            <h1 className="trek-heading">{intro?.title || "Treks"}</h1>
+            {intro?.intro && <p className="trek-subheading" style={{ whiteSpace: "pre-line" }}>{intro.intro}</p>}
 
             {/* Stats Strip */}
             <div className="trek-stats-strip">
@@ -639,37 +618,17 @@ function Trek() {
           </div>
         )}
 
-        {/* ── SEO TEXT BLOCK ───────────────────────── */}
-        <section className="trek-seo-block" aria-label="About Maharashtra trekking">
-          <h2>Why Choose Gadvede Trekkers for Maharashtra Treks?</h2>
-          <p>
-            Gadvede Trekkers offers the best-curated trekking experiences across
-            Maharashtra — from the mighty <strong>Kalsubai Peak</strong> (highest
-            in Maharashtra) to the iconic <strong>Harihar Fort</strong> with its
-            near-vertical rock-cut steps. Whether you're planning a{" "}
-            <strong>one-day trek near Pune</strong>, a{" "}
-            <strong>monsoon waterfall trek near Mumbai</strong>, or an{" "}
-            <strong>overnight camping adventure</strong> in Bhandardara, we have
-            you covered with expert local guides, safe group batches, and
-            guaranteed departures.
-          </p>
-          <div className="trek-seo-tags">
-            {[
-              "Treks Near Pune",
-              "Treks Near Mumbai",
-              "Monsoon Treks Maharashtra",
-              "Weekend Treks 2025",
-              "Fort Treks Maharashtra",
-              "Waterfall Treks",
-              "One Day Treks",
-              "Overnight Camping",
-            ].map((tag) => (
-              <span className="trek-seo-tag" key={tag}>
-                {tag}
-              </span>
+        {/* ── TEXT BLOCK (Admin → Site Content → "Treks page intro" sections; hidden when empty) ── */}
+        {intro?.sections?.length > 0 && (
+          <section className="trek-seo-block" aria-label="About our treks">
+            {intro.sections.map((sec, i) => (
+              <div key={i}>
+                <h2>{sec.heading}</h2>
+                <p style={{ whiteSpace: "pre-line" }}>{sec.body}</p>
+              </div>
             ))}
-          </div>
-        </section>
+          </section>
+        )}
       </div>
     </section>
   );

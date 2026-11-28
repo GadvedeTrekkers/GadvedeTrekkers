@@ -1,257 +1,17 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
+import { syncProductsFromApi } from "../../api/getAll";
+import { findRentalEntry, rentalPath } from "../../utils/rentalLookup";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { realRating } from "../../utils/rating";
+import NotFound from "../NotFound";
+import { useSiteContent } from "../../config/siteContent";
 
 const RENTAL_PREVIEW_KEY = "gt_rental_preview";
 
-/* ─── Full catalogue (same as Rental.jsx — shared source of truth) ─── */
-const catalogue = [
-  {
-    id: "coleman-sundome-4p",
-    name: "Coleman Sundome 4 Person Tent",
-    category: "Tents",
-    location: "Pune & Mumbai",
-    deposit: 1500,
-    availability: "Available",
-    badge: "Most Rented",
-    pricePerDay: 350,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 350 },
-      { period: "7 Days",  rentPerDay: 200 },
-      { period: "15 Days", rentPerDay: 150 },
-      { period: "20 Days", rentPerDay: 120 },
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=900&q=80",
-      "https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?auto=format&fit=crop&w=900&q=80",
-      "https://images.unsplash.com/photo-1537905569824-f89f14cceb68?auto=format&fit=crop&w=900&q=80",
-      "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=900&q=80",
-    ],
-    description: "The Coleman Sundome 4 Person Tent is built with WeatherTec system — patented welded floors and inverted seams to keep water out. Features a large door for easy in-and-out access, two windows for ventilation, and a powerful center height of 4 feet 11 inches. Setup takes approximately 10 minutes.",
-    specifications: [
-      { label: "Capacity",       value: "4 Person" },
-      { label: "Dimensions",    value: "9 x 7 ft (2.7 x 2.1 m)" },
-      { label: "Center Height", value: "4 ft 11 in (1.5 m)" },
-      { label: "Weight",        value: "7.28 kg" },
-      { label: "Doors",         value: "1 large door" },
-      { label: "Windows",       value: "2 windows" },
-      { label: "Material",      value: "Polyester fly, polyethylene floor" },
-      { label: "Setup Time",    value: "~10 minutes" },
-      { label: "Season",        value: "3 Season" },
-      { label: "Packed Size",   value: "61 x 15 cm" },
-    ],
-  },
-  {
-    id: "2p-camping-tent",
-    name: "2 Person Camping Tent",
-    category: "Tents",
-    location: "Pune",
-    deposit: 800,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 199,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 199 },
-      { period: "7 Days",  rentPerDay: 120 },
-      { period: "15 Days", rentPerDay: 90  },
-      { period: "20 Days", rentPerDay: 75  },
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?auto=format&fit=crop&w=900&q=80",
-      "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=900&q=80",
-    ],
-    description: "Lightweight 2-person tent with easy setup. Ideal for couples and solo trekkers who want a comfortable night under the stars without carrying heavy gear.",
-    specifications: [
-      { label: "Capacity",    value: "2 Person" },
-      { label: "Dimensions",  value: "7 x 5 ft" },
-      { label: "Weight",      value: "2.8 kg" },
-      { label: "Material",    value: "190T polyester" },
-      { label: "Season",      value: "3 Season" },
-    ],
-  },
-  {
-    id: "event-shelter",
-    name: "Coleman Event Shelter UV & Water Protected",
-    category: "Tents",
-    location: "Pune & Mumbai",
-    deposit: 2000,
-    availability: "Available",
-    badge: "Group Pick",
-    pricePerDay: 3000,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 3000 },
-      { period: "7 Days",  rentPerDay: 714  },
-      { period: "15 Days", rentPerDay: 366  },
-      { period: "20 Days", rentPerDay: 300  },
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1537905569824-f89f14cceb68?auto=format&fit=crop&w=900&q=80",
-      "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=900&q=80",
-    ],
-    description: "Large event shelter with UV 50+ protection and water resistance. Perfect for group camping events, outdoor gatherings, and team-building activities.",
-    specifications: [
-      { label: "Size",         value: "3.6 x 3.6 m" },
-      { label: "UV Rating",   value: "UPF 50+" },
-      { label: "Material",    value: "Polyester 150D" },
-      { label: "Weight",      value: "18 kg" },
-      { label: "Capacity",    value: "Up to 20 people" },
-    ],
-  },
-  {
-    id: "sleeping-bag",
-    name: "Sleeping Bag — Mummy Style",
-    category: "Gear",
-    location: "Pune",
-    deposit: 500,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 149,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 149 },
-      { period: "7 Days",  rentPerDay: 90  },
-      { period: "15 Days", rentPerDay: 60  },
-      { period: "20 Days", rentPerDay: 45  },
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?auto=format&fit=crop&w=900&q=80",
-    ],
-    description: "Warm mummy-style sleeping bag rated to 5°C. Lightweight and compact for backpacking.",
-    specifications: [
-      { label: "Temperature Rating", value: "5°C comfort" },
-      { label: "Weight",             value: "1.2 kg" },
-      { label: "Material",           value: "Hollow fibre fill" },
-    ],
-  },
-  {
-    id: "rucksack-60l",
-    name: "Rucksack 60L",
-    category: "Gear",
-    location: "Pune",
-    deposit: 700,
-    availability: "Available",
-    badge: "Top Rated",
-    pricePerDay: 249,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 249 },
-      { period: "7 Days",  rentPerDay: 150 },
-      { period: "15 Days", rentPerDay: 100 },
-      { period: "20 Days", rentPerDay: 80  },
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=80",
-    ],
-    description: "Spacious 60L trekking rucksack with rain cover. Ergonomic back support for long hauls.",
-    specifications: [
-      { label: "Volume",    value: "60L" },
-      { label: "Weight",    value: "1.8 kg" },
-      { label: "Material",  value: "Ripstop nylon" },
-      { label: "Rain Cover", value: "Included" },
-    ],
-  },
-  {
-    id: "barbeque-grill",
-    name: "Prestige Barbeque Grill",
-    category: "Gear",
-    location: "Pune & Mumbai",
-    deposit: 600,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 500,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 500 },
-      { period: "7 Days",  rentPerDay: 92  },
-      { period: "15 Days", rentPerDay: 46  },
-      { period: "20 Days", rentPerDay: 37  },
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=900&q=80",
-    ],
-    description: "Portable charcoal barbeque grill — perfect for camping cookouts and bonfire nights.",
-    specifications: [
-      { label: "Type",     value: "Charcoal" },
-      { label: "Size",     value: "45 x 30 cm grill area" },
-      { label: "Weight",   value: "4.5 kg" },
-    ],
-  },
-  {
-    id: "shower-cubicle",
-    name: "2 Seconds Camping Shower Cubicle",
-    category: "Gear",
-    location: "Pune",
-    deposit: 400,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 500,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 500 },
-      { period: "7 Days",  rentPerDay: 100 },
-      { period: "15 Days", rentPerDay: 60  },
-      { period: "20 Days", rentPerDay: 50  },
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=900&q=80",
-    ],
-    description: "Instant pop-up shower cubicle / changing tent. Sets up in 2 seconds — perfect for multi-day camps.",
-    specifications: [
-      { label: "Setup Time",  value: "2 seconds" },
-      { label: "Height",      value: "190 cm" },
-      { label: "Floor",       value: "Waterproof base" },
-    ],
-  },
-  {
-    id: "hammock-chair",
-    name: "SkyFloat Foldable Hammock Chair",
-    category: "Gear",
-    location: "Pune & Mumbai",
-    deposit: 350,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 400,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 400 },
-      { period: "7 Days",  rentPerDay: 100 },
-      { period: "15 Days", rentPerDay: 60  },
-      { period: "20 Days", rentPerDay: 45  },
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1520454974749-611f78e3c949?auto=format&fit=crop&w=900&q=80",
-    ],
-    description: "Lightweight foldable hammock chair for relaxing at camp. Easy to hang between trees.",
-    specifications: [
-      { label: "Load Capacity", value: "120 kg" },
-      { label: "Weight",        value: "0.9 kg" },
-      { label: "Material",      value: "Parachute nylon" },
-    ],
-  },
-  {
-    id: "trekking-poles",
-    name: "Trekking Poles (Pair)",
-    category: "Gear",
-    location: "Pune",
-    deposit: 300,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 120,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 120 },
-      { period: "7 Days",  rentPerDay: 70  },
-      { period: "15 Days", rentPerDay: 50  },
-      { period: "20 Days", rentPerDay: 40  },
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=900&q=80",
-    ],
-    description: "Adjustable aluminium trekking poles with anti-shock mechanism. A must for rocky trails.",
-    specifications: [
-      { label: "Material",       value: "Aluminium 7075" },
-      { label: "Weight",         value: "280g per pole" },
-      { label: "Adjustable",     value: "58–135 cm" },
-      { label: "Anti-shock",     value: "Yes" },
-    ],
-  },
-];
+/* Rentals are resolved from route state, the preview, or the published items synced from the API;
+   there is no hard-coded catalogue here any more. */
 
 const rentalRules = [
   "You will be asked to provide a government-issued photo ID and address proof before or at the time of delivery.",
@@ -264,6 +24,7 @@ const rentalRules = [
 ];
 
 export default function RentalDetails() {
+  const trustBadges = useSiteContent("site.trustBadges")?.items || []; // Admin → Site Content (t129u)
   const { id } = useParams();
   const location = useLocation();
 
@@ -277,11 +38,29 @@ export default function RentalDetails() {
       })()
     : null;
 
+  /* A shared link has no router state and an empty cache, so the page loads the published rentals and villas itself
+     (same sync the list pages use) and finds the record by id or slug. */
+  const [synced, setSynced] = useState(false);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (id === "preview") return undefined;
+    let cancelled = false;
+    Promise.allSettled([
+      syncProductsFromApi("rental", "gt_rentals"),
+      syncProductsFromApi("villa", "gt_villas"),
+    ]).finally(() => { if (!cancelled) { setSynced(true); setTick((t) => t + 1); } });
+    return () => { cancelled = true; };
+  }, [id]);
+
   const adminItem =
     id !== "preview"
-      ? getAdminItems("gt_rentals")
-          .map(normaliseItem)
-          .find((entry) => entry.id === id)
+      ? (() => {
+          const found = findRentalEntry(id, {
+            rentals: getAdminItems("gt_rentals"),
+            villas: getAdminItems("gt_villas"),
+          });
+          return found ? normaliseItem(found) : null;
+        })()
       : null;
 
   /* resolve item — from route state or catalogue lookup */
@@ -289,7 +68,7 @@ export default function RentalDetails() {
     previewItem ||
     location.state?.item ||
     adminItem ||
-    catalogue.find((c) => c.id === id);
+    null;
   const rating = realRating(item);
 
   const [activeImage, setActiveImage] = useState(0);
@@ -303,22 +82,19 @@ export default function RentalDetails() {
   }, [id]);
 
   if (!item) {
+    if (id !== "preview" && !synced) {
+      return <div className="container py-5 text-center text-muted" data-testid="product-loading">Loading…</div>;
+    }
     return (
-      <div style={{ textAlign: "center", padding: "80px 20px" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🏕</div>
-        <h3 style={{ fontWeight: 700, color: "#111827", marginBottom: 8 }}>Rental item not found</h3>
-        <Link to="/rentals" style={{ background: "#059669", color: "#fff", padding: "10px 24px", borderRadius: 10, fontWeight: 700, textDecoration: "none" }}>
-          ← Back to Rentals
-        </Link>
-      </div>
+      <NotFound
+        title="We couldn’t find that rental"
+        message="This rental page is not available. Browse our rentals or message us on WhatsApp."
+      />
     );
   }
 
   const images = item.images || [item.image];
-  const relatedPool = [
-    ...catalogue,
-    ...getAdminItems("gt_rentals").map(normaliseItem),
-  ];
+  const relatedPool = getAdminItems("gt_rentals").filter((r) => r.active !== false).map(normaliseItem);
   const youMayLike = relatedPool.filter((c) => c.id !== item.id).slice(0, 4);
 
   /* compute rental cost */
@@ -402,12 +178,7 @@ export default function RentalDetails() {
 
             {/* Trust badges */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
-              {[
-                { icon: "⚡", text: "Block in 2 minutes" },
-                { icon: "💳", text: "No payment required now" },
-                { icon: "🚚", text: "Pay on delivery available*" },
-                { icon: "↩️", text: "Easy cancellation policy" },
-              ].map((b) => (
+              {trustBadges.map((b) => (
                 <div key={b.text} style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "8px 12px", fontSize: "0.78rem", fontWeight: 600, color: "#065f46", display: "flex", alignItems: "center", gap: 6 }}>
                   <span>{b.icon}</span>{b.text}
                 </div>
@@ -605,7 +376,7 @@ export default function RentalDetails() {
                     ))}
                   </div>
                   <Link
-                    to={`/rentals/${rel.id}`}
+                    to={rentalPath(rel)}
                     state={{ item: rel }}
                     style={{ display: "block", background: "#059669", color: "#fff", textAlign: "center", padding: "7px", borderRadius: 8, fontWeight: 700, fontSize: "0.8rem", textDecoration: "none" }}
                   >

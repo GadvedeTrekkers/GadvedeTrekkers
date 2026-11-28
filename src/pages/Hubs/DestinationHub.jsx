@@ -7,6 +7,8 @@ import { DESTINATION_HUBS, hubBySlug, hubIsIndexable, hubTrips } from "../../../
 import { CONTACT, telHref, whatsappHref } from "../../config/contact";
 import { handleImageError } from "../../utils/imageFallback";
 import "./DestinationHub.css";
+import { upcomingLabel } from "../../utils/upcomingDate";
+import { useSiteData } from "../../config/siteContent";
 
 const fmtPrice = (n) => `₹${Number(n).toLocaleString("en-IN")}`;
 const fmtDate = (d) => {
@@ -29,6 +31,7 @@ function loadProducts() {
 }
 
 export default function DestinationHub({ slug }) {
+  useSiteData(); // re-render when the admin-managed contact details arrive
   const hub = hubBySlug(slug);
   const [products, setProducts] = useState(null);
   const [failed, setFailed] = useState(false);
@@ -153,7 +156,7 @@ export default function DestinationHub({ slug }) {
                       {t.fromPrice ? (
                         <span className="hub-price">{fmtPrice(t.fromPrice)} <small>{t.priceCity || "onwards"}</small></span>
                       ) : <span />}
-                      {t.nextDate && <span className="hub-next">Next: {fmtDate(t.nextDate)}</span>}
+                      {upcomingLabel(t.nextDate) && <span className="hub-next">Next: {fmtDate(t.nextDate)}</span>}
                     </div>
                     <Link to={t.path} className="hub-btn">View trip</Link>
                   </div>

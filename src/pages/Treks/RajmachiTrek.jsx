@@ -212,7 +212,6 @@ export default function RajmachiTrek() {
               { icon: "⏱", label: "1 Night 2 Days" },
               { icon: "🏔", label: "2,710 ft (825m)" },
               { icon: "⚡", label: "Easy–Medium" },
-              { icon: "⭐", label: "4.5 (15,000+ trekkers)" },
               { icon: "💰", label: "From ₹1,499" },
             ].map(s => (
               <div className="td-stat" key={s.label}>

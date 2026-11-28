@@ -179,7 +179,6 @@ export default function SandhanValley() {
               { icon: "⏱", label: "2 Nights 2 Days" },
               { icon: "🏔", label: "200 ft Canyon" },
               { icon: "⚡", label: "Moderate–Difficult" },
-              { icon: "⭐", label: "4.8 (Every Saturday)" },
               { icon: "💰", label: "From ₹2,699" },
             ].map(s => (
               <div className="td-stat" key={s.label}>
