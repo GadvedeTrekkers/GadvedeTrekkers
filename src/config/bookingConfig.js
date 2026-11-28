@@ -1,5 +1,6 @@
 import { OFFICIAL_WHATSAPP_NUMBER, waSendUrl, waUrl } from "./whatsappSetting.js";
 import { withWhatsappUtm } from "./whatsappTrip.js";
+import { upcomingLabel } from "../utils/upcomingDate.js";
 /* ═══════════════════════════════════════════════════════════════
    BOOKING MODE CONFIGURATION
    ═══════════════════════════════════════════════════════════════
@@ -61,7 +62,8 @@ function formatFees(value) {
 export function buildBookingWhatsAppUrl(trek, selectedDate = null) {
   const name = trek?.name || trek?.shortName || "Trek";
   const kind = bookingKindLabel(trek);
-  const date = selectedDate || trek?.nextDate || trek?.date || "";
+  // A date the visitor picked is used as-is; a stored "next" date is dropped once it is in the past.
+  const date = selectedDate || upcomingLabel(trek?.nextDate || trek?.date || "");
   const city = trek?.departureCity || trek?.location || trek?.destination || "";
   const fees = formatFees(trek?.fees ?? trek?.price);
 
