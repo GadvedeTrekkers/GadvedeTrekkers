@@ -45,4 +45,9 @@ describe("app.js wiring", () => {
     expect((await b.json()).data).toEqual([]);
     expect((await fetch(`${srv.url}/api/blog/admin/posts`, { headers: h })).status).toBe(401);
   });
+  it("mounts /api/reports (admin only, read only)", async () => {
+    const h = { Origin: "https://www.gadvede.com" };
+    for (const p of ["/overview", "/trips", "/revenue"]) expect((await fetch(`${srv.url}/api/reports${p}`, { headers: h })).status, p).toBe(401);
+    expect((await fetch(`${srv.url}/api/reports/overview`, { method: "POST", headers: h })).status).toBe(401);
+  });
 });
