@@ -25,6 +25,7 @@ import createIntegrationsRouter from "./routes/integrations.routes.js";
 import createMcpRouter from "./routes/mcp.routes.js";
 import createAiRouter from "./routes/ai.routes.js";
 import createBlogRouter from "./routes/blog.routes.js";
+import createReportsRouter from "./routes/reports.routes.js";
 import supabasePublic   from "./config/supabasePublicClient.js";
 import supabaseAdmin    from "./config/supabaseAdminClient.js";
 
@@ -152,6 +153,7 @@ app.use("/api/social", createSocialRouter());       // public Instagram feed (ca
 app.use("/api/mcp", createMcpRouter());   // read-only MCP server for AI bots (OFF unless MCP_ENABLED=true; bearer MCP_API_TOKEN)
 app.use("/api/ai", createAiRouter());     // Gemini drafts for staff (AI_ENABLED off by default; drafts only, never sent)
 app.use("/api/blog", createBlogRouter()); // blog: public = published only; admin = drafts/publish/archive, no delete
+app.use("/api/reports", createReportsRouter()); // admin Reports: read only, Management/Admin roles, masked customer data
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, status: "ok" });
