@@ -6,42 +6,32 @@
  */
 
 import { parseJson, upcomingBatches } from "../../shared/tripData.js";
+import { CONTACT } from "../config/contact.js";
+import { getSiteContent, getSiteProfile } from "../config/siteContent.js";
 
 export const SITE_ORIGIN = "https://www.gadvede.com";
 export const SITE_NAME = "Gadvede Trekkers";
-export const PHONE_DISPLAY = "+91-9856112727";
-export const INSTAGRAM = "https://www.instagram.com/gadvede_trekkers/";
-export const SOCIAL_PROFILES = [
-  INSTAGRAM,
-  "https://www.youtube.com/@gadvedetrekkers",
-  "https://www.facebook.com/gadvedetrekkers",
-];
-export const ORG_ADDRESS = {
-  "@type": "PostalAddress",
-  addressLocality: "Pune",
-  addressRegion: "Maharashtra",
-  addressCountry: "IN",
-};
+/* t129u: phone, email, social links and city come from the admin (Profile Setup / WhatsApp setting) at runtime.
+   These are getters, so JSON-LD built later picks up the admin values; empty values are left out. */
+const nonEmpty = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => (Array.isArray(v) ? v.length : v)));
+export const getPhoneDisplay = () => `+91-${CONTACT.phones[0]}`;
+export const getSocialProfiles = () => Object.values(CONTACT.social).filter(Boolean);
+export function getOrgAddress() {
+  const a = getSiteProfile()?.address || {};
+  const addr = nonEmpty({ addressLocality: a.city || "", addressRegion: a.state || "", addressCountry: a.country || "" });
+  return Object.keys(addr).length ? { "@type": "PostalAddress", ...addr } : undefined;
+}
 
-export const HOME_TITLE = "Gadvede Trekkers | Maharashtra Treks from Pune & Mumbai";
-export const HOME_DESCRIPTION =
-  "Book Maharashtra treks from Pune and Mumbai with Gadvede Trekkers. Vasota, Harishchandragad, Kalsubai, and New Year beach camping from ₹1,400. WhatsApp booking.";
-
-export const TREKS_TITLE = "Maharashtra Treks | Gadvede Trekkers";
-export const TREKS_DESCRIPTION =
-  "Weekend treks from Pune and Mumbai: Vasota Fort, Harishchandragad, and Kalsubai Peak, plus New Year beach camping. From ₹1,400. Book on WhatsApp.";
-
-export const TRIPS_TITLE = "Open Trips | Gadvede Trekkers";
-export const TRIPS_DESCRIPTION =
-  "Four open Gadvede Trekkers trips from Pune and Mumbai: Vasota, Harishchandragad, Kalsubai, and New Year beach camping. From ₹1,400. Book on WhatsApp.";
-
-export const TOURS_TITLE = "Group Tours from Pune & Mumbai | Gadvede Trekkers";
-export const TOURS_DESCRIPTION =
-  "Fixed-departure group tours from Pune and Mumbai: Rajasthan, Manali Kullu Kasol, Malvan Tarkarli scuba, Hampi Gokarna and Amritsar Dalhousie.";
-
-export const CAMPING_TITLE = "Camping near Pune & Mumbai | Pawna, Alibaug | Gadvede";
-export const CAMPING_DESCRIPTION =
-  "Lake and beach camping near Pune and Mumbai: Pawna Lake from ₹1,099, Alibaug beach from ₹1,000, and New Year beach camping. BBQ, bonfire, meals.";
+/* t129u: page titles/descriptions come from Admin → Site Content → "Search titles & descriptions".
+   Not set → a plain "<Page> | <Company>" title and no description (no trip names or prices in code). */
+const SEO_LABELS = { home: "", treks: "Treks", trips: "Trips", tours: "Tours", camping: "Camping" };
+export function pageSeo(page) {
+  const seo = getSiteContent("site.seo") || {};
+  const company = CONTACT.companyName;
+  const label = SEO_LABELS[page] ?? "";
+  const fallbackTitle = page === "home" ? company : [label, company].filter(Boolean).join(" | ");
+  return { title: seo[`${page}Title`] || fallbackTitle || label, description: seo[`${page}Description`] || "" };
+}
 
 export const DEFAULT_OG = {
   path: "/trips/vasota.jpg",
@@ -78,36 +68,8 @@ export const TRIP_OG = {
   },
 };
 
-export const TRIP_SEO = {
-  "vasota-fort-trek": {
-    name: "Vasota Fort Trek",
-    location: "Koyna Wildlife Sanctuary, Satara",
-    duration: "2 days, 1 night",
-    lowPrice: 1800,
-    description:
-      "Vasota Fort trek in Koyna Wildlife Sanctuary, Satara. 2 days with a Bamnoli camp and boat. From ₹1,800 (Pune). Book on WhatsApp.",
-  },
-  "harishchandragad-trek": {
-    name: "Harishchandragad Trek",
-    location: "Pachnai, Ahmednagar",
-    duration: "1 night, 2 days",
-    lowPrice: 1399,
-  },
-  "kalsubai-peak-trek": {
-    name: "Kalsubai Peak Trek",
-    location: "Bari, Ahmednagar",
-    duration: "1 night",
-    lowPrice: 1099,
-  },
-  "new-year-beach-side-camping": {
-    name: "New Year Beach Side Camping",
-    location: "Konkan coast",
-    duration: "30 Dec night to 1 Jan",
-    lowPrice: 2800,
-    description:
-      "New Year beach camping on the Konkan coast, 30 Dec night to 1 Jan. Tent from ₹2,800 (Pune). Book on WhatsApp with Gadvede Trekkers.",
-  },
-};
+/* t129u: per-trip SEO comes from each product's own fields (admin); no built-in names, prices or descriptions. */
+export const TRIP_SEO = {};
 
 export const PUBLIC_SITEMAP_PATHS = [
   "/",
@@ -118,6 +80,16 @@ export const PUBLIC_SITEMAP_PATHS = [
   "/treks/kalsubai-peak-trek",
   "/treks/new-year-beach-side-camping",
 ];
+
+/** Head for unknown URLs and product slugs that are not in the catalogue: noindex, no canonical, no JSON-LD. */
+export const NOT_FOUND_SEO = {
+  title: `Page not found | ${SITE_NAME}`,
+  description: "This page could not be found. Browse Gadvede Trekkers treks, tours and camping, or message us on WhatsApp.",
+  canonical: null,
+  robots: "noindex, nofollow",
+  image: undefined,
+  jsonLd: null,
+};
 
 export function absoluteUrl(pathOrUrl = "/") {
   if (!pathOrUrl) return `${SITE_ORIGIN}/`;
@@ -219,23 +191,24 @@ export const organizationNode = {
   url: `${SITE_ORIGIN}/`,
   logo: `${SITE_ORIGIN}/gadvedelogo.png`,
   image: absoluteUrl(DEFAULT_OG.path),
-  description: HOME_DESCRIPTION,
-  telephone: PHONE_DISPLAY,
-  email: "info@gadvede.com",
-  address: ORG_ADDRESS,
-  contactPoint: {
-    "@type": "ContactPoint",
-    telephone: PHONE_DISPLAY,
-    contactType: "customer service",
-    areaServed: "IN",
-    availableLanguage: ["English", "Hindi", "Marathi"],
+  get description() { return pageSeo("home").description || undefined; },
+  get telephone() { return getPhoneDisplay(); },
+  get email() { return CONTACT.email || undefined; },
+  get address() { return getOrgAddress(); },
+  get contactPoint() {
+    return {
+      "@type": "ContactPoint",
+      telephone: getPhoneDisplay(),
+      contactType: "customer service",
+      areaServed: "IN",
+      availableLanguage: ["English", "Hindi", "Marathi"],
+    };
   },
-  sameAs: SOCIAL_PROFILES,
+  get sameAs() { const p = getSocialProfiles(); return p.length ? p : undefined; },
   areaServed: {
     "@type": "State",
     name: "Maharashtra",
   },
-  priceRange: "₹1400–₹3700",
 };
 
 export const homeJsonLd = {
@@ -320,8 +293,8 @@ const PROVIDER = {
   "@id": `${SITE_ORIGIN}/#organization`,
   name: SITE_NAME,
   url: `${SITE_ORIGIN}/`,
-  telephone: PHONE_DISPLAY,
-  address: ORG_ADDRESS,
+  get telephone() { return getPhoneDisplay(); },
+  get address() { return getOrgAddress(); },
 };
 
 /** Up to 6 absolute image URLs from media, gallery and cover (first one = cover). */
@@ -473,6 +446,8 @@ function seoTitle(seo, name) {
 
 export function buildTrekPageSeo({ slug = "", trek = null, pricing = null } = {}) {
   const preset = TRIP_SEO[slug] || null;
+  // Unknown slug (not in the catalogue and no built-in preset): never present it as a real trek.
+  if (!trek && !preset) return NOT_FOUND_SEO;
   const name = trek?.name || preset?.name || "Trek";
   const location = trek?.location || preset?.location || "Maharashtra";
   const duration = trek?.duration || preset?.duration || "";
@@ -541,6 +516,7 @@ export function buildTrekPageSeo({ slug = "", trek = null, pricing = null } = {}
 
 /** Tour (/tours/:slug) and camping (/camping/:slug) detail pages. */
 export function buildProductPageSeo({ section = "tours", slug = "", item = null } = {}) {
+  if (!item) return NOT_FOUND_SEO;
   const seo = productSeo(item);
   const sectionName = section === "camping" ? "Camping" : "Tours";
   const name = item?.name || slug.replace(/-/g, " ");

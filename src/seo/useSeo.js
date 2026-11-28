@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import {
-  HOME_DESCRIPTION,
-  HOME_TITLE,
+  pageSeo,
   SITE_ORIGIN,
   DEFAULT_OG,
   absoluteUrl,
@@ -11,8 +10,8 @@ import {
 const JSONLD_ID = "gadvede-jsonld";
 
 const DEFAULTS = {
-  title: HOME_TITLE,
-  description: HOME_DESCRIPTION,
+  get title() { return pageSeo("home").title; },
+  get description() { return pageSeo("home").description; },
   canonical: `${SITE_ORIGIN}/`,
   image: absoluteUrl(DEFAULT_OG.path),
   imageWidth: DEFAULT_OG.width,
@@ -39,6 +38,11 @@ function upsertMeta(attr, key, content) {
 
 function upsertCanonical(href) {
   let el = document.head.querySelector('link[rel="canonical"]');
+  if (!href) {
+    // No canonical (for example the 404 page): drop it rather than point at a wrong URL.
+    el?.remove();
+    return;
+  }
   if (!el) {
     el = document.createElement("link");
     el.rel = "canonical";
@@ -79,6 +83,7 @@ function applyHead(seo) {
   upsertMeta("name", "twitter:image:alt", seo.imageAlt);
   upsertCanonical(seo.canonical);
   if (seo.jsonLd) writeJsonLd(seo.jsonLd);
+  else if (/noindex/i.test(seo.robots || "")) document.getElementById(JSONLD_ID)?.remove(); // no structured data on noindex pages (404)
 }
 
 /**
