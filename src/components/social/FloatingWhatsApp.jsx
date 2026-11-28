@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react"
 import { useLocation } from "react-router-dom";
 import { getWhatsappTrip, subscribeWhatsappTrip, tripChatUrl } from "../../config/whatsappTrip";
 import "./FloatingWhatsApp.css";
+import { formatWhatsappDisplay, getWhatsappNumber } from "../../config/whatsappSetting";
 
 /** Pages that never show the button (staff areas and the printable ticket). App.jsx already hides it on /admin. */
 const HIDDEN_PREFIXES = ["/admin", "/employee", "/leader-training", "/ticket", "/qa/"];
@@ -113,7 +114,7 @@ function FloatingWhatsAppButton({ trip, offset }) {
           <a className="gt-wa-send" href={href} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} {...trackAttrs}>
             <WhatsAppIcon size={18} /> Open WhatsApp
           </a>
-          <div className="gt-wa-note">We reply on +91 98561 12727</div>
+          <div className="gt-wa-note">We reply on {formatWhatsappDisplay(getWhatsappNumber())}</div>
         </div>
       )}
       <button type="button" className="gt-wa-fab" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls={open ? panelId : undefined}

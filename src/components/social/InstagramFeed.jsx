@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "../../analytics/tracking";
 import "./InstagramFeed.css";
+import { CONTACT } from "../../config/contact";
 
 /**
  * "From our Instagram" — latest posts and reels of @gadvede_trekkers.
@@ -10,7 +11,7 @@ import "./InstagramFeed.css";
  * instagram_post_click { media_type, position, placement, page_path } and instagram_follow_click { placement, page_path }.
  */
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
-const PROFILE_URL = "https://www.instagram.com/gadvede_trekkers/";
+const PROFILE_URL = () => CONTACT.social.instagram; // Admin → Profile Setup (t129u)
 const MIN_ITEMS = 3;
 const TYPE_LABEL = { reel: "Reel", video: "Video", carousel: "Album", image: "Photo" };
 
@@ -19,7 +20,7 @@ function loadInstagramFeed(fetchImpl = globalThis.fetch) {
   if (!API_BASE || !fetchImpl) return Promise.resolve({ items: [] });
   feedPromise ||= fetchImpl(`${API_BASE}/api/social/instagram/feed`)
     .then((r) => (r.ok ? r.json() : null))
-    .then((j) => ({ items: Array.isArray(j?.data?.items) ? j.data.items : [], profileUrl: j?.data?.profileUrl || PROFILE_URL }))
+    .then((j) => ({ items: Array.isArray(j?.data?.items) ? j.data.items : [], profileUrl: j?.data?.profileUrl || PROFILE_URL() }))
     .catch(() => ({ items: [] }));
   return feedPromise;
 }
@@ -60,7 +61,7 @@ export default function InstagramFeed({ placement = "home", limit = 8, title = "
 
   const items = (feed?.items || []).filter((it) => !broken.has(it.permalink)).slice(0, limit);
   const visible = items.length >= Math.min(MIN_ITEMS, limit);
-  const profileUrl = feed?.profileUrl || PROFILE_URL;
+  const profileUrl = feed?.profileUrl || PROFILE_URL();
 
   // Before loading: an empty, zero-height anchor for the observer. After: the section, or nothing at all.
   if (!visible) return <div ref={ref} className="ig-feed-sentinel" aria-hidden="true" />;
@@ -73,11 +74,11 @@ export default function InstagramFeed({ placement = "home", limit = 8, title = "
             <h2 className="ig-feed-title" id={`ig-feed-title-${placement}`}>{title}</h2>
             {subtitle && <p className="ig-feed-sub">{subtitle}</p>}
           </div>
-          <a className="ig-follow" href={profileUrl} target="_blank" rel="noopener noreferrer"
+          {profileUrl ? <a className="ig-follow" href={profileUrl} target="_blank" rel="noopener noreferrer"
             onClick={() => trackEvent("instagram_follow_click", { placement, page_path: window.location.pathname })}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4ZM17.3 5.5a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4ZM12 2c-2.7 0-3 0-4.1.1-1 0-1.8.2-2.4.5-.7.3-1.2.6-1.8 1.2S2.9 5 2.6 5.6c-.3.6-.5 1.4-.5 2.4C2 9 2 9.3 2 12s0 3 .1 4.1c0 1 .2 1.8.5 2.4.3.7.6 1.2 1.2 1.8s1.1.9 1.8 1.2c.6.3 1.4.5 2.4.5 1.1.1 1.4.1 4.1.1s3 0 4.1-.1c1 0 1.8-.2 2.4-.5.7-.3 1.2-.6 1.8-1.2s.9-1.1 1.2-1.8c.3-.6.5-1.4.5-2.4.1-1.1.1-1.4.1-4.1s0-3-.1-4.1c0-1-.2-1.8-.5-2.4-.3-.7-.6-1.2-1.2-1.8S19 2.9 18.4 2.6c-.6-.3-1.4-.5-2.4-.5C15 2 14.7 2 12 2Zm0 1.8c2.7 0 3 0 4 .1.9 0 1.5.2 1.8.3.5.2.8.4 1.1.7.3.3.6.7.7 1.1.1.3.3.9.3 1.8.1 1 .1 1.3.1 4s0 3-.1 4c0 .9-.2 1.5-.3 1.8-.2.5-.4.8-.7 1.1-.3.3-.7.6-1.1.7-.3.1-.9.3-1.8.3-1 .1-1.3.1-4 .1s-3 0-4-.1c-.9 0-1.5-.2-1.8-.3-.5-.2-.8-.4-1.1-.7-.3-.3-.6-.7-.7-1.1-.1-.3-.3-.9-.3-1.8-.1-1-.1-1.3-.1-4s0-3 .1-4c0-.9.2-1.5.3-1.8.2-.5.4-.8.7-1.1.3-.3.7-.6 1.1-.7.3-.1.9-.3 1.8-.3 1-.1 1.3-.1 4-.1Z" /></svg>
-            Follow @gadvede_trekkers
-          </a>
+            Follow on Instagram
+          </a> : null}
         </div>
         <ul className="ig-grid">
           {items.map((it, i) => (

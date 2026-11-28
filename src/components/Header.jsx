@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import logo from "../assets/gadvedelogo.png";
+import logo from "../assets/gadvedelogo-256.png";
 import { CONTACT, telHref, whatsappHref } from "../config/contact";
+import { useSiteData } from "../config/siteContent";
+import { getAdminItems } from "../data/adminStorage";
+import { syncProductsFromApi } from "../api/getAll";
 
 function Header() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -9,14 +12,19 @@ function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const headerRef = useRef(null);
   const rentalCategories = ["Tents"];
-  const featuredTours = [
-    { label: "Goa", to: "/tours/goa-backpacking" },
-    { label: "Malvan Tarkarli", to: "/tours/malvan-tarkarli-with-scuba-diving-and-watersports" },
-    { label: "Hampi", to: "/tours/hampi-tour" },
-    { label: "Hampi Gokarna Murudeshwar", to: "/tours/hampi-gokarna-murudeshwar" },
-    { label: "Gokarna Murudeshwar", to: "/tours/gokarna-honnavar-murudeshwar" },
-    { label: "Amritsar Dharamshala Dalhousie", to: "/tours/amritsar-dharamshala-dalhousie-khajjiar" },
-  ];
+  const { profile } = useSiteData(); // logo + company name from Admin → Profile Setup (re-renders when it loads)
+  const [toursTick, setToursTick] = useState(0);
+  // Tours menu = published tours from the catalogue (Admin → Tours), not a hand-written list.
+  const featuredTours = getAdminItems("gt_tours")
+    .filter((t) => t.active !== false && (t.slug || t.name))
+    .sort((x, y) => Number(x.sortOrder ?? 999) - Number(y.sortOrder ?? 999))
+    .slice(0, 8)
+    .map((t) => ({ label: t.shortName || t.name, to: `/tours/${t.slug || String(t.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}` }));
+  void toursTick;
+
+  useEffect(() => {
+    syncProductsFromApi("tour", "gt_tours").then(() => setToursTick((n) => n + 1)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     function handlePointerDown(event) {
@@ -95,7 +103,7 @@ function Header() {
           ))}
           <span aria-hidden="true" style={{ opacity: 0.6 }}>·</span>
           <a
-            href={whatsappHref("Hi Gadvede Trekkers! I'd like more details.")}
+            href={whatsappHref("Hi! I'd like more details.")}
             target="_blank"
             rel="noopener noreferrer"
             className="text-white text-decoration-none"
@@ -123,8 +131,8 @@ function Header() {
           style={{ minWidth: 0, transition: "all 0.3s ease" }}
         >
           <img
-            src={logo}
-            alt="Gadvede Trekkers Logo"
+            src={profile?.logoUrl || logo}
+            alt={`${CONTACT.companyName || "Site"} logo`}
             style={{ 
               height: isScrolled ? "clamp(24px, 4vw, 32px)" : "clamp(32px, 6vw, 56px)", 
               marginRight: isScrolled ? "6px" : "10px", 
@@ -138,7 +146,7 @@ function Header() {
             fontWeight: 800,
             transition: "all 0.3s ease"
           }}>
-            Gadvede Trekkers
+            {CONTACT.companyName}
           </span>
         </Link>
 
@@ -210,12 +218,14 @@ function Header() {
                     🗺 Tours
                   </Link>
                 </li>
-                <li><hr className="dropdown-divider" /></li>
+                {featuredTours.length > 0 && <li><hr className="dropdown-divider" /></li>}
+                {featuredTours.length > 0 && (
                 <li>
                   <span className="dropdown-item-text fw-semibold text-success">
                     Featured Tours
                   </span>
                 </li>
+                )}
                 {featuredTours.map((tour) => (
                   <li key={tour.to}>
                     <Link className="dropdown-item" to={tour.to} onClick={closeMenus}>
