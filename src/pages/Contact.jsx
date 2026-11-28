@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CONTACT, telHref, whatsappHref } from "../config/contact";
 import { enquiryService } from "../services/enquiry.service";
+import { trackEvent } from "../analytics/tracking";
+import { useSeo } from "../seo/useSeo";
+import { SITE_ORIGIN } from "../seo/publicSeo";
+import PaidRegisterLink from "../components/PaidRegisterLink";
+import { useSiteData } from "../config/siteContent";
 
 const INTERESTS = ["Trek", "Tour", "Camping", "Corporate Outing", "Industrial Visit", "Rentals", "Other"];
 
@@ -9,6 +14,13 @@ const BRAND = "#198754";
 const BRAND_DARK = "#146c43";
 
 function Contact() {
+  useSiteData(); // re-render when the admin-managed contact details arrive
+  useSeo({
+    // Name, number and email come from Admin → Profile Setup / WhatsApp setting (t129u).
+    title: [`Contact${CONTACT.companyName ? ` ${CONTACT.companyName}` : " us"}`, `Call or WhatsApp ${CONTACT.phones[0]}`].join(" | "),
+    description: [`Call or WhatsApp +91 ${CONTACT.phones[0]}`, CONTACT.email ? `or email ${CONTACT.email}` : ""].filter(Boolean).join(" ") + ".",
+    canonical: `${SITE_ORIGIN}/contact`,
+  });
   const [form, setForm] = useState({ name: "", phone: "", email: "", interest: "Trek", message: "" });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -16,7 +28,6 @@ function Contact() {
   const [waMessage, setWaMessage] = useState("");
 
   useEffect(() => {
-    document.title = "Contact Us | Gadvede Trekkers";
     window.scrollTo({ top: 0, behavior: "auto" });
   }, []);
 
@@ -58,6 +69,7 @@ function Contact() {
 
     setWaMessage(message);
     setSubmitted(true);
+    trackEvent("enquiry_submit", { form_name: "contact", item_name: form.interest });
     setSubmitting(true);
     try {
       await enquiryService.create({
@@ -113,7 +125,7 @@ function Contact() {
             Treks · Tours · Camping · Corporate
           </span>
           <h1 className="fw-bold mb-2" style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>
-            Contact Gadvede Trekkers
+            Contact {CONTACT.companyName || "us"}
           </h1>
           <p className="mb-4" style={{ maxWidth: 640, color: "rgba(255,255,255,0.88)", lineHeight: 1.6 }}>
             Questions about a trek, tour, camping trip or a corporate outing? Call us, drop a WhatsApp message,
@@ -128,7 +140,7 @@ function Contact() {
               📞 Call {CONTACT.phones[0]}
             </a>
             <a
-              href={whatsappHref("Hi Gadvede Trekkers! I'd like more details.")}
+              href={whatsappHref("Hi! I'd like more details.")}
               target="_blank"
               rel="noopener noreferrer"
               className="btn fw-bold"
@@ -163,7 +175,7 @@ function Contact() {
                 <div>
                   <h2 className="gt-contact-title">WhatsApp</h2>
                   <a
-                    href={whatsappHref("Hi Gadvede Trekkers! I'd like more details.")}
+                    href={whatsappHref("Hi! I'd like more details.")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="gt-contact-link d-block"
@@ -174,6 +186,9 @@ function Contact() {
                 </div>
               </div>
 
+              <PaidRegisterLink />
+
+              {CONTACT.email && (
               <div className="gt-contact-card">
                 <div className="gt-contact-icon">✉️</div>
                 <div>
@@ -181,13 +196,12 @@ function Contact() {
                   <a href={`mailto:${CONTACT.email}`} className="gt-contact-link d-block">
                     {CONTACT.email}
                   </a>
-                  <a href={`mailto:${CONTACT.supportEmail}`} className="gt-contact-link d-block">
-                    {CONTACT.supportEmail}
-                  </a>
                   <p className="gt-contact-meta">For bookings, cancellations and invoices.</p>
                 </div>
               </div>
+              )}
 
+              {CONTACT.addressLines.length > 0 && (
               <div className="gt-contact-card">
                 <div className="gt-contact-icon">📍</div>
                 <div>
@@ -196,11 +210,11 @@ function Contact() {
                     {CONTACT.addressLines.join(", ")}
                   </p>
                   <p className="gt-contact-meta">
-                    Looking for refund rules? See our <Link to="/cancellation-policy">Cancellation Policy</Link> or{" "}
-                    <Link to="/faq">FAQ</Link>.
+                    Looking for refund rules? See our <Link to="/cancellation-policy">Cancellation Policy</Link>.
                   </p>
                 </div>
               </div>
+              )}
             </div>
           </div>
 

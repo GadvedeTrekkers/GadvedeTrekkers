@@ -1,16 +1,12 @@
 /**
- * Public trip allowlist for Gadvede Trekkers.
- * Home, /treks, and /trips render only these slugs, whether the row is
- * stored as a trek or as camping. Sample cards never substitute.
+ * Public trip listing rules for Gadvede Trekkers (t129u: no hard-coded trip list).
+ * Home, /treks and /trips show every catalogue product that Admin has switched ON (active), in the
+ * admin's sort order. Nothing is added or removed in code: switch a trip OFF in Admin to hide it.
+ * Duplicate URLs that permanently redirect elsewhere (shared/seoRedirects.js) are not listed twice.
  */
+import { SEO_REDIRECTS } from "./seoRedirects.js";
 
-export const PUBLIC_TRIP_SLUGS = [
-  "vasota-fort-trek",
-  "harishchandragad-trek",
-  "kalsubai-peak-trek",
-  "new-year-beach-side-camping",
-];
-
+/** Bundled photos used ONLY when a product row has no image of its own (files in /public/trips). */
 export const PUBLIC_TRIP_PHOTOS = {
   "vasota-fort-trek": "/trips/vasota.jpg",
   "harishchandragad-trek": "/trips/harishchandragad.jpg",
@@ -18,11 +14,7 @@ export const PUBLIC_TRIP_PHOTOS = {
   "new-year-beach-side-camping": "/trips/nye-beach.jpg",
 };
 
-const SLUG_SET = new Set(PUBLIC_TRIP_SLUGS);
-
-export function isPublicTripSlug(slug) {
-  return SLUG_SET.has(String(slug || ""));
-}
+const REDIRECTED_SLUGS = new Set(Object.keys(SEO_REDIRECTS).map((p) => p.split("/").pop()));
 
 export function publicTripPhoto(slug) {
   return PUBLIC_TRIP_PHOTOS[String(slug || "")] || "";
@@ -36,26 +28,25 @@ export function publicTripImage(item = {}) {
 
 export function tripDetailPath(item = {}) {
   const slug = item.slug || "";
-  if (isPublicTripSlug(slug)) return `/treks/${slug}`;
   const type = String(item.productType || item.product_type || "").toLowerCase();
   if (type === "camping") return `/camping/${slug}`;
   if (type === "tour") return `/tours/${slug}`;
   return `/treks/${slug}`;
 }
 
+/** Admin sort order first (sortOrder, lower first), then name. */
 export function sortPublicTrips(items = []) {
-  return [...items].sort(
-    (a, b) => PUBLIC_TRIP_SLUGS.indexOf(a.slug) - PUBLIC_TRIP_SLUGS.indexOf(b.slug)
-  );
+  return [...items].sort((a, b) =>
+    (Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999)) || String(a.name || "").localeCompare(String(b.name || "")));
 }
 
-/** Keep the four public trips, de-duplicated, in catalog order. */
+/** Active catalogue products, de-duplicated by slug, without redirected duplicate URLs, in admin order. */
 export function selectPublicTrips(items = []) {
   const bySlug = new Map();
   for (const item of items) {
     if (!item || item.active === false) continue;
     const slug = item.slug || "";
-    if (!isPublicTripSlug(slug) || bySlug.has(slug)) continue;
+    if (!slug || REDIRECTED_SLUGS.has(slug) || bySlug.has(slug)) continue;
     bySlug.set(slug, { ...item, slug, image: publicTripImage(item) });
   }
   return sortPublicTrips([...bySlug.values()]);

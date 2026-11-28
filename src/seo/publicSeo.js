@@ -5,30 +5,33 @@
  * WebSite JSON-LD deliberately omits SearchAction.
  */
 
+import { parseJson, upcomingBatches } from "../../shared/tripData.js";
+import { CONTACT } from "../config/contact.js";
+import { getSiteContent, getSiteProfile } from "../config/siteContent.js";
+
 export const SITE_ORIGIN = "https://www.gadvede.com";
 export const SITE_NAME = "Gadvede Trekkers";
-export const PHONE_DISPLAY = "+91-9856112727";
-export const INSTAGRAM = "https://www.instagram.com/gadvede_trekkers/";
+/* t129u: phone, email, social links and city come from the admin (Profile Setup / WhatsApp setting) at runtime.
+   These are getters, so JSON-LD built later picks up the admin values; empty values are left out. */
+const nonEmpty = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => (Array.isArray(v) ? v.length : v)));
+export const getPhoneDisplay = () => `+91-${CONTACT.phones[0]}`;
+export const getSocialProfiles = () => Object.values(CONTACT.social).filter(Boolean);
+export function getOrgAddress() {
+  const a = getSiteProfile()?.address || {};
+  const addr = nonEmpty({ addressLocality: a.city || "", addressRegion: a.state || "", addressCountry: a.country || "" });
+  return Object.keys(addr).length ? { "@type": "PostalAddress", ...addr } : undefined;
+}
 
-export const HOME_TITLE = "Gadvede Trekkers | Maharashtra Treks from Pune & Mumbai";
-export const HOME_DESCRIPTION =
-  "Book Maharashtra treks from Pune and Mumbai with Gadvede Trekkers. Vasota, Harishchandragad, Kalsubai, and New Year beach camping from ₹1,400. WhatsApp booking.";
-
-export const TREKS_TITLE = "Maharashtra Treks | Gadvede Trekkers";
-export const TREKS_DESCRIPTION =
-  "Weekend treks from Pune and Mumbai: Vasota Fort, Harishchandragad, and Kalsubai Peak, plus New Year beach camping. From ₹1,400. Book on WhatsApp.";
-
-export const TRIPS_TITLE = "Open Trips | Gadvede Trekkers";
-export const TRIPS_DESCRIPTION =
-  "Four open Gadvede Trekkers trips from Pune and Mumbai: Vasota, Harishchandragad, Kalsubai, and New Year beach camping. From ₹1,400. Book on WhatsApp.";
-
-export const TOURS_TITLE = "Group Tours from Pune & Mumbai | Gadvede Trekkers";
-export const TOURS_DESCRIPTION =
-  "Fixed-departure group tours from Pune and Mumbai: Rajasthan, Manali Kullu Kasol, Malvan Tarkarli scuba, Hampi Gokarna and Amritsar Dalhousie.";
-
-export const CAMPING_TITLE = "Camping near Pune & Mumbai | Pawna, Alibaug | Gadvede";
-export const CAMPING_DESCRIPTION =
-  "Lake and beach camping near Pune and Mumbai: Pawna Lake from ₹1,099, Alibaug beach from ₹1,000, and New Year beach camping. BBQ, bonfire, meals.";
+/* t129u: page titles/descriptions come from Admin → Site Content → "Search titles & descriptions".
+   Not set → a plain "<Page> | <Company>" title and no description (no trip names or prices in code). */
+const SEO_LABELS = { home: "", treks: "Treks", trips: "Trips", tours: "Tours", camping: "Camping" };
+export function pageSeo(page) {
+  const seo = getSiteContent("site.seo") || {};
+  const company = CONTACT.companyName;
+  const label = SEO_LABELS[page] ?? "";
+  const fallbackTitle = page === "home" ? company : [label, company].filter(Boolean).join(" | ");
+  return { title: seo[`${page}Title`] || fallbackTitle || label, description: seo[`${page}Description`] || "" };
+}
 
 export const DEFAULT_OG = {
   path: "/trips/vasota.jpg",
@@ -65,36 +68,8 @@ export const TRIP_OG = {
   },
 };
 
-export const TRIP_SEO = {
-  "vasota-fort-trek": {
-    name: "Vasota Fort Trek",
-    location: "Koyna Wildlife Sanctuary, Satara",
-    duration: "2 days, 1 night",
-    lowPrice: 1800,
-    description:
-      "Vasota Fort trek in Koyna Wildlife Sanctuary, Satara. 2 days with a Bamnoli camp and boat. From ₹1,800 (Pune). Book on WhatsApp.",
-  },
-  "harishchandragad-trek": {
-    name: "Harishchandragad Trek",
-    location: "Pachnai, Ahmednagar",
-    duration: "1 night, 2 days",
-    lowPrice: 1399,
-  },
-  "kalsubai-peak-trek": {
-    name: "Kalsubai Peak Trek",
-    location: "Bari, Ahmednagar",
-    duration: "1 night",
-    lowPrice: 1099,
-  },
-  "new-year-beach-side-camping": {
-    name: "New Year Beach Side Camping",
-    location: "Konkan coast",
-    duration: "30 Dec night to 1 Jan",
-    lowPrice: 2800,
-    description:
-      "New Year beach camping on the Konkan coast, 30 Dec night to 1 Jan. Tent from ₹2,800 (Pune). Book on WhatsApp with Gadvede Trekkers.",
-  },
-};
+/* t129u: per-trip SEO comes from each product's own fields (admin); no built-in names, prices or descriptions. */
+export const TRIP_SEO = {};
 
 export const PUBLIC_SITEMAP_PATHS = [
   "/",
@@ -105,6 +80,16 @@ export const PUBLIC_SITEMAP_PATHS = [
   "/treks/kalsubai-peak-trek",
   "/treks/new-year-beach-side-camping",
 ];
+
+/** Head for unknown URLs and product slugs that are not in the catalogue: noindex, no canonical, no JSON-LD. */
+export const NOT_FOUND_SEO = {
+  title: `Page not found | ${SITE_NAME}`,
+  description: "This page could not be found. Browse Gadvede Trekkers treks, tours and camping, or message us on WhatsApp.",
+  canonical: null,
+  robots: "noindex, nofollow",
+  image: undefined,
+  jsonLd: null,
+};
 
 export function absoluteUrl(pathOrUrl = "/") {
   if (!pathOrUrl) return `${SITE_ORIGIN}/`;
@@ -138,16 +123,6 @@ function asNumber(value) {
   return NaN;
 }
 
-function parseJson(value, fallback) {
-  if (value == null || value === "") return fallback;
-  if (typeof value !== "string") return value;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
-}
-
 /** Departure-plan fees first. The card price is used only when no plan fee is set. */
 export function offerPrices(trek, pricing) {
   const planPrices = [];
@@ -175,32 +150,37 @@ export function offerPrices(trek, pricing) {
   return planPrices;
 }
 
-export function offerAvailability(trek) {
-  const batches = parseJson(trek?.trekDateBatches, []);
-  if (!Array.isArray(batches) || batches.length === 0) {
-    return "https://schema.org/InStock";
-  }
-  const today = new Date().toISOString().slice(0, 10);
-  const open = batches.some(
-    (batch) =>
-      batch?.date &&
-      batch.date >= today &&
-      batch.status !== "CANCELLED" &&
-      batch.status !== "CLOSED"
-  );
-  return open ? "https://schema.org/InStock" : "https://schema.org/SoldOut";
+/** InStock when there are no dated batches (open on request) or at least one upcoming batch. */
+export function offerAvailability(item) {
+  const batches = parseJson(item?.trekDateBatches ?? item?.tourDateBatches, []);
+  if (!Array.isArray(batches) || batches.length === 0) return "https://schema.org/InStock";
+  return upcomingBatches(item).length ? "https://schema.org/InStock" : "https://schema.org/SoldOut";
 }
 
-/** Only when the product record already has both a rating and a review count. */
-export function aggregateRating(trek) {
-  const ratingValue = asNumber(trek?.rating);
-  const reviewCount = asNumber(trek?.reviews ?? trek?.reviewCount ?? trek?.review_count);
-  if (!(ratingValue > 0) || ratingValue > 5 || !(reviewCount > 0)) return null;
+/**
+ * AggregateRating ONLY from real review records stored on the product
+ * (reviewList / testimonials / userReviews: [{ rating, ... }]).
+ * The bare `rating` / `reviews` numbers on a product are not review records, so they are never used.
+ */
+export function aggregateRating(item) {
+  const lists = [item?.reviewList, item?.testimonials, item?.userReviews, item?.customerReviews];
+  const ratings = [];
+  for (const list of lists) {
+    const arr = parseJson(list, []);
+    if (!Array.isArray(arr)) continue;
+    for (const r of arr) {
+      const v = asNumber(r?.rating ?? r?.stars);
+      if (v > 0 && v <= 5) ratings.push(v);
+    }
+  }
+  if (!ratings.length) return null;
+  const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
   return {
     "@type": "AggregateRating",
-    ratingValue,
-    reviewCount,
+    ratingValue: Math.round(avg * 10) / 10,
+    reviewCount: ratings.length,
     bestRating: 5,
+    worstRating: 1,
   };
 }
 
@@ -211,20 +191,24 @@ export const organizationNode = {
   url: `${SITE_ORIGIN}/`,
   logo: `${SITE_ORIGIN}/gadvedelogo.png`,
   image: absoluteUrl(DEFAULT_OG.path),
-  description: HOME_DESCRIPTION,
-  telephone: PHONE_DISPLAY,
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Pune",
-    addressRegion: "Maharashtra",
-    addressCountry: "IN",
+  get description() { return pageSeo("home").description || undefined; },
+  get telephone() { return getPhoneDisplay(); },
+  get email() { return CONTACT.email || undefined; },
+  get address() { return getOrgAddress(); },
+  get contactPoint() {
+    return {
+      "@type": "ContactPoint",
+      telephone: getPhoneDisplay(),
+      contactType: "customer service",
+      areaServed: "IN",
+      availableLanguage: ["English", "Hindi", "Marathi"],
+    };
   },
-  sameAs: [INSTAGRAM],
+  get sameAs() { const p = getSocialProfiles(); return p.length ? p : undefined; },
   areaServed: {
     "@type": "State",
     name: "Maharashtra",
   },
-  priceRange: "₹1400–₹3700",
 };
 
 export const homeJsonLd = {
@@ -304,12 +288,166 @@ export function faqPageNode(faqs) {
   };
 }
 
+const PROVIDER = {
+  "@type": "TravelAgency",
+  "@id": `${SITE_ORIGIN}/#organization`,
+  name: SITE_NAME,
+  url: `${SITE_ORIGIN}/`,
+  get telephone() { return getPhoneDisplay(); },
+  get address() { return getOrgAddress(); },
+};
+
+/** Up to 6 absolute image URLs from media, gallery and cover (first one = cover). */
+function tripImages(item, fallbackUrl) {
+  const urls = [];
+  const add = (u) => {
+    const v = typeof u === "string" ? u.trim() : "";
+    if (!v || v.startsWith("data:")) return;
+    const abs = absoluteUrl(v);
+    if (!urls.includes(abs)) urls.push(abs);
+  };
+  add(item?.image);
+  const media = parseJson(item?.media, []);
+  if (Array.isArray(media)) media.forEach((m) => (!m?.kind || m.kind === "image") && add(m?.url));
+  const gallery = parseJson(item?.imageGallery, []);
+  if (Array.isArray(gallery)) gallery.forEach((g) => add(typeof g === "string" ? g : g?.url));
+  if (!urls.length && fallbackUrl) add(fallbackUrl);
+  return urls.slice(0, 6);
+}
+
+const stripUrls = (t) =>
+  String(t || "")
+    .replace(/\(\s*https?:\/\/[^)]*\)/g, "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\s+([;,.:])/g, "$1")
+    .trim();
+
+/**
+ * Itinerary rows are "City|Day 1|09:00 PM|Text" or "Day 1|09:00 PM|Text" (one per line).
+ * Uses the first departure city only, so the list reads as one journey.
+ */
+function tripItinerary(item) {
+  let raw = item?.itinerary;
+  if (!raw) {
+    const plans = parseJson(item?.departurePlans, null);
+    const first = plans && typeof plans === "object" ? Object.values(plans).find((p) => p?.itinerary) : null;
+    raw = first?.itinerary || "";
+  }
+  if (Array.isArray(raw)) {
+    raw = raw
+      .map((d) => [d?.day || d?.title || "", d?.time || "", d?.description || d?.details || d?.activity || ""].join("|"))
+      .join("\n");
+  }
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  let city = null;
+  const steps = [];
+  for (const line of raw.split("\n")) {
+    const parts = line.split("|").map((x) => x.trim());
+    if (parts.length < 2) continue;
+    if (!/^day\b/i.test(parts[0]) && parts.length >= 3) {
+      if (city === null) city = parts[0];
+      if (parts[0] !== city) continue;
+      parts.shift();
+    }
+    const [day, ...rest] = parts;
+    const time = rest.length > 1 && /\d{1,2}[:.]\d{2}|\b(am|pm)\b/i.test(rest[0]) ? rest.shift() : "";
+    const text = stripUrls(rest.join(" – "));
+    if (!text) continue;
+    steps.push({ name: [day, time].filter(Boolean).join(", "), description: text.slice(0, 300) });
+    if (steps.length >= 25) break;
+  }
+  if (!steps.length) return null;
+  return {
+    "@type": "ItemList",
+    numberOfItems: steps.length,
+    itemListElement: steps.map((st, i) => ({ "@type": "ListItem", position: i + 1, name: st.name, description: st.description })),
+  };
+}
+
+/**
+ * TouristTrip + Product node. Offers come only from real prices in the data
+ * (departure plans per city, batch prices, card price). Upcoming dates become
+ * dated Offers (Google does not allow trips/packages to be marked up as Events).
+ */
+function tripNode({ item, name, description, canonical, lowPrice, highPrice, touristType, fallbackImage }) {
+  const images = tripImages(item, fallbackImage);
+  const plans = parseJson(item?.departurePlans, null);
+  const availability = offerAvailability(item);
+  const offers = [];
+  if (plans && typeof plans === "object" && !Array.isArray(plans)) {
+    for (const [city, plan] of Object.entries(plans)) {
+      const price = asNumber(plan?.price);
+      if (price > 0) {
+        offers.push({
+          "@type": "Offer",
+          name: `${name} – ${city} departure`,
+          price,
+          priceCurrency: "INR",
+          availability,
+          url: canonical,
+          seller: { "@id": `${SITE_ORIGIN}/#organization` },
+        });
+      }
+    }
+  }
+  const upcoming = upcomingBatches(item).slice(0, 12);
+  for (const b of upcoming) {
+    const price = asNumber(b?.price) > 0 ? asNumber(b.price) : lowPrice;
+    if (!(price > 0)) continue;
+    const seatsLeft = asNumber(b?.seatsAvailable);
+    offers.push({
+      "@type": "Offer",
+      name: `${name} – departure ${b.date}${b.departureCity ? ` (${b.departureCity})` : ""}`,
+      price,
+      priceCurrency: "INR",
+      availability: seatsLeft === 0 && String(b.seatsAvailable).trim() !== "" ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+      validThrough: `${b.endDate || b.date}T23:59:59+05:30`,
+      url: canonical,
+      seller: { "@id": `${SITE_ORIGIN}/#organization` },
+    });
+  }
+  const hasPrice = lowPrice != null && lowPrice > 0;
+  const node = {
+    "@type": hasPrice ? ["TouristTrip", "Product"] : "TouristTrip",
+    "@id": `${canonical}#trip`,
+    name,
+    description,
+    ...(images.length ? { image: images } : {}),
+    url: canonical,
+    touristType,
+    provider: PROVIDER,
+  };
+  const itinerary = tripItinerary(item);
+  if (itinerary) node.itinerary = itinerary;
+  if (hasPrice) {
+    node.sku = item?.slug || canonical.split("/").pop();
+    node.brand = { "@type": "Brand", name: SITE_NAME };
+    if (item?.category) node.category = String(item.category);
+    node.offers = {
+      "@type": "AggregateOffer",
+      priceCurrency: "INR",
+      lowPrice,
+      highPrice: highPrice != null && highPrice >= lowPrice ? highPrice : lowPrice,
+      offerCount: Math.max(offers.length, 1),
+      availability,
+      url: canonical,
+      ...(offers.length ? { offers } : {}),
+    };
+  }
+  const rating = aggregateRating(item);
+  if (rating) node.aggregateRating = rating;
+  return node;
+}
+
 function seoTitle(seo, name) {
   return seo.title && seo.title.length <= 65 ? seo.title : trekTitle(name);
 }
 
 export function buildTrekPageSeo({ slug = "", trek = null, pricing = null } = {}) {
   const preset = TRIP_SEO[slug] || null;
+  // Unknown slug (not in the catalogue and no built-in preset): never present it as a real trek.
+  if (!trek && !preset) return NOT_FOUND_SEO;
   const name = trek?.name || preset?.name || "Trek";
   const location = trek?.location || preset?.location || "Maharashtra";
   const duration = trek?.duration || preset?.duration || "";
@@ -337,31 +475,17 @@ export function buildTrekPageSeo({ slug = "", trek = null, pricing = null } = {}
       .replace(/\.\./g, ".");
   const image = ogForSlug(slug);
   const canonical = absoluteUrl(seo.canonicalPath || `/treks/${slug}`);
-  const rating = aggregateRating(trek);
   const faq = faqPageNode(parseFaq(trek?.faq || trek?.faqs));
-  const trip = {
-    "@type": "TouristTrip",
+  const trip = tripNode({
+    item: { ...(trek || {}), slug },
     name,
     description,
-    image: image.url,
-    url: canonical,
+    canonical,
+    lowPrice,
+    highPrice,
     touristType: "Trekking group",
-    provider: {
-      "@type": "TravelAgency",
-      name: SITE_NAME,
-      url: `${SITE_ORIGIN}/`,
-      telephone: PHONE_DISPLAY,
-    },
-    offers: {
-      "@type": "AggregateOffer",
-      priceCurrency: "INR",
-      ...(lowPrice != null ? { lowPrice } : {}),
-      ...(highPrice != null && highPrice !== lowPrice ? { highPrice } : {}),
-      availability: offerAvailability(trek),
-      url: canonical,
-    },
-  };
-  if (rating) trip.aggregateRating = rating;
+    fallbackImage: image.url,
+  });
 
   return {
     title: seoTitle(seo, name),
@@ -392,6 +516,7 @@ export function buildTrekPageSeo({ slug = "", trek = null, pricing = null } = {}
 
 /** Tour (/tours/:slug) and camping (/camping/:slug) detail pages. */
 export function buildProductPageSeo({ section = "tours", slug = "", item = null } = {}) {
+  if (!item) return NOT_FOUND_SEO;
   const seo = productSeo(item);
   const sectionName = section === "camping" ? "Camping" : "Tours";
   const name = item?.name || slug.replace(/-/g, " ");
@@ -420,28 +545,16 @@ export function buildProductPageSeo({ section = "tours", slug = "", item = null 
   const canonical = absoluteUrl(seo.canonicalPath || `/${section}/${slug}`);
   const imageUrl = item?.image ? absoluteUrl(item.image) : absoluteUrl(DEFAULT_OG.path);
   const faq = faqPageNode(parseFaq(item?.faq || item?.faqs));
-  const today = new Date().toISOString().slice(0, 10);
-  const batches = parseJson(item?.tourDateBatches || item?.trekDateBatches, []);
-  const hasUpcoming =
-    Array.isArray(batches) &&
-    batches.some((b) => b?.date && b.date >= today && b.status !== "CANCELLED" && b.status !== "CLOSED");
-  const trip = {
-    "@type": "TouristTrip",
+  const trip = tripNode({
+    item: { ...(item || {}), slug },
     name,
     description,
-    image: imageUrl,
-    url: canonical,
+    canonical,
+    lowPrice,
+    highPrice,
     touristType: section === "camping" ? "Camping group" : "Group tour",
-    provider: { "@type": "TravelAgency", name: SITE_NAME, url: `${SITE_ORIGIN}/`, telephone: PHONE_DISPLAY },
-    offers: {
-      "@type": "AggregateOffer",
-      priceCurrency: "INR",
-      ...(lowPrice != null ? { lowPrice } : {}),
-      ...(highPrice != null && highPrice !== lowPrice ? { highPrice } : {}),
-      ...(hasUpcoming ? { availability: "https://schema.org/InStock" } : {}),
-      url: canonical,
-    },
-  };
+    fallbackImage: imageUrl,
+  });
   return {
     title: seoTitle(seo, name),
     description,

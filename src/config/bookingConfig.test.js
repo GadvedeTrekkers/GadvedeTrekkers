@@ -24,3 +24,12 @@ test("share URL has no recipient and keeps emoji", () => {
   assert.ok(text.startsWith("Hi 👋  Join me on this trek!\n\n📍 Trek: Kalsubai\n📅 Date: 6 Dec 2026\n💰 Price: ₹1200\n\n👉 Book here: https://www.gadvede.com/treks/kalsubai?ref=AB12"));
   assert.ok(!text.includes("\uFFFD"));
 });
+
+test("shared trip link carries utm_source=whatsapp and keeps the referral code", () => {
+  const url = buildShareWhatsAppUrl({ name: "Kalsubai" }, "https://www.gadvede.com/treks/kalsubai?ref=AB12&utm_source=google");
+  const link = new URL(new URL(url).searchParams.get("text").match(/https:\/\/www\.gadvede\.com\S+/)[0]);
+  assert.equal(link.searchParams.get("ref"), "AB12");
+  assert.equal(link.searchParams.get("utm_source"), "whatsapp");
+  assert.equal(link.searchParams.get("utm_medium"), "share");
+  assert.equal(link.searchParams.get("utm_campaign"), "trip_share");
+});

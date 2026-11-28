@@ -1,4 +1,6 @@
 import { OFFICIAL_WHATSAPP_NUMBER, waSendUrl, waUrl } from "./whatsappSetting.js";
+import { withWhatsappUtm } from "./whatsappTrip.js";
+import { upcomingLabel } from "../utils/upcomingDate.js";
 /* ═══════════════════════════════════════════════════════════════
    BOOKING MODE CONFIGURATION
    ═══════════════════════════════════════════════════════════════
@@ -60,7 +62,8 @@ function formatFees(value) {
 export function buildBookingWhatsAppUrl(trek, selectedDate = null) {
   const name = trek?.name || trek?.shortName || "Trek";
   const kind = bookingKindLabel(trek);
-  const date = selectedDate || trek?.nextDate || trek?.date || "";
+  // A date the visitor picked is used as-is; a stored "next" date is dropped once it is in the past.
+  const date = selectedDate || upcomingLabel(trek?.nextDate || trek?.date || "");
   const city = trek?.departureCity || trek?.location || trek?.destination || "";
   const fees = formatFees(trek?.fees ?? trek?.price);
 
@@ -87,14 +90,16 @@ export function buildBookingWhatsAppUrl(trek, selectedDate = null) {
      📍 Trek: {trek_name}
      📅 Date: {selected_date}
      💰 Price: ₹{price}
-     👉 Book here: {referral_url}
+     👉 Book here: {referral_url}   (UTM-tagged: utm_source=whatsapp&utm_medium=share&utm_campaign=trip_share)
      Use my referral code for benefits.
    ─────────────────────────────────────────────────────────────── */
 export function buildShareWhatsAppUrl(trek, referralUrl, selectedDate = null) {
   const trekName = trek?.name || "Trek";
   const price    = trek?.price ? `₹${trek.price}` : "TBD";
   const date     = selectedDate || trek?.nextDate || "Flexible";
-  const url      = referralUrl || (typeof window !== "undefined" ? window.location.href : "https://www.gadvede.com");
+  // utm_source=whatsapp: visits from shared chats show up as WhatsApp in Analytics (the ?ref= code is kept).
+  const url      = withWhatsappUtm(referralUrl || (typeof window !== "undefined" ? window.location.href : "https://www.gadvede.com"),
+    { medium: "share", campaign: "trip_share" });
 
   const message = [
     "Hi 👋  Join me on this trek!",

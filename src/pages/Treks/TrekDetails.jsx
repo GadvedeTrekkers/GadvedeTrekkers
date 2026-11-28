@@ -1,11 +1,11 @@
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
-import { findTrekBySlug, slugifyTrekName } from "../../data/treks";
+import { slugifyTrekName } from "../../utils/slugify";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
-import { richTrekDetails, richTrekFor } from "../../data/richTrekDetails";
-import { FEATURED_TRIPS } from "../../data/featuredTrips";
+import { useSiteContent } from "../../config/siteContent";
 import { getTrekDates } from "../../data/trekDatesStorage";
 import BookingCTA from "../../components/BookingCTA";
+import PaidRegisterLink from "../../components/PaidRegisterLink";
 import { buildShareWhatsAppUrl } from "../../config/bookingConfig";
 import { productService } from "../../services/product.service";
 import { cleanDisplayText, isPromptLike, stripPromptFields } from "../../utils/contentSanitizer";
@@ -28,6 +28,12 @@ import {
   upcomingDepartures,
 } from "../../utils/tripDisplay";
 import { useSeo } from "../../seo/useSeo";
+import NotFound from "../NotFound";
+import { trackViewItem } from "../../analytics/tracking";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
+import InstagramFeed from "../../components/social/InstagramFeed";
+import { departureLabels, pickupLabels } from "../../config/whatsappTrip";
+import { realRating } from "../../utils/rating";
 import { buildTrekPageSeo, parseFaq, productSeo } from "../../seo/publicSeo";
 
 
@@ -176,6 +182,8 @@ function TrekDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [remoteTrek, setRemoteTrek] = useState(null);
+  // true once the live catalogue lookup has finished (so an unknown slug shows 404, not a flash while loading)
+  const [lookupDone, setLookupDone] = useState(false);
   const previewDraft =
     typeof window !== "undefined" ? sessionStorage.getItem("gt_trek_preview") : null;
   const previewItem = parseJsonValue(previewDraft, null);
@@ -192,14 +200,10 @@ function TrekDetails() {
 
   const adminTrek = adminMatch ? buildLocalTrek(adminMatch) : null;
   const previewTrek = previewItem && previewSlug === id ? buildLocalTrek(previewItem) : null;
-  const featuredBase = FEATURED_TRIPS.find((item) => item.slug === id);
-  const featuredTrek = featuredBase
-    ? buildLocalTrek({ ...featuredBase, originalPrice: 0, altitude: "", rating: 0, reviews: 0 })
-    : null;
-  const trek = previewTrek || remoteTrek || adminTrek || (id ? findTrekBySlug(id) : null) || featuredTrek;
-  const staticRichTrek =
-    richTrekFor({ name: trek?.name, slug: id || trek?.slug }) ||
-    (trek?.name ? richTrekDetails[trek.name] || null : null);
+  // t129u: the trek comes only from the catalogue (API / admin preview). No built-in trek data or copy.
+  const trek = previewTrek || remoteTrek || adminTrek;
+  const staticRichTrek = null;
+  const whyChoose = useSiteContent("site.whyChoose"); // Admin → Site Content → "Why choose us"
   const catalogItineraries = publicTrekItineraries(trek?.departurePlans, trek?.itinerary);
   const hasTimedItinerary = itineraryHasEvents(catalogItineraries);
   const hasCatalogCopy = Boolean(
@@ -233,7 +237,12 @@ function TrekDetails() {
 
   useEffect(() => {
     setRemoteTrek(null);
-    if (!id || previewSlug === id) return;
+    setLookupDone(false);
+    if (!id || previewSlug === id) {
+      setLookupDone(true);
+      return;
+    }
+    let cancelled = false;
 
     const syncLocal = () => {
       const latestLocal = getAdminItems("gt_treks").find((item) => slugifyTrekName(item.name || "") === id);
@@ -245,12 +254,18 @@ function TrekDetails() {
     productService
       .getBySlug(id)
       .then((item) => {
-        if (item) setRemoteTrek(buildLocalTrek(item));
+        if (!cancelled && item) setRemoteTrek(buildLocalTrek(item));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLookupDone(true);
+      });
 
     window.addEventListener("storage", syncLocal);
-    return () => window.removeEventListener("storage", syncLocal);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("storage", syncLocal);
+    };
   }, [id, previewSlug]);
   const referralCode = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -369,14 +384,24 @@ function TrekDetails() {
   const pageSeo = useMemo(() => {
     const cards = trek ? pricingCards(trek) : [];
     const cardPricing = Object.fromEntries(cards.map((card) => [card.key, { price: card.price }]));
-    const rated = remoteTrek || adminTrek || previewTrek;
     return buildTrekPageSeo({
       slug: id,
-      trek: rated ? trek : { ...(trek || {}), rating: undefined, reviews: undefined },
+      trek,
       pricing: { ...(staticRichTrek?.pricing || {}), ...cardPricing },
     });
-  }, [id, trek, staticRichTrek, remoteTrek, adminTrek, previewTrek]);
+  }, [id, trek, staticRichTrek]);
   useSeo(pageSeo);
+
+  const viewItemKey = trek ? `${id}|${trek.name || ""}` : "";
+  useEffect(() => {
+    if (!viewItemKey) return;
+    const prices = (pageSeo?.jsonLd?.["@graph"] || []).find((n) => n?.offers)?.offers;
+    trackViewItem({ slug: id, name: trek?.name, productType: "trek", price: prices?.lowPrice });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewItemKey]);
+  useWhatsappTrip(trek ? {
+    id, name: trek.name, type: "trek", dates: departureLabels(departures), pickups: pickupLabels(pickupGroups(trek.departurePlans)),
+  } : null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -423,9 +448,9 @@ function TrekDetails() {
                     { icon: "⏱", label: trek.duration },
                     { icon: "🏔", label: trek.altitude },
                     { icon: "⚡", label: trek.difficulty },
-                    { icon: "⭐", label: `${trek.rating} (${trek.reviews} reviews)` },
+                    { icon: "⭐", label: realRating(trek)?.label },
                     { icon: "💰", label: `From ₹${trek.price}` },
-                  ].map((stat) => (
+                  ].filter((stat) => stat.label).map((stat) => (
                     <div className="td-stat" key={stat.label}>
                       <span className="td-stat-icon">{stat.icon}</span>
                       <span>{stat.label}</span>
@@ -447,6 +472,7 @@ function TrekDetails() {
                     Choose a date and tap <strong>Book Now</strong> — it opens WhatsApp so we can confirm your spot.
                   </p>
                   <DepartureRows departures={departures} trek={trek} />
+                  <PaidRegisterLink slug={trek.slug || id} style={{ marginTop: 12 }} />
                 </div>
               </div>
             )}
@@ -472,10 +498,13 @@ function TrekDetails() {
               </div>
             </div>
           </>
+        ) : lookupDone ? (
+          <NotFound
+            title="We couldn’t find that trek"
+            message="This trek page is not available. Browse our current treks or message us on WhatsApp."
+          />
         ) : (
-          <div className="trek-details-basic container py-5">
-            <p className="text-center text-muted">Detailed itinerary coming soon for this trek.</p>
-          </div>
+          <div className="trek-details-basic container py-5 text-center text-muted" data-testid="product-loading">Loading…</div>
         )}
       </div>
     );
@@ -539,14 +568,22 @@ function TrekDetails() {
   const catalogPrices = pricingCards(trek);
   const pricing = catalogPrices.length ? catalogPrices : Object.values(staticRichTrek?.pricing || {});
   const heroCompare = genuineCompareAt(trek?.originalPrice, trek?.price, collectSellingPrices(trek));
-  const whyJoin = staticRichTrek?.whyJoin || [];
+  // Per-trek "Why join" (Admin → Treks → Why Join); otherwise the site-wide list (Admin → Site Content). t129u
+  const trekWhyJoin = (Array.isArray(trek?.whyJoin) ? trek.whyJoin : parseLineItems(trek?.whyJoin || ""))
+    .map((row) => {
+      if (row && typeof row === "object") return { icon: row.icon || "✓", title: row.title || "", desc: row.desc || "" };
+      const [a, b, c] = String(row).split("|").map((x) => x.trim());
+      return c !== undefined ? { icon: a || "✓", title: b, desc: c } : { icon: "✓", title: a, desc: b || "" };
+    })
+    .filter((row) => row.title);
+  const whyJoin = trekWhyJoin.length ? trekWhyJoin : (whyChoose?.items || []).map((it) => ({ icon: "✓", title: it.text, desc: "" }));
   const itineraries = hasTimedItinerary ? catalogItineraries : staticRichTrek?.itineraries || {};
   const itineraryKeys = Object.keys(itineraries);
   const itinerary =
     itineraryKeys.length > 0
       ? itineraries[activeItinerary] ?? itineraries[itineraryKeys[0]]
       : { note: "Itinerary will appear once route details are added.", days: [] };
-  const bookingSteps = staticRichTrek?.bookingSteps || [];
+  const bookingSteps = Array.isArray(trek?.bookingSteps) ? trek.bookingSteps : parseLineItems(trek?.bookingSteps || ""); // Admin → Treks → How to Book steps
   const listOr = (primary, secondary, titles, fallback) => {
     const first = asList(primary);
     if (first.length) return first;
@@ -577,7 +614,7 @@ function TrekDetails() {
         ? []
         : parseDiscountItems(trek?.discountCodes)
       : staticRichTrek?.discountCodes || [];
-  const heroKicker = staticRichTrek?.heroKicker || "🏔 Maharashtra Trek Experience";
+  const heroKicker = trek?.heroBadge || trek?.subtitle || "";
   const heroTagline = overview.tagline || overview.subtitle;
 
   return (
@@ -593,7 +630,7 @@ function TrekDetails() {
             ← Back
           </button>
           <TrekBreadcrumb name={trek.name} />
-          <span className="td-kicker">{heroKicker}</span>
+          {heroKicker && <span className="td-kicker">{heroKicker}</span>}
           <h1 className="td-heading">{pageH1}</h1>
           {heroTagline && <p className="td-subheading">{heroTagline}</p>}
           <div className="td-stats-bar">
@@ -602,9 +639,9 @@ function TrekDetails() {
               { icon: "⏱", label: trek.duration },
               { icon: "🏔", label: trek.altitude },
               { icon: "⚡", label: trek.difficulty },
-              { icon: "⭐", label: `${trek.rating} (${trek.reviews} reviews)` },
+              { icon: "⭐", label: realRating(trek)?.label },
               { icon: "💰", label: `From ₹${trek.price}` },
-            ].map((stat) => (
+            ].filter((stat) => stat.label).map((stat) => (
               <div className="td-stat" key={stat.label}>
                 <span className="td-stat-icon">{stat.icon}</span>
                 <span>{stat.label}</span>
@@ -712,6 +749,8 @@ function TrekDetails() {
                     <DepartureRows departures={departures} trek={trek} />
                   </div>
                 )}
+
+                <PaidRegisterLink slug={trek.slug || id} style={{ marginBottom: 16 }} />
 
                 {highlights.length > 0 && (
                 <div className="td-card td-highlights-card">
@@ -854,6 +893,7 @@ function TrekDetails() {
                 </ol>
                 <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <BookingCTA trek={trek} selectedDate={activeBookingDate} className="btn td-book-btn" />
+                  <PaidRegisterLink slug={trek.slug || id} style={{ flexBasis: "100%" }} />
                   <a
                     href={buildShareWhatsAppUrl(trek, referralUrl, activeBookingDate)}
                     target="_blank"
@@ -967,6 +1007,8 @@ function TrekDetails() {
           </div>
         )}
       </div>
+
+      <InstagramFeed placement="trip_page" limit={4} title="On our Instagram" subtitle="Photos and reels from recent batches." />
 
       {lightboxImg && (
         <div className="td-lightbox" onClick={() => setLightboxImg(null)}>

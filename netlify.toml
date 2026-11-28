@@ -11,11 +11,9 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# ── SPA fallback: all routes → index.html (React Router handles routing) ──
-[[redirects]]
-  from   = "/*"
-  to     = "/index.html"
-  status = 200
+# ── SPA routes: handled by public/_redirects (generated from shared/spaRoutes.js).
+# There is deliberately NO catch-all "/*" -> index.html here: unknown URLs must return a real 404
+# (public/404.html), not the home page with status 200.
 
 # ── Redirect bare domain → www ──
 [[redirects]]

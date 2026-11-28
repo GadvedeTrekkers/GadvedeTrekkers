@@ -1,5 +1,4 @@
 import ManagePage from "./ManagePage";
-import { rentalsList } from "../data/rentalsData";
 
 const RENTAL_PREVIEW_KEY = "gt_rental_preview";
 
@@ -35,7 +34,7 @@ export default function ManageRentals() {
       storageKey="gt_rentals"
       fields={FIELDS}
       defaultForm={DEFAULT}
-      seedData={rentalsList}
+      seedData={[] /* t129u: no built-in catalogue; items come only from the database */}
       onPreview={(form) => {
         const previewItem = {
           ...form,

@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
 import { createWhatsAppInquiryUrl, handleWhatsAppLead } from "../../utils/leadActions";
+import { realRating } from "../../utils/rating";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { getWhatsappNumber } from "../../config/whatsappSetting";
+import { upcomingLabel } from "../../utils/upcomingDate";
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -35,7 +37,7 @@ function BookNowButton({ item }) {
     name: item.name,
     price: item.price,
     location: item.location,
-    nextDate: item.nextDate,
+    nextDate: upcomingLabel(item.nextDate),
     productType: "heritage",
   });
 
@@ -52,7 +54,7 @@ function BookNowButton({ item }) {
           location: item.location,
           category: "Heritage Walk",
           source: "Heritage Listing",
-          preferredDate: item.nextDate,
+          preferredDate: upcomingLabel(item.nextDate),
           openWhatsApp: false,
         }).catch(() => {});
       }}
@@ -83,6 +85,7 @@ function BookNowButton({ item }) {
 function HeritageCard({ item }) {
   const pct    = discountPct(item.price, item.originalPrice);
   const saving = item.originalPrice - item.price;
+  const rating = realRating(item);
 
   return (
     <div
@@ -155,13 +158,13 @@ function HeritageCard({ item }) {
           📍 {item.location} &nbsp;·&nbsp; ⏱ {item.duration}
         </p>
 
-        {/* Rating */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-          <StarRating rating={item.rating} />
-          <span style={{ fontSize: 12, color: "#6b7280" }}>
-            {item.rating} ({item.reviews} reviews)
-          </span>
-        </div>
+        {/* Rating (only when the walk has real ratings) */}
+        {rating && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+            <StarRating rating={rating.value} />
+            <span style={{ fontSize: 12, color: "#6b7280" }}>{rating.label}</span>
+          </div>
+        )}
 
         {/* Pricing */}
         <div style={{ marginBottom: 8 }}>
@@ -179,10 +182,16 @@ function HeritageCard({ item }) {
           )}
         </div>
 
-        {/* Next date — urgency anchor */}
-        <div style={{ fontSize: "0.8rem", color: "#374151", marginBottom: 14 }}>
-          📅 <strong>Next batch:</strong> {item.nextDate}
-        </div>
+        {/* Next date: shown only while it is still in the future */}
+        {upcomingLabel(item.nextDate) ? (
+          <div style={{ fontSize: "0.8rem", color: "#374151", marginBottom: 14 }}>
+            📅 <strong>Next batch:</strong> {item.nextDate}
+          </div>
+        ) : (
+          <div style={{ fontSize: "0.8rem", color: "#374151", marginBottom: 14 }}>
+            📅 Dates on request. Message us on WhatsApp.
+          </div>
+        )}
 
         {/* ── CTAs ── */}
         <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -250,10 +259,6 @@ function HeritageCard({ item }) {
             Ask a Question
           </a>
 
-          {/* Micro-copy — reduces hesitation */}
-          <p style={{ margin: 0, textAlign: "center", fontSize: "0.7rem", color: "#9ca3af" }}>
-            ⚡ Instant confirmation · No advance payment
-          </p>
         </div>
       </div>
     </div>
@@ -266,151 +271,25 @@ function Heritage() {
   const location = useLocation();
   const selectedCategory = location.state?.category || null;
   const [, setSyncKey] = useState(0);
+  const [synced, setSynced] = useState(false);
 
   useEffect(() => {
     const syncLocal = () => setSyncKey((k) => k + 1);
 
     syncProductsFromApi("heritage", "gt_heritage")
       .then((items) => { if (items) setSyncKey((k) => k + 1); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setSynced(true));
 
     window.addEventListener("storage", syncLocal);
     return () => window.removeEventListener("storage", syncLocal);
   }, []);
 
-  const heritageData = {
-    city: [
-      {
-        name: "Shaniwar Wada Heritage Walk",
-        location: "Pune",
-        duration: "2-3 Hours",
-        type: "City",
-        price: 499,
-        originalPrice: 799,
-        nextDate: "20 Sept 2025",
-        rating: 4.8,
-        reviews: 120,
-        image: "https://images.unsplash.com/photo-1599661046827-dacff0c0f09c",
-      },
-      {
-        name: "Kasba Peth Walk",
-        location: "Pune",
-        duration: "2 Hours",
-        type: "City",
-        price: 399,
-        originalPrice: 699,
-        nextDate: "22 Sept 2025",
-        rating: 4.7,
-        reviews: 90,
-        image: "https://images.unsplash.com/photo-1581091215367-59ab6b2d6c2d",
-      },
-      {
-        name: "Tulshibaug Market Walk",
-        location: "Pune",
-        duration: "2 Hours",
-        type: "City",
-        price: 399,
-        originalPrice: 699,
-        nextDate: "25 Sept 2025",
-        rating: 4.6,
-        reviews: 75,
-        image: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1",
-      },
-    ],
-    forts: [
-      {
-        name: "Sinhagad Fort Walk",
-        location: "Pune",
-        duration: "Half Day",
-        type: "Fort",
-        price: 799,
-        originalPrice: 1199,
-        nextDate: "21 Sept 2025",
-        rating: 4.9,
-        reviews: 210,
-        image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
-      },
-      {
-        name: "Purandar Fort Walk",
-        location: "Pune",
-        duration: "1 Day",
-        type: "Fort",
-        price: 999,
-        originalPrice: 1399,
-        nextDate: "28 Sept 2025",
-        rating: 4.8,
-        reviews: 150,
-        image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
-      },
-      {
-        name: "Lohagad Fort Walk",
-        location: "Lonavala",
-        duration: "Half Day",
-        type: "Fort",
-        price: 699,
-        originalPrice: 999,
-        nextDate: "24 Sept 2025",
-        rating: 4.7,
-        reviews: 130,
-        image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff",
-      },
-    ],
-    temples: [
-      {
-        name: "Dagdusheth Ganpati Walk",
-        location: "Pune",
-        duration: "2 Hours",
-        type: "Temple",
-        price: 299,
-        originalPrice: 599,
-        nextDate: "19 Sept 2025",
-        rating: 4.9,
-        reviews: 300,
-        image: "https://images.unsplash.com/photo-1587474260584-136574528ed5",
-      },
-      {
-        name: "Parvati Hill Temple Walk",
-        location: "Pune",
-        duration: "2-3 Hours",
-        type: "Temple",
-        price: 399,
-        originalPrice: 699,
-        nextDate: "23 Sept 2025",
-        rating: 4.8,
-        reviews: 180,
-        image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
-      },
-      {
-        name: "Sarasbaug Walk",
-        location: "Pune",
-        duration: "2 Hours",
-        type: "Temple",
-        price: 299,
-        originalPrice: 599,
-        nextDate: "26 Sept 2025",
-        rating: 4.7,
-        reviews: 140,
-        image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
-      },
-    ],
-  };
-
-  /* Merge admin-created heritage walks, respecting Live/Off status */
-  const _adminHeritage = getAdminItems("gt_heritage");
-  const _adminByName   = new Map(_adminHeritage.map((w) => [(w.name || "").toLowerCase(), w]));
-
-  Object.keys(heritageData).forEach((cat) => {
-    heritageData[cat] = heritageData[cat].filter((w) => {
-      const adminItem = _adminByName.get((w.name || "").toLowerCase());
-      return !adminItem || adminItem.active !== false;
-    });
-  });
-
-  const _hardcodedNames = new Set(
-    Object.values(heritageData).flat().map((w) => (w.name || "").toLowerCase())
-  );
-  _adminHeritage
-    .filter((w) => w.active !== false && !_hardcodedNames.has((w.name || "").toLowerCase()))
+  /* Only walks that exist as published records (synced from the API into gt_heritage) are listed.
+     The old hard-coded walks, with their September 2025 dates and sample ratings, were removed. */
+  const heritageData = {};
+  getAdminItems("gt_heritage")
+    .filter((w) => w.active !== false)
     .forEach((w) => {
       const item = normaliseItem(w);
       const cat  = (item.type || "city").toLowerCase();
@@ -446,6 +325,18 @@ function Heritage() {
       <h2 className="fw-bold text-center mb-5 text-success">
         Pune Heritage Walks
       </h2>
+
+      {categories.length === 0 && synced && (
+        <div className="text-center text-muted py-5" data-testid="heritage-empty">
+          <p className="mb-2">No heritage walks are open for booking right now.</p>
+          <p>
+            Message us on WhatsApp and we’ll tell you about the next walk:{" "}
+            <a href={createWhatsAppInquiryUrl({ packageName: "Heritage walk", location: "Pune", category: "Heritage Walk" })} target="_blank" rel="noopener noreferrer">
+              WhatsApp us
+            </a>
+          </p>
+        </div>
+      )}
 
       {categories.map((category) => (
         <div key={category} ref={categoryRefs[category]} className="mb-5">

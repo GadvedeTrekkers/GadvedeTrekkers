@@ -57,7 +57,7 @@ SUPABASE_ANON_KEY=your_supabase_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
 
 # Admin Authentication
-ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 ADMIN_USERS=[{"username":"admin","password":"YOUR_SECURE_PASSWORD","name":"Admin","role":"Super Admin"}]
 JWT_SECRET=your_random_jwt_secret_minimum_32_characters
 
@@ -101,7 +101,7 @@ Publish Directory: dist
 VITE_API_BASE_URL=https://admin.gadvede.com
 
 # Admin API Key (Must match backend)
-VITE_ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+VITE_ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 
 # Supabase Credentials (Same as backend)
 VITE_SUPABASE_URL=https://your-project.supabase.co

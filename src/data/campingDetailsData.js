@@ -45,66 +45,15 @@ export const CAMPING_CARRY_OPTIONS = [
   "Toiletries",
 ];
 
-export function parseJsonValue(value, fallback) {
-  try {
-    return JSON.parse(value || JSON.stringify(fallback));
-  } catch {
-    return fallback;
-  }
-}
-
-export function parseLineItems(value = "") {
-  return String(value)
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-export function parsePipeItems(value = "") {
-  return parseLineItems(value).map((line) => {
-    const [title, detail] = line.split("|");
-    return {
-      title: String(title || "").trim(),
-      detail: String(detail || "").trim(),
-    };
-  });
-}
-
-export function parseFaqItems(value = "") {
-  return parseLineItems(value)
-    .map((line) => {
-      const [q, a] = line.split("|");
-      return { q: String(q || "").trim(), a: String(a || "").trim() };
-    })
-    .filter((item) => item.q && item.a);
-}
-
-export function parseOfferItems(value = "") {
-  return parseLineItems(value)
-    .map((line) => {
-      const [code, desc] = line.split("|");
-      return { code: String(code || "").trim(), desc: String(desc || "").trim() };
-    })
-    .filter((item) => item.code);
-}
-
-export function parseItineraryItems(value = "") {
-  return parseLineItems(value)
-    .map((line) => {
-      const [day, time, description] = line.split("|");
-      return {
-        day: String(day || "").trim(),
-        time: String(time || "").trim(),
-        description: String(description || "").trim(),
-      };
-    })
-    .filter((item) => item.day || item.time || item.description);
-}
-
-export function getPrimaryCampingImage(item = {}) {
-  const gallery = parseJsonValue(item.imageGallery, []);
-  return item.image || gallery[0] || "https://images.unsplash.com/photo-1504851149312-7a075b496cc7?auto=format&fit=crop&w=1200&q=80";
-}
+export {
+  getPrimaryCampingImage,
+  parseFaqItems,
+  parseItineraryItems,
+  parseJsonValue,
+  parseLineItems,
+  parseOfferItems,
+  parsePipeItems,
+} from "../utils/listingParsers";
 
 const GENERIC_POLICY = [
   "50% refund if notified 10 days before the event date.",

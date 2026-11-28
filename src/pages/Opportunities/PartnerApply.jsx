@@ -96,7 +96,7 @@ export default function PartnerApply() {
           <h1>Join Our Team</h1>
           <p>
             Join the Gadvede Trekkers community as a trek leader, guide, photographer, or
-            content creator. Share your passion for the outdoors with thousands of adventurers.
+            content creator. Share your passion for the outdoors with fellow adventurers.
           </p>
         </div>
 

@@ -1,5 +1,6 @@
 import { useRef } from "react";
-import logo from "../assets/gadvedelogo.png";
+import logo from "../assets/gadvedelogo-256.png";
+import { CONTACT } from "../config/contact";
 
 /* ─────────────────────────────────────────────
    Sub-components
@@ -306,14 +307,14 @@ export default function HistoricTicket({ booking }) {
           <div className="ht-org-badge">
             <img src={logo} alt="" className="ht-org-badge-logo" />
             <div>
-              <div className="ht-org-badge-name">Gadvede Trekkers</div>
+              <div className="ht-org-badge-name">{CONTACT.companyName}</div>
               <div className="ht-org-badge-sub">Authorized Organizer</div>
             </div>
           </div>
           <div className="ht-org-contact">
-            <div>📞 +91-XXXXXXXXXX</div>
+            <div>📞 +91 {CONTACT.phones[0]}</div>
             <div>🌐 www.gadvede.com</div>
-            <div>📧 info@gadvede.com</div>
+            {CONTACT.email ? <div>📧 {CONTACT.email}</div> : null}
           </div>
         </div>
 

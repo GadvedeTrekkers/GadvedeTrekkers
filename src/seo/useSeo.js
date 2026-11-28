@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import {
-  HOME_DESCRIPTION,
-  HOME_TITLE,
+  pageSeo,
   SITE_ORIGIN,
   DEFAULT_OG,
   absoluteUrl,
@@ -11,8 +10,8 @@ import {
 const JSONLD_ID = "gadvede-jsonld";
 
 const DEFAULTS = {
-  title: HOME_TITLE,
-  description: HOME_DESCRIPTION,
+  get title() { return pageSeo("home").title; },
+  get description() { return pageSeo("home").description; },
   canonical: `${SITE_ORIGIN}/`,
   image: absoluteUrl(DEFAULT_OG.path),
   imageWidth: DEFAULT_OG.width,
@@ -39,6 +38,11 @@ function upsertMeta(attr, key, content) {
 
 function upsertCanonical(href) {
   let el = document.head.querySelector('link[rel="canonical"]');
+  if (!href) {
+    // No canonical (for example the 404 page): drop it rather than point at a wrong URL.
+    el?.remove();
+    return;
+  }
   if (!el) {
     el = document.createElement("link");
     el.rel = "canonical";
@@ -61,7 +65,7 @@ function writeJsonLd(data) {
 function applyHead(seo) {
   document.title = seo.title;
   upsertMeta("name", "description", seo.description);
-  upsertMeta("name", "robots", "index, follow");
+  upsertMeta("name", "robots", seo.robots || "index, follow");
   upsertMeta("property", "og:title", seo.title);
   upsertMeta("property", "og:description", seo.description);
   upsertMeta("property", "og:url", seo.canonical);
@@ -79,6 +83,7 @@ function applyHead(seo) {
   upsertMeta("name", "twitter:image:alt", seo.imageAlt);
   upsertCanonical(seo.canonical);
   if (seo.jsonLd) writeJsonLd(seo.jsonLd);
+  else if (/noindex/i.test(seo.robots || "")) document.getElementById(JSONLD_ID)?.remove(); // no structured data on noindex pages (404)
 }
 
 /**
@@ -95,6 +100,7 @@ export function useSeo({
   imageAlt,
   type = "website",
   jsonLd,
+  robots = "index, follow",
 }) {
   const jsonLdText = jsonLd ? JSON.stringify(jsonLd) : "";
 
@@ -108,8 +114,9 @@ export function useSeo({
       imageHeight,
       imageAlt,
       type,
+      robots,
       jsonLd: jsonLdText ? JSON.parse(jsonLdText) : null,
     });
     return () => applyHead(DEFAULTS);
-  }, [title, description, canonical, image, imageWidth, imageHeight, imageAlt, type, jsonLdText]);
+  }, [title, description, canonical, image, imageWidth, imageHeight, imageAlt, type, robots, jsonLdText]);
 }

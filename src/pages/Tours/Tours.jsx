@@ -2,13 +2,14 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
-import { toursData as defaultToursData } from "../../data/toursData";
-import { parseJsonValue } from "../../data/manaliTourDetails";
+import { parseJsonValue } from "../../utils/listingParsers";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import BookingCTA from "../../components/BookingCTA";
 import { useSeo } from "../../seo/useSeo";
-import { TOURS_TITLE, TOURS_DESCRIPTION, SITE_ORIGIN, DEFAULT_OG, absoluteUrl, organizationNode } from "../../seo/publicSeo";
+import { pageSeo, SITE_ORIGIN, DEFAULT_OG, absoluteUrl, organizationNode } from "../../seo/publicSeo";
 import { FALLBACK_IMAGE, handleImageError } from "../../utils/imageFallback";
+import { upcomingLabel } from "../../utils/upcomingDate";
+import { useSiteData } from "../../config/siteContent";
 
 const REGION_ORDER = [
   "himachal",
@@ -41,25 +42,16 @@ const slugifyTourName = (value = "") =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-function dedupeTours(items = []) {
-  const bySlug = new Map();
-
-  items.forEach((tour) => {
-    const slug = slugifyTourName(tour.slug || tour.name || "");
-    if (!slug) return;
-    bySlug.set(slug, tour);
-  });
-
-  return Array.from(bySlug.values());
-}
-
 function Tours() {
   const location = useLocation();
   const selectedRegion = location.state?.region || null;
   const [, setSyncKey] = useState(0);
+  const [synced, setSynced] = useState(false); // catalogue sync finished (so "no tours" is not flashed while loading)
+  useSiteData(); // re-render when admin content (search titles, company name) arrives
+  const seoText = pageSeo("tours"); // Admin → Site Content → Search titles (t129u)
   useSeo({
-    title: TOURS_TITLE,
-    description: TOURS_DESCRIPTION,
+    title: seoText.title,
+    description: seoText.description,
     canonical: `${SITE_ORIGIN}/tours`,
     image: absoluteUrl(DEFAULT_OG.path),
     imageWidth: DEFAULT_OG.width,
@@ -69,7 +61,7 @@ function Tours() {
       "@context": "https://schema.org",
       "@graph": [
         organizationNode,
-        { "@type": "CollectionPage", name: TOURS_TITLE, url: `${SITE_ORIGIN}/tours`, description: TOURS_DESCRIPTION },
+        { "@type": "CollectionPage", name: seoText.title, url: `${SITE_ORIGIN}/tours`, description: seoText.description },
       ],
     },
   });
@@ -80,41 +72,26 @@ function Tours() {
 
     syncProductsFromApi("tour", "gt_tours")
       .then((items) => { if (items) setSyncKey((k) => k + 1); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setSynced(true));
 
     window.addEventListener("storage", syncLocal);
     return () => window.removeEventListener("storage", syncLocal);
   }, []);
 
-  // Admin-first: if gt_tours has any data, use ONLY active admin tours.
-  // Static defaultToursData is used as fallback only when admin storage is empty.
-  // This ensures Live/Off toggles in the admin panel are respected on the frontend.
-  const _adminTours = getAdminItems("gt_tours");
-
-  let displayTourData;
-
-  if (_adminTours.length > 0) {
-    // Build purely from admin — only active tours, sorted by sortOrder
-    const tourData = {};
-    _adminTours
-      .filter((tour) => tour.active !== false)
-      .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
-      .forEach((tour) => {
-        const item = normaliseItem(tour);
-        const gallery = parseJsonValue(item.imageGallery, [item.image]).filter(Boolean);
-        if (!tourData[item.region]) tourData[item.region] = [];
-        tourData[item.region].push({ ...item, image: gallery[0] || item.image });
-      });
-    displayTourData = tourData;
-  } else {
-    // Fallback: static seed data (no OFF-filtering needed — all are active by default)
-    const tourData = JSON.parse(JSON.stringify(defaultToursData));
-    delete tourData.southindia;
-    Object.keys(tourData).forEach((region) => {
-      tourData[region] = dedupeTours(tourData[region]);
+  // Only published tours synced from the API (gt_tours) are listed. The old static fallback list
+  // (Goa Backpacking and others, with past 2025 dates) was removed so nothing unpublished looks bookable.
+  // Live/Off toggles in the admin panel are respected.
+  const displayTourData = {};
+  getAdminItems("gt_tours")
+    .filter((tour) => tour.active !== false)
+    .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999))
+    .forEach((tour) => {
+      const item = normaliseItem(tour);
+      const gallery = parseJsonValue(item.imageGallery, [item.image]).filter(Boolean);
+      if (!displayTourData[item.region]) displayTourData[item.region] = [];
+      displayTourData[item.region].push({ ...item, image: gallery[0] || item.image });
     });
-    displayTourData = tourData;
-  }
 
   const regions = REGION_ORDER.filter(
     (region) => Array.isArray(displayTourData[region]) && displayTourData[region].length
@@ -152,6 +129,13 @@ function Tours() {
         Explore Tours by Region
       </h2>
 
+      {regions.length === 0 && synced && (
+        <div className="text-center text-muted py-5" data-testid="tours-empty">
+          <p className="mb-2">No group tours are open for booking right now.</p>
+          <p>Message us on WhatsApp and we’ll share the next departures.</p>
+        </div>
+      )}
+
       {regions.map((region) => (
         <div key={region} ref={regionRefs[region]} className="mb-5">
           <h4 className="fw-bold mb-4 text-success">
@@ -184,9 +168,11 @@ function Tours() {
                       <span className="fw-bold fs-5">₹{tour.price}</span>
                     </div>
 
-                    <div className="small mb-3">
-                      📅 <strong>Next:</strong> {tour.nextDate}
-                    </div>
+                    {upcomingLabel(tour.nextDate) && (
+                      <div className="small mb-3">
+                        📅 <strong>Next:</strong> {tour.nextDate}
+                      </div>
+                    )}
 
                     <div className="d-flex gap-2 flex-wrap">
                       <BookingCTA trek={tour} className="btn btn-success w-50" label="Book on WhatsApp" />

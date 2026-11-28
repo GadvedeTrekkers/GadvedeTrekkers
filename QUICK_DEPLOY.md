@@ -25,7 +25,7 @@ JWT_SECRET = [paste the secret from Step 1]
 ADMIN_USERS = [{"username":"admin","password":"YourNewStrongPassword","name":"Admin","role":"Super Admin"}]
 SUPABASE_URL = https://qgiqkxxwoyqffozgvbvi.supabase.co
 SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnaXFreHh3b3lxZmZvemd2YnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxOTEzODQsImV4cCI6MjA4NDc2NzM4NH0.LufpdVhrHr-yrrC-45AL-69s_YGBhm5qmzdcDGAPAio
-SUPABASE_SERVICE_ROLE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnaXFreHh3b3lxZmZvemd2YnZpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTE5MTM4NCwiZXhwIjoyMDg0NzY3Mzg0fQ.H0hsor0xBiOEFgmE8n3691A4DYcxNAePBDxpoB-ecss
+SUPABASE_SERVICE_ROLE_KEY = <set-in-render-dashboard-never-commit>
 CORS_ORIGIN = https://gadvede.com,https://www.gadvede.com
 NODE_ENV = production
 BACKEND_URL = https://gadvedetrekkers.onrender.com
@@ -91,7 +91,7 @@ Your `.env` files should **NEVER** be committed to Git. They contain secrets!
 - Production: Use strong random secrets (Step 1)
 
 ### 3. Admin Password
-Change `admin123` to something strong like: `Admin@Gadvede2024!`
+Change `<your-admin-password>` to something strong like: `Admin@Gadvede2024!`
 
 ---
 

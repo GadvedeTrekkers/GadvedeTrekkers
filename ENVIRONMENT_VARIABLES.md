@@ -18,7 +18,7 @@ SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
 # Admin Authentication
-ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 ADMIN_USERS=[{"username":"admin","password":"CHANGE_THIS_PASSWORD","name":"Admin","role":"Super Admin"}]
 JWT_SECRET=GENERATE_RANDOM_STRING_HERE
 
@@ -28,6 +28,17 @@ CORS_ORIGIN=http://localhost:5173,https://gadvede.com,https://www.gadvede.com,ht
 # Gmail Configuration
 GMAIL_USER=
 GMAIL_APP_PASSWORD=
+
+# AI drafts (Google Gemini). OFF unless AI_ENABLED=true. Drafts only — nothing is ever sent automatically.
+AI_ENABLED=false
+# Free key from https://aistudio.google.com/apikey (backend only — never a VITE_ variable). The Settings hub secret store wins when it exists.
+GEMINI_API_KEY=
+# Optional (defaults shown)
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_BLOG_MODEL=gemini-3.8-flash
+AI_DAILY_LIMIT=100
+AI_USER_DAILY_LIMIT=40
+AI_TIMEOUT_MS=25000
 ```
 
 ---
@@ -41,7 +52,7 @@ Copy these to your Render frontend service:
 VITE_API_BASE_URL=https://your-backend-name.onrender.com
 
 # Admin API Key (Must match backend)
-VITE_ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+VITE_ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 
 # Supabase Credentials (Same as backend)
 VITE_SUPABASE_URL=

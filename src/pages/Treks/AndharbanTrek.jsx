@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { findTrekBySlug } from "../../data/treks";
 import BookingCTA from "../../components/BookingCTA";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
 
 const HERO_IMG = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1600&q=80";
 
@@ -142,7 +143,10 @@ const routeInfo = [
   { icon: "⚡", label: "Difficulty",        value: "Medium" },
 ];
 
+const WHATSAPP_TRIP = { id: "andharban-trek-2025", name: "Andharban Trek", type: "trek" };
+
 export default function AndharbanTrek() {
+  useWhatsappTrip(WHATSAPP_TRIP);
   const trek = findTrekBySlug("andharban-jungle-trek");
   const [activeTab, setActiveTab]   = useState("overview");
   const [lightboxImg, setLightboxImg] = useState(null);
@@ -163,7 +167,6 @@ export default function AndharbanTrek() {
               { icon: "⏱", label: "1 Night 1 Day" },
               { icon: "🏔", label: "659m (2160 ft)" },
               { icon: "⚡", label: "Medium" },
-              { icon: "⭐", label: "4.7 (20,000+ trekkers)" },
               { icon: "💰", label: "From ₹1,699" },
             ].map(s => (
               <div className="td-stat" key={s.label}>

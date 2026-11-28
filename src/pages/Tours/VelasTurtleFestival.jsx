@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
 import { waUrl } from "../../config/whatsappSetting";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
 
 const gallery = [
   "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=900&q=80",
@@ -222,7 +223,10 @@ function Section({ title, children, dark }) {
   );
 }
 
+const WHATSAPP_TRIP = { id: "velas-turtle-festival-2026", name: "Velas Turtle Festival", type: "tour" };
+
 export default function VelasTurtleFestival() {
+  useWhatsappTrip(WHATSAPP_TRIP);
   const [mainImg, setMainImg]           = useState(gallery[0]);
   const [openFaq, setOpenFaq]           = useState(null);
   const [transport, setTransport]       = useState("without");
@@ -274,7 +278,7 @@ export default function VelasTurtleFestival() {
               <div style={{ color: "#fff", fontWeight: 900, fontSize: "2rem" }}>₹2,599<span style={{ fontSize: "1rem", fontWeight: 400 }}>/person</span></div>
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {["✅ Best Price Guaranteed", "🔒 Secure & Easy Booking", "😊 1000+ Happy Customers"].map(b => (
+              {["✅ Best Price Guaranteed", "🔒 Secure & Easy Booking"].map(b => (
                 <span key={b} style={{ background: "rgba(255,255,255,0.12)", color: "#fff", borderRadius: 20, padding: "5px 14px", fontSize: "0.78rem", fontWeight: 600 }}>{b}</span>
               ))}
             </div>

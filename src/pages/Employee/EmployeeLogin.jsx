@@ -162,18 +162,16 @@ function SignInView({ onBack }) {
   const [error,    setError]     = useState("");
   const [loading,  setLoading]   = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    setTimeout(() => {
-      const result = employeeLogin(username.trim(), password.trim());
-      setLoading(false);
-      if (!result.ok) { setError(result.error); return; }
-      setEmployeeSession(result.cred);
-      const params = new URLSearchParams(location.search);
-      navigate(params.get("next") || "/employee/dashboard");
-    }, 400);
+    const result = await employeeLogin(username.trim(), password.trim());
+    setLoading(false);
+    if (!result.ok) { setError(result.error); return; }
+    setEmployeeSession(result.cred);
+    const params = new URLSearchParams(location.search);
+    navigate(params.get("next") || "/employee/dashboard");
   };
 
   return (

@@ -19,6 +19,9 @@ import {
 } from "../utils/leadActions";
 import { canAssignEnquiries } from "../utils/roleHelpers";
 import { waSendUrl } from "../config/whatsappSetting";
+import { LEAD_SOURCES, leadSourceOf } from "../../shared/leadSources.js";
+import AiReplyModal from "./ai/AiReplyModal";
+import { isWebsiteEnquiry } from "./ai/aiChannels";
 
 const STATUS_COLUMNS = [
   { key: ENQUIRY_STATUS.NEW_LEAD, label: "New Lead", color: "#d97706", bg: "#fff7ed" },
@@ -29,6 +32,20 @@ const STATUS_COLUMNS = [
 ];
 
 const HIGH_INTENT_TAG = "High Intent";
+
+/** Where the lead came from: Website / Instagram DM / WhatsApp (enquiries.source, migration 021). */
+function SourceBadge({ item }) {
+  const src = LEAD_SOURCES[leadSourceOf(item)];
+  const handle = item.sourceHandle && leadSourceOf(item) === "instagram_dm" ? ` ${item.sourceHandle}` : "";
+  return (
+    <span
+      title={`Source: ${src.label}${handle}`}
+      style={{ display: "inline-block", background: src.bg, color: src.color, border: `1px solid ${src.color}33`, borderRadius: 999, padding: "1px 8px", fontSize: 10, fontWeight: 800, marginTop: 4, whiteSpace: "nowrap" }}
+    >
+      {src.short}{handle}
+    </span>
+  );
+}
 
 function formatStatus(status) {
   return String(status || "")
@@ -46,7 +63,7 @@ function formatDuration(ms = 0) {
   return mins ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
-function EnquiryBoard({ items, expanded, setExpanded, onStatusDrop, onStatusUpdate, onArchive, onTagToggle, onAssign, onCall, onWhatsApp, onEmail, onContact, salesPeople, showStatusControls = true, showAssignControls = true }) {
+function EnquiryBoard({ items, expanded, setExpanded, onStatusDrop, onStatusUpdate, onArchive, onTagToggle, onAssign, onCall, onWhatsApp, onEmail, onContact, onAiReply, salesPeople, showStatusControls = true, showAssignControls = true }) {
   const columns = STATUS_COLUMNS.map((status) => ({
     ...status,
     items: items.filter((item) => item.status === status.key),
@@ -105,6 +122,7 @@ function EnquiryBoard({ items, expanded, setExpanded, onStatusDrop, onStatusUpda
                       <div style={{ fontWeight: 800, fontSize: 13, color: "#0f172a" }}>{item.name}</div>
                       <div style={{ fontSize: 12, color: "#64748b" }}>{item.phone}</div>
                       <div style={{ fontSize: 11, color: "#94a3b8" }}>{item.location || "Unknown location"}</div>
+                      <SourceBadge item={item} />
                     </div>
                     <span style={{ background: `${column.color}15`, color: column.color, borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 800 }}>
                       {formatStatus(item.status)}
@@ -114,6 +132,11 @@ function EnquiryBoard({ items, expanded, setExpanded, onStatusDrop, onStatusUpda
                   <div style={{ fontSize: 12, color: "#334155", marginBottom: 6 }}>
                     <strong>Package:</strong> {item.eventName}
                   </div>
+                  {leadSourceOf(item) !== "website" && item.message && (
+                    <div style={{ fontSize: 12, color: "#475569", background: "#f8fafc", borderRadius: 10, padding: "6px 8px", marginBottom: 6 }}>
+                      <strong>First message:</strong> {item.message.length > 140 ? `${item.message.slice(0, 140)}…` : item.message}
+                    </div>
+                  )}
                   <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>
                     {item.category || "General"} · PAX {item.pax || "—"}
                   </div>
@@ -148,6 +171,7 @@ function EnquiryBoard({ items, expanded, setExpanded, onStatusDrop, onStatusUpda
                       {expanded === item.id ? "Hide" : "View"}
                     </button>
                     <button className="btn btn-outline-success btn-sm py-0 px-2" onClick={() => onWhatsApp(item)}>WhatsApp</button>
+                    <button type="button" className="ai-trigger" onClick={() => onAiReply(item)} title="Draft a reply with AI (you review it before sending)">✨ AI reply</button>
                     <button className="btn btn-outline-dark btn-sm py-0 px-2" onClick={() => onContact(item)}>SMS</button>
                     <button className="btn btn-outline-danger btn-sm py-0 px-2" onClick={() => onArchive(item.id)}>Archive</button>
                   </div>
@@ -170,7 +194,15 @@ function EnquiryBoard({ items, expanded, setExpanded, onStatusDrop, onStatusUpda
                           <button type="button" className="btn btn-sm btn-outline-success" onClick={() => onWhatsApp(item)}>WhatsApp</button>
                           <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => onEmail(item)} disabled={!item.email}>Email</button>
                           <button type="button" className="btn btn-sm btn-outline-dark" onClick={() => onContact(item)}>Contact SMS</button>
+                          <button type="button" className="ai-trigger big" onClick={() => onAiReply(item)}>
+                            {isWebsiteEnquiry(item) ? "✨ AI reply suggestions" : "✨ Draft reply with AI"}
+                          </button>
                         </div>
+                        {item.message && (
+                          <div style={{ marginTop: 8, fontSize: 12, color: "#475569", background: "#f8fafc", borderRadius: 10, padding: "6px 10px" }}>
+                            <strong>Message:</strong> {item.message}
+                          </div>
+                        )}
                       </div>
 
                       {showStatusControls && (
@@ -249,6 +281,8 @@ export default function ManageEnquiries() {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);
   const [salesFilter, setSalesFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
+  const [aiFor, setAiFor] = useState(null);   // { enquiry } | { enquiry: null } (paste-a-DM helper)
 
   const { enquiries, loading, refresh, currentUser, seeAll } = useEnquiries({ limit: 500 });
 
@@ -275,7 +309,9 @@ export default function ManageEnquiries() {
     // Sales users' records are already pre-scoped by the API — no extra filter needed.
     const matchesSales = !seeAll || !salesFilter || item.assignedSalesEmployeeId === salesFilter;
 
-    return matchesSearch && matchesSales;
+    const matchesSource = !sourceFilter || leadSourceOf(item) === sourceFilter;
+
+    return matchesSearch && matchesSales && matchesSource;
   });
 
   const highIntentItems = filtered.filter((item) => (item.tags || []).includes(HIGH_INTENT_TAG));
@@ -337,7 +373,10 @@ export default function ManageEnquiries() {
     <div className="adm-page">
       <div className="adm-page-header">
         <h3 className="adm-page-title">📬 Enquiries Pipeline</h3>
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
+          <button type="button" className="ai-trigger big" onClick={() => setAiFor({ enquiry: null })} title="Paste an Instagram DM or WhatsApp message and get a draft reply">
+            ✨ AI reply helper
+          </button>
           <span className="adm-count-badge">{filtered.length} total</span>
           <DownloadButton
             getData={() =>
@@ -381,6 +420,19 @@ export default function ManageEnquiries() {
           onChange={(e) => setSearch(e.target.value)}
           style={{ flex: 1 }}
         />
+
+        <select
+          className="form-select form-select-sm"
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
+          style={{ maxWidth: 190 }}
+          aria-label="Filter by source"
+        >
+          <option value="">All sources</option>
+          {Object.entries(LEAD_SOURCES).map(([key, src]) => (
+            <option value={key} key={key}>{src.label}</option>
+          ))}
+        </select>
 
         {/* Sales-owner dropdown — Management/Super Admin only */}
         {seeAll && (
@@ -426,7 +478,7 @@ export default function ManageEnquiries() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
             {highIntentItems.map((item) => (
               <div key={item.id} style={{ border: "1px solid #fcd34d", background: "#fffbeb", borderRadius: 14, padding: 14 }}>
-                <div className="fw-bold">{item.name}</div>
+                <div className="fw-bold">{item.name} <SourceBadge item={item} /></div>
                 <div className="small text-muted mb-2">{item.eventName}</div>
                 <div className="small mb-2">Sales: {item.assignedSalesName || "Unassigned"}</div>
                 <div className="d-flex gap-1 flex-wrap">
@@ -453,9 +505,12 @@ export default function ManageEnquiries() {
         onWhatsApp={handleWhatsApp}
         onEmail={handleEmail}
         onContact={handleContact}
+        onAiReply={(item) => setAiFor({ enquiry: item })}
         salesPeople={salesPeople}
         showAssignControls={canAssign}
       />
+
+      {aiFor && <AiReplyModal enquiry={aiFor.enquiry} onClose={() => setAiFor(null)} />}
     </div>
   );
 }

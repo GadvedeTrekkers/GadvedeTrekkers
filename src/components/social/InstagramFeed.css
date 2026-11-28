@@ -1,0 +1,41 @@
+/* Instagram feed section (home page + trip pages). */
+.ig-feed-sentinel { height: 1px; }
+.ig-feed { padding: 48px 0; background: #fff; }
+.ig-feed--trip_page { padding: 32px 0 40px; background: transparent; }
+.ig-feed-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.ig-feed-title { font-size: clamp(1.35rem, 2.4vw, 1.8rem); font-weight: 800; color: #0c2e20; margin: 0 0 4px; }
+.ig-feed--trip_page .ig-feed-title { font-size: 1.25rem; }
+.ig-feed-sub { margin: 0; color: #5a7a6a; font-size: 0.95rem; max-width: 560px; }
+.ig-follow {
+  display: inline-flex; align-items: center; gap: 8px; flex: none;
+  padding: 9px 16px; border-radius: 999px; font-weight: 700; font-size: 0.9rem; text-decoration: none; color: #fff;
+  background: linear-gradient(45deg, #f09433, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888);
+  box-shadow: 0 6px 16px rgba(188, 24, 136, 0.22);
+}
+.ig-follow:hover { color: #fff; filter: brightness(1.05); }
+.ig-follow:focus-visible, .ig-tile a:focus-visible { outline: 3px solid #0c6e44; outline-offset: 3px; }
+
+.ig-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.ig-feed--trip_page .ig-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ig-tile a { position: relative; display: block; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 14px; background: #eef5f0; }
+.ig-tile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s ease; }
+.ig-tile a:hover img { transform: scale(1.05); }
+.ig-type {
+  position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; color: #fff; background: rgba(15, 23, 42, 0.55);
+}
+.ig-caption {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 10px 9px; font-size: 0.78rem; line-height: 1.35; color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  opacity: 0; transition: opacity 0.2s ease;
+}
+.ig-tile a:hover .ig-caption, .ig-tile a:focus-visible .ig-caption { opacity: 1; }
+
+@media (max-width: 767px) {
+  .ig-feed { padding: 36px 0; }
+  .ig-grid, .ig-feed--trip_page .ig-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .ig-tile a { border-radius: 10px; }
+  .ig-caption { display: none; }
+  .ig-follow { width: 100%; justify-content: center; }
+}

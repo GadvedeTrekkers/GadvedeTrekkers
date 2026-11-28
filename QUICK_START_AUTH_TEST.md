@@ -49,7 +49,7 @@ VITE v... ready in ...ms
 
 #### Test 2: Admin Login
 - Username: `admin`
-- Password: `admin123`
+- Password: `<your-admin-password>`
 - Click "Login"
 - **Expected:** ✅ Login successful!
 - **If failed:** Check backend/.env for correct credentials
@@ -71,7 +71,7 @@ VITE v... ready in ...ms
 1. Go to: `http://localhost:5173/admin/login`
 2. Login with:
    - Username: `admin`
-   - Password: `admin123`
+   - Password: `<your-admin-password>`
 3. Navigate to "Manage Treks" or "Manage Tours"
 4. Try toggling the status of any trek/tour
 5. **Expected:** Status should toggle successfully

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const SEEDED_EMPLOYEE = {
   username: "rahul.patil",
-  password: "rahul001",
+  password: process.env.E2E_EMPLOYEE_PASSWORD || "",
   name: "Rahul Patil",
 };
 
@@ -38,7 +38,7 @@ const LEGACY_LOCAL_COPY_OF_BACKEND_EVENT = {
 
 async function ensureBackendEvent(request) {
   const loginResponse = await request.post("http://localhost:10000/api/auth/admin/login", {
-    data: { username: "admin", password: "admin123" },
+    data: { username: "admin", password: process.env.E2E_ADMIN_PASSWORD || "" },
   });
   const loginBody = await loginResponse.json();
   const token = loginBody?.data?.token;

@@ -658,7 +658,7 @@ export default function Corporate() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 20 }}>
           {[
             { icon: "🏕️", title: "Corporate Camping Retreat", desc: "Overnight lakeside or forest camping with bonfire, team games, and group meals. Perfect for 15–100 people." },
-            { icon: "🥾", title: "Corporate Trek Day Out", desc: "Half or full-day guided treks in the Sahyadris with certified trek leaders and safety gear included." },
+            { icon: "🥾", title: "Corporate Trek Day Out", desc: "Half or full-day guided treks in the Sahyadris with trek leaders and safety gear included." },
             { icon: "🧗", title: "Adventure & Sports Package", desc: "Rock climbing, rappelling, zip-lining, and obstacle courses customized for your team size and fitness level." },
             { icon: "🏛️", title: "Heritage & Culture Walk", desc: "Explore Pune or Mumbai's historic forts and heritage sites with expert guides and team quiz activities." },
             { icon: "🌊", title: "Water Sports Package", desc: "Rafting, kayaking, and canoeing at scenic Maharashtra locations — perfect for high-energy teams." },

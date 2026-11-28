@@ -1,0 +1,60 @@
+/* Floating WhatsApp button (public pages only). --gt-wa-offset = height of a fixed bottom bar on the page. */
+.gt-wa-fab,
+.gt-wa-wrap {
+  position: fixed;
+  right: 20px;
+  bottom: calc(20px + var(--gt-wa-offset, 0px) + env(safe-area-inset-bottom, 0px));
+  z-index: 1050;
+}
+.gt-wa-wrap .gt-wa-fab { position: static; }
+.gt-wa-fab {
+  width: 58px;
+  height: 58px;
+  border: 0;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  margin-left: auto;
+}
+.gt-wa-fab:hover { transform: scale(1.07); color: #fff; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.26); }
+.gt-wa-fab:focus-visible { outline: 3px solid #0c6e44; outline-offset: 3px; }
+.gt-wa-x { font-size: 30px; line-height: 1; font-weight: 400; }
+
+.gt-wa-panel {
+  width: min(320px, calc(100vw - 40px));
+  margin-bottom: 12px;
+  background: #fff;
+  border: 1px solid #d8eed8;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  padding: 16px;
+  animation: gt-wa-in 0.16s ease-out;
+}
+@keyframes gt-wa-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.gt-wa-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+.gt-wa-panel-title { font-size: 0.78rem; font-weight: 700; color: #128c7e; text-transform: uppercase; letter-spacing: 0.04em; }
+.gt-wa-panel-trip { font-size: 1rem; font-weight: 800; color: #0c2e20; line-height: 1.25; margin-top: 2px; }
+.gt-wa-close { border: 0; background: #f1f5f9; color: #334155; width: 28px; height: 28px; border-radius: 50%; font-size: 18px; line-height: 1; flex: none; }
+.gt-wa-field { display: block; margin-bottom: 10px; }
+.gt-wa-field span { display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 4px; }
+.gt-wa-field em { font-style: normal; font-weight: 400; color: #64748b; }
+.gt-wa-field select { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 10px; font-size: 0.9rem; background: #fff; color: #0f172a; }
+.gt-wa-send {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 4px; padding: 10px 14px;
+  background: #25d366; color: #fff; border-radius: 10px; font-weight: 800; text-decoration: none;
+}
+.gt-wa-send:hover { background: #1ebe5b; color: #fff; }
+.gt-wa-note { text-align: center; font-size: 0.75rem; color: #64748b; margin-top: 8px; }
+
+@media (max-width: 575px) {
+  .gt-wa-fab, .gt-wa-wrap { right: 14px; bottom: calc(14px + var(--gt-wa-offset, 0px) + env(safe-area-inset-bottom, 0px)); }
+  .gt-wa-fab { width: 54px; height: 54px; }
+}
+@media print { .gt-wa-fab, .gt-wa-wrap { display: none !important; } }

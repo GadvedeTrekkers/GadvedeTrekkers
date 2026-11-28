@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { findTrekBySlug } from "../../data/treks";
 import BookingCTA from "../../components/BookingCTA";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
 
 const HERO_IMG = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80";
 
@@ -34,7 +35,6 @@ const highlights = [
   { icon: "🎖", text: "E-Certificate on Successful Completion" },
   { icon: "👩‍🦯", text: "Female Trek Leader on Every Batch" },
   { icon: "🛡", text: "Adventure Insurance Included" },
-  { icon: "⭐", text: "4.7 Rating · 20,000+ Happy Trekkers" },
   { icon: "📸", text: "Perfect for Photographers & Vloggers" },
 ];
 
@@ -211,7 +211,10 @@ const routeInfo = [
   { icon: "⚡", label: "Difficulty",        value: "Moderate" },
 ];
 
+const WHATSAPP_TRIP = { id: "devkund-waterfall-trek", name: "Devkund Waterfall Trek", type: "trek" };
+
 export default function DevkundTrek() {
+  useWhatsappTrip(WHATSAPP_TRIP);
   const trek = findTrekBySlug("devkund-waterfall-trek");
   const [activeTab, setActiveTab]     = useState("overview");
   const [lightboxImg, setLightboxImg] = useState(null);
@@ -235,7 +238,6 @@ export default function DevkundTrek() {
               { icon: "⏱", label: "1 Day" },
               { icon: "🏔", label: "535 ft Highest Point" },
               { icon: "⚡", label: "Moderate" },
-              { icon: "⭐", label: "4.7 (20,000+ trekkers)" },
               { icon: "💰", label: "From ₹899" },
             ].map(s => (
               <div className="td-stat" key={s.label}>
@@ -343,7 +345,6 @@ export default function DevkundTrek() {
                   <h2 className="td-section-title">Why Choose Gadvede Trekkers?</h2>
                   <ul className="td-inclusions">
                     <li className="td-inclusion-item">✅ 6+ years of experience managing Devkund Waterfall Trek with all safety SOPs.</li>
-                    <li className="td-inclusion-item">✅ Preferred by over 20,000 trekkers with a 4.7 rating out of 5.</li>
                     <li className="td-inclusion-item">✅ One trek leader for every 10 trekkers.</li>
                     <li className="td-inclusion-item">✅ Female trek leader on each trek.</li>
                     <li className="td-inclusion-item">✅ E-certificate on successful trek completion — tamper-proof and shareable on social media.</li>

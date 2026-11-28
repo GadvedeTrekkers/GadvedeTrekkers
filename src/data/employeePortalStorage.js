@@ -1,9 +1,13 @@
 /* ══════════════════════════════════════════════
    employeePortalStorage.js — Gadvede Trekkers
-   Employee login credentials + onboarding approval
+   Employee onboarding approval + portal session
    Approval: Akshay Kangude / Pratik Ubhe
+   Passwords are never stored or checked in the browser: login goes to the
+   backend (POST /api/auth/admin/login, accounts in the ADMIN_USERS env var).
 ══════════════════════════════════════════════ */
-const KEY = "gt_employee_creds";
+import { apiRequest } from "../api/backendClient";
+
+const KEY = "gt_employee_onboarding";
 
 function _uid() {
   return `CRED-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
@@ -33,16 +37,13 @@ export function createEmployeeCredentials({ employeeId, fullName }) {
   if (all.find(c => c.employeeId === employeeId)) return all.find(c => c.employeeId === employeeId);
 
   const username = _slugify(fullName);
-  // Default password = first name + last 3 of employeeId
-  const idSuffix = (employeeId || "").replace(/\D/g, "").slice(-3).padStart(3, "0");
-  const password = `${fullName.split(" ")[0].toLowerCase()}${idSuffix}`;
+  // The login password is set by the admin on the server (ADMIN_USERS), not here.
 
   const cred = {
     credId: _uid(),
     employeeId,
     fullName,
     username,
-    password,
     referralCode: _refCode(fullName, employeeId),
     onboardingStatus: "PENDING",   // PENDING | APPROVED | REJECTED
     approvedBy: null,
@@ -98,13 +99,27 @@ export function getPendingOnboardings() {
   return getAllCredentials().filter(c => c.onboardingStatus === "PENDING");
 }
 
-/* Employee login — returns cred if valid + approved, else null */
-export function employeeLogin(username, password) {
-  const cred = getAllCredentials().find(c => c.username === username && c.password === password);
-  if (!cred) return { ok: false, error: "Invalid username or password." };
-  if (cred.onboardingStatus === "PENDING")  return { ok: false, error: "Your onboarding request is pending approval." };
-  if (cred.onboardingStatus === "REJECTED") return { ok: false, error: `Your onboarding was rejected: ${cred.rejectedReason || "Contact admin."}` };
-  return { ok: true, cred };
+/* Employee login — verified by the backend; returns { ok, cred } or { ok: false, error } */
+export async function employeeLogin(username, password) {
+  let user;
+  try {
+    user = await apiRequest("/api/auth/admin/login", { method: "POST", body: { username, password } });
+  } catch {
+    return { ok: false, error: "Invalid username or password." };
+  }
+  if (!user?.username) return { ok: false, error: "Invalid username or password." };
+  const local = getCredentialsByUsername(user.username);
+  if (local?.onboardingStatus === "PENDING")  return { ok: false, error: "Your onboarding request is pending approval." };
+  if (local?.onboardingStatus === "REJECTED") return { ok: false, error: `Your onboarding was rejected: ${local.rejectedReason || "Contact admin."}` };
+  return {
+    ok: true,
+    cred: {
+      employeeId:   local?.employeeId || `EMP-${user.username.toUpperCase()}`,
+      username:     user.username,
+      fullName:     user.name || local?.fullName || user.username,
+      referralCode: local?.referralCode || "",
+    },
+  };
 }
 
 /* Session helpers */
@@ -125,139 +140,3 @@ export function getEmployeeSession() {
 export function clearEmployeeSession() {
   sessionStorage.removeItem("gt_emp");
 }
-
-/* Update password */
-export function updateEmployeePassword(employeeId, newPassword) {
-  const all = getAllCredentials().map(c =>
-    c.employeeId === employeeId ? { ...c, password: newPassword } : c
-  );
-  _save(all);
-}
-
-/* ─────────────────────────────────────────────────
-   SEED DATA — auto-seeded on first load to match
-   the seed employees in employeeStorage.js
-───────────────────────────────────────────────── */
-(function _seedCredentials() {
-  const SEED_CREDS = [
-    /* ── Admin users — same password as admin panel for easy recall ── */
-    {
-      credId: "CRED-SEED-ADMIN-PRATIK",
-      employeeId: "EMP-ADMIN-PRATIK",
-      fullName: "Pratik Ubhe",
-      username: "pratik.ubhe",
-      password: "Pratik@gadvede",
-      referralCode: "REF-PU001",
-      onboardingStatus: "APPROVED",
-      approvedBy: "Admin",
-      approvedByUsername: "admin",
-      approvedAt: "2026-03-21T20:12:56.433Z",
-      rejectedReason: "",
-      createdAt: "2026-03-21T20:12:56.433Z",
-    },
-    {
-      credId: "CRED-SEED-ADMIN-ROHIT",
-      employeeId: "EMP-ADMIN-ROHIT",
-      fullName: "Rohit Panhalkar",
-      username: "rohit.panhalkar",
-      password: "Rohit@gadvede",
-      referralCode: "REF-RP002",
-      onboardingStatus: "APPROVED",
-      approvedBy: "Admin",
-      approvedByUsername: "admin",
-      approvedAt: "2026-03-21T20:12:56.433Z",
-      rejectedReason: "",
-      createdAt: "2026-03-21T20:12:56.433Z",
-    },
-    {
-      credId: "CRED-SEED-ADMIN-AKSHAY",
-      employeeId: "EMP-ADMIN-AKSHAY",
-      fullName: "Akshay Kangude",
-      username: "akshay.kangude",
-      password: "Akshay@gadvede",
-      referralCode: "REF-AK003",
-      onboardingStatus: "APPROVED",
-      approvedBy: "Admin",
-      approvedByUsername: "admin",
-      approvedAt: "2026-03-21T20:12:56.433Z",
-      rejectedReason: "",
-      createdAt: "2026-03-21T20:12:56.433Z",
-    },
-    /* ── Demo employees ── */
-    {
-      credId: "CRED-SEED-EMP-SEED-001",
-      employeeId: "EMP-SEED-001",
-      fullName: "Rahul Patil",
-      username: "rahul.patil",
-      password: "rahul001",
-      referralCode: "REF-RP001",
-      onboardingStatus: "APPROVED",
-      approvedBy: "Admin",
-      approvedByUsername: "admin",
-      approvedAt: "2026-03-21T20:12:56.433Z",
-      rejectedReason: "",
-      createdAt: "2026-03-21T20:12:56.433Z",
-    },
-    {
-      credId: "CRED-SEED-EMP-SEED-002",
-      employeeId: "EMP-SEED-002",
-      fullName: "Priya Deshmukh",
-      username: "priya.deshmukh",
-      password: "priya002",
-      referralCode: "REF-PD002",
-      onboardingStatus: "APPROVED",
-      approvedBy: "Admin",
-      approvedByUsername: "admin",
-      approvedAt: "2026-03-21T20:12:56.433Z",
-      rejectedReason: "",
-      createdAt: "2026-03-21T20:12:56.433Z",
-    },
-    {
-      credId: "CRED-SEED-EMP-SEED-003",
-      employeeId: "EMP-SEED-003",
-      fullName: "Amit Shinde",
-      username: "amit.shinde",
-      password: "amit003",
-      referralCode: "REF-AS003",
-      onboardingStatus: "APPROVED",
-      approvedBy: "Admin",
-      approvedByUsername: "admin",
-      approvedAt: "2026-03-21T20:12:56.433Z",
-      rejectedReason: "",
-      createdAt: "2026-03-21T20:12:56.433Z",
-    },
-    {
-      credId: "CRED-SEED-EMP-SEED-004",
-      employeeId: "EMP-SEED-004",
-      fullName: "Sneha Kulkarni",
-      username: "sneha.kulkarni",
-      password: "sneha004",
-      referralCode: "REF-SK004",
-      onboardingStatus: "APPROVED",
-      approvedBy: "Admin",
-      approvedByUsername: "admin",
-      approvedAt: "2026-03-21T20:12:56.433Z",
-      rejectedReason: "",
-      createdAt: "2026-03-21T20:12:56.433Z",
-    },
-    {
-      credId: "CRED-SEED-EMP-SEED-005",
-      employeeId: "EMP-SEED-005",
-      fullName: "Vikram Jadhav",
-      username: "vikram.jadhav",
-      password: "vikram005",
-      referralCode: "REF-VJ005",
-      onboardingStatus: "APPROVED",
-      approvedBy: "Admin",
-      approvedByUsername: "admin",
-      approvedAt: "2026-03-21T20:12:56.433Z",
-      rejectedReason: "",
-      createdAt: "2026-03-21T20:12:56.433Z",
-    },
-  ];
-  /* Merge — preserve existing records, only add missing employeeIds */
-  const existing = getAllCredentials();
-  const existingIds = new Set(existing.map(c => c.employeeId));
-  const toAdd = SEED_CREDS.filter(c => !existingIds.has(c.employeeId));
-  if (toAdd.length > 0) _save([...existing, ...toAdd]);
-})();

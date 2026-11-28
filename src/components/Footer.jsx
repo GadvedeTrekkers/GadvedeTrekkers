@@ -1,9 +1,31 @@
 import { Link } from "react-router-dom";
-import logo from "../assets/gadvedelogo.png";
+import logo from "../assets/gadvedelogo-256.png";
 import { CONTACT, telHref, whatsappHref } from "../config/contact";
-// Footer updated: FAQ moved here from Header nav
+import { DESTINATION_HUBS } from "../../shared/destinationHubs.js";
+import { useSiteData } from "../config/siteContent";
+import { isFilled } from "../../shared/siteContent.js";
+
+/* Footer copy, contact details and which policy pages are linked all come from the admin (t129u):
+   text → Admin → Settings → Site Content → "Footer text"; contact → Profile Setup; a page link appears only once
+   that page is PUBLISHED in Site Content (About, FAQ, Privacy, Terms, Cancellation). */
+const PAGE_LINKS = [
+  { key: "pages.about", to: "/about", label: "About Us" },
+  { key: "pages.faq", to: "/faq", label: "FAQ" },
+  { key: "pages.privacy", to: "/privacy-policy", label: "Privacy Policy" },
+  { key: "pages.cancellation", to: "/cancellation-policy", label: "Cancellation Policy" },
+  { key: "pages.terms", to: "/terms", label: "Terms & Conditions" },
+];
 
 function Footer() {
+  const { content } = useSiteData();
+  const about = isFilled("site.footer", content["site.footer"]) ? content["site.footer"].about : "";
+  const published = (key) => isFilled(key, content[key]);
+  const socials = [
+    { label: "Instagram", href: CONTACT.social.instagram },
+    { label: "YouTube", href: CONTACT.social.youtube },
+    { label: "Facebook", href: CONTACT.social.facebook },
+    { label: "WhatsApp", href: whatsappHref() },
+  ].filter((s) => s.href);
   return (
     <footer
       className="py-5 mt-5 text-white"
@@ -20,10 +42,7 @@ function Footer() {
               style={{ width: "80px" }}
               className="mb-3"
             />
-            <p style={{ fontSize: "14px", lineHeight: "1.6" }}>
-              At Gadvede Trekkers, we provide safe, affordable, and
-              unforgettable adventure experiences across India.
-            </p>
+            {about && <p style={{ fontSize: "14px", lineHeight: "1.6", whiteSpace: "pre-line" }}>{about}</p>}
           </div>
 
           {/* EXPLORE */}
@@ -64,18 +83,17 @@ function Footer() {
           <div className="col-md-2 mb-4">
             <h5 className="fw-bold mb-3">Company</h5>
             <ul className="list-unstyled">
-              <li><Link className="footer-link" to="/about">About Us</Link></li>
               <li><Link className="footer-link" to="/contact">Contact</Link></li>
-              <li><Link className="footer-link" to="/faq">FAQ</Link></li>
-              <li><span className="footer-link" style={{ cursor: "default" }}>Privacy Policy</span></li>
-              <li><Link className="footer-link" to="/cancellation-policy">Cancellation Policy</Link></li>
-              <li><span className="footer-link" style={{ cursor: "default" }}>Terms & Conditions</span></li>
+              <li><Link className="footer-link" to="/register">Paid by bank / UPI? Register</Link></li>
+              {PAGE_LINKS.filter((l) => published(l.key)).map((l) => (
+                <li key={l.key}><Link className="footer-link" to={l.to}>{l.label}</Link></li>
+              ))}
             </ul>
           </div>
 
           {/* OFFICE */}
           <div className="col-md-2 mb-4">
-            <h5 className="fw-bold mb-3">Our Office</h5>
+            {CONTACT.addressLines.length > 0 && <h5 className="fw-bold mb-3">Our Office</h5>}
             <p style={{ fontSize: "14px", lineHeight: "1.6" }}>
               {CONTACT.addressLines.map((line) => (
                 <span key={line} className="d-block">{line}</span>
@@ -85,15 +103,11 @@ function Footer() {
               {CONTACT.phones.map((phone) => (
                 <a key={phone} href={telHref(phone)} className="footer-link d-block">📞 {phone}</a>
               ))}
-              <a href={`mailto:${CONTACT.email}`} className="footer-link d-block">✉️ {CONTACT.email}</a>
+              {CONTACT.email && <a href={`mailto:${CONTACT.email}`} className="footer-link d-block">✉️ {CONTACT.email}</a>}
             </p>
-            <h5 className="fw-bold mb-2 mt-3">Follow Us</h5>
+            {socials.length > 0 && <h5 className="fw-bold mb-2 mt-3">Follow Us</h5>}
             <div className="d-flex gap-2 flex-wrap">
-              {[
-                { label: "Instagram", href: CONTACT.social.instagram },
-                { label: "YouTube", href: CONTACT.social.youtube },
-                { label: "WhatsApp", href: whatsappHref("Hi Gadvede Trekkers!") },
-              ].map((s) => (
+              {socials.map((s) => (
                 <a
                   key={s.label}
                   href={s.href}
@@ -110,10 +124,28 @@ function Footer() {
 
         </div>
 
+        {/* POPULAR COLLECTIONS (destination hubs) */}
+        <nav aria-label="Popular trip collections" className="mt-2">
+          <h5 className="fw-bold mb-2" style={{ fontSize: 15 }}>Popular collections</h5>
+          <ul className="list-unstyled d-flex flex-wrap gap-2 mb-0">
+            {DESTINATION_HUBS.map((hub) => (
+              <li key={hub.slug}>
+                <Link
+                  className="footer-link"
+                  to={hub.path}
+                  style={{ fontSize: 13, border: "1px solid rgba(255,255,255,0.3)", padding: "3px 10px", borderRadius: 999, display: "inline-block" }}
+                >
+                  {hub.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
         {/* COPYRIGHT */}
         <div className="text-center mt-4 pt-3 border-top border-light">
           <p className="mb-0" style={{ fontSize: "14px" }}>
-            © {new Date().getFullYear()} Gadvede Trekkers. All rights reserved.
+            © {new Date().getFullYear()} {CONTACT.companyName}{CONTACT.companyName ? ". " : ""}All rights reserved.
           </p>
         </div>
       </div>

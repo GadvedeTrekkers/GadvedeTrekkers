@@ -20,7 +20,7 @@ http://localhost:5173/test-auth.html
 1. **Backend Connection Test** - Should show ✅ Backend is running!
 2. **Admin Login Test** 
    - Username: `admin`
-   - Password: `admin123`
+   - Password: `<your-admin-password>`
    - Should show ✅ Login successful!
 3. **Authenticated Request Test** - Should show ✅ Authenticated request successful!
 4. **Check Token Status** - Should show Token Status: ✅ VALID
@@ -37,7 +37,7 @@ http://localhost:5173/admin/login
 **Steps:**
 1. Login with:
    - Username: `admin`
-   - Password: `admin123`
+   - Password: `<your-admin-password>`
 
 2. Navigate to **"Manage Treks"** or **"Manage Tours"**
 

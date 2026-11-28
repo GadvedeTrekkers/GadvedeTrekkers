@@ -1,9 +1,11 @@
 import { saveEnquiry } from "../data/enquiryStorage";
-import { waSendUrl } from "../config/whatsappSetting";
+import { OFFICIAL_WHATSAPP_NUMBER, getWhatsappNumber, waSendUrl } from "../config/whatsappSetting";
+import { trackEvent } from "../analytics/tracking";
 
 export const DEFAULT_SALES_SMS =
   "Hi, I’m interested in outing packages near Pune/Mumbai.\nPlease share details.";
-export const DEFAULT_WHATSAPP_NUMBER = "919856112727";
+/** The admin WhatsApp setting (its default lives in config/whatsappSetting.js, not here). */
+export const DEFAULT_WHATSAPP_NUMBER = OFFICIAL_WHATSAPP_NUMBER;
 
 function getDeviceType() {
   const width = window.innerWidth;
@@ -90,11 +92,12 @@ export function openSmsWithMessage(phone, message = DEFAULT_SALES_SMS) {
  */
 export function openWhatsAppUrl(url) {
   if (typeof window === "undefined" || !url) return;
+  trackEvent("whatsapp_click", { link_location: "lead_form", page_path: window.location.pathname });
   window.location.assign(url);
 }
 
 export function createWhatsAppInquiryUrl({
-  phoneNumber = DEFAULT_WHATSAPP_NUMBER,
+  phoneNumber = getWhatsappNumber(),
   packageName,
   location,
   category,
@@ -151,6 +154,8 @@ export async function handleWhatsAppLead({
       pageUrl: payload.pageUrl,
     });
 
+    trackEvent("enquiry_submit", { form_name: String(source || "website").toLowerCase(), item_name: packageName, item_category: category });
+
     if (window.dataLayer?.push) {
       window.dataLayer.push({
         event: "whatsapp_lead_created",
@@ -176,7 +181,7 @@ export async function handleWhatsAppLead({
       pax,
       preferredDate,
     });
-    const phone = phoneNumber || DEFAULT_WHATSAPP_NUMBER;
+    const phone = phoneNumber || getWhatsappNumber();
     const waUrl = waSendUrl(message, phone);
     openWhatsAppUrl(waUrl);
   }

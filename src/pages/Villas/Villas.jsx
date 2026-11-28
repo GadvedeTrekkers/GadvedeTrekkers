@@ -3,206 +3,15 @@ import { Link } from "react-router-dom";
 import { getAdminItems } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
-import { waUrl } from "../../config/whatsappSetting";
+import { formatWhatsappDisplay, getWhatsappNumber, waUrl } from "../../config/whatsappSetting";
 import { villaStayTotal } from "../../utils/villaPricing";
+import { useSeo } from "../../seo/useSeo";
+import { realRating } from "../../utils/rating";
+import { SITE_ORIGIN } from "../../seo/publicSeo";
 
-export const villasList = [
-  {
-    id: "marigold-villa",
-    name: "The Marigold Villa",
-    location: "Girivan, 412108 Pune",
-    area: "Pune",
-    rating: 8.5,
-    ratingLabel: "Very good",
-    reviews: 8,
-    price: 5200,
-    originalPrice: 7500,
-    guests: "2 adults",
-    size: "279 m²",
-    bedrooms: 3,
-    bathrooms: 4,
-    badge: "Top Pick",
-    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
-    gallery: [
-      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
-    ],
-    locationScore: 9.6,
-    description: "Featuring garden views, The Marigold Villa provides accommodation with a garden and a patio, around 42 km from University of Pune.",
-    about: "Spacious Accommodation: The Marigold Villa in Pune offers a spacious villa with three bedrooms and four bathrooms. Family rooms provide ample space for relaxation and comfort. Outdoor Spaces: Guests can enjoy a beautiful garden and terrace with stunning mountain views. The terrace is perfect for outdoor dining and leisure activities such as cycling. Modern Amenities: The property features free WiFi, a balcony, patio, and dining area. Additional amenities include a barbecue, shower, and carpeted floors. Convenient Location: Located 42 km from the University of Pune and 54 km from Pune International Airport, the villa is close to attractions like Bund Garden and FTII.",
-    guestReview: "Property is very neat and clean. It is amidst the forest so there will be no noise and you can enjoy the nature peacefully. Caretaker is very helpful.",
-    reviewerName: "Pramod, India",
-    amenities: ["Free WiFi", "Free Parking", "Garden", "Balcony", "Terrace", "Patio", "Pets Allowed", "Family Rooms", "Bath", "Barbecue", "Mountain View", "Entire Place"],
-    activities: ["Hiking", "Cycling", "Badminton"],
-    accommodation: [
-      { type: "Three-Bedroom Villa", beds: ["Bedroom 1: 1 large double bed", "Bedroom 2: 1 large double bed", "Bedroom 3: 1 extra-large double bed"], maxGuests: 6 },
-    ],
-    distance: "42 km from University of Pune · 54 km from Pune International Airport",
-  },
-  {
-    id: "villetta-cottage",
-    name: "Villetta, Cozy & Uber Modern Cottage",
-    location: "Pune, Maharashtra",
-    area: "Pune",
-    rating: 8.8,
-    ratingLabel: "Fabulous",
-    reviews: 9,
-    price: 9751,
-    originalPrice: 13000,
-    guests: "2 adults",
-    size: "180 m²",
-    bedrooms: 2,
-    bathrooms: 2,
-    badge: "Fabulous",
-    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
-    gallery: [
-      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-    ],
-    locationScore: 9.0,
-    description: "Situated in Pune in the Maharashtra region, Villetta, cozy and uber modern cottage features a patio and stunning interiors.",
-    about: "Villetta is a beautifully designed modern cottage offering a perfect blend of contemporary aesthetics and cozy comfort. The property features a spacious patio, modern kitchen, and stylishly furnished rooms. Ideal for couples and small families seeking a luxurious yet homely retreat in the heart of Maharashtra.",
-    guestReview: "Absolutely stunning property. Very clean, stylish and well maintained. The host was very responsive and helpful throughout our stay.",
-    reviewerName: "Anjali, Mumbai",
-    amenities: ["Free WiFi", "Patio", "Air Conditioning", "Modern Kitchen", "Free Parking", "Garden", "Balcony", "Entire Place"],
-    activities: ["Sightseeing", "Local Tours"],
-    accommodation: [
-      { type: "Two-Bedroom Cottage", beds: ["Bedroom 1: 1 king bed", "Bedroom 2: 1 queen bed"], maxGuests: 4 },
-    ],
-    distance: "Central Pune location · Easy access to restaurants and shopping",
-  },
-  {
-    id: "royal-luxor-villa",
-    name: "The Royal Luxor 3BHK Villa",
-    location: "Baner, Pune",
-    area: "Pune",
-    rating: 7.2,
-    ratingLabel: "Good",
-    reviews: 8,
-    price: 4679,
-    originalPrice: 6500,
-    guests: "2 adults",
-    size: "220 m²",
-    bedrooms: 3,
-    bathrooms: 3,
-    badge: null,
-    image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
-    gallery: [
-      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=800&q=80",
-    ],
-    locationScore: 8.2,
-    description: "Featuring garden views, The Royal Luxor 3BHK Villa features accommodation with a garden and a balcony, around 6.9 km from University of Pune.",
-    about: "The Royal Luxor is a premium 3-bedroom villa in the upscale Baner area of Pune. Featuring a beautiful garden, private balcony, and modern furnishings, this villa is perfect for families and groups. Located close to major IT hubs and shopping centers, it offers the perfect mix of luxury and convenience.",
-    guestReview: "Great location in Baner. Villa is spacious and well furnished. Good for family stays.",
-    reviewerName: "Rahul, Pune",
-    amenities: ["Free WiFi", "Garden", "Balcony", "Air Conditioning", "Free Parking", "Family Rooms", "Kitchen", "Entire Place"],
-    activities: ["City Tours", "Shopping"],
-    accommodation: [
-      { type: "Three-Bedroom Villa", beds: ["Bedroom 1: 1 king bed", "Bedroom 2: 1 queen bed", "Bedroom 3: 2 single beds"], maxGuests: 8 },
-    ],
-    distance: "6.9 km from University of Pune · 20 km from Pune Airport",
-  },
-  {
-    id: "saffron-happy-fields",
-    name: "SaffronStays Happy Fields — 3BR Pet-Friendly Pool Farmhouse",
-    location: "Pune, Maharashtra",
-    area: "Pune",
-    rating: 7.4,
-    ratingLabel: "Good",
-    reviews: 8,
-    price: 22655,
-    originalPrice: 30000,
-    guests: "2 adults",
-    size: "350 m²",
-    bedrooms: 3,
-    bathrooms: 3,
-    badge: "Pet Friendly",
-    image: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80",
-    gallery: [
-      "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1599619351208-3e6c839d6828?auto=format&fit=crop&w=800&q=80",
-    ],
-    locationScore: 8.5,
-    description: "Featuring air-conditioned accommodation with a private pool, pool view and a terrace. Pet-friendly farmhouse with farm-to-table dining near Pune.",
-    about: "SaffronStays Happy Fields is a luxurious 3-bedroom pet-friendly farmhouse featuring a private pool, farm views, hammocks, and farm-to-table dining. Perfect for a premium getaway with your pets and family. The property features air-conditioned rooms, a terrace, and beautifully landscaped farm grounds.",
-    guestReview: "Amazing farmhouse with a beautiful private pool. Farm-to-table food was delicious. Pet-friendly was a big plus for us!",
-    reviewerName: "Sneha, Mumbai",
-    amenities: ["Private Pool", "Pet Friendly", "Air Conditioning", "Farm-to-Table Dining", "Terrace", "Free WiFi", "Free Parking", "Hammocks", "Entire Place"],
-    activities: ["Swimming", "Farm Activities", "Nature Walks"],
-    accommodation: [
-      { type: "Three-Bedroom Farmhouse", beds: ["Bedroom 1: 1 king bed", "Bedroom 2: 1 king bed", "Bedroom 3: 1 queen bed"], maxGuests: 8 },
-    ],
-    distance: "Near Pune · Farm-fresh dining experience included",
-  },
-  {
-    id: "teak-trail",
-    name: "Teak Trail",
-    location: "Pune, Maharashtra",
-    area: "Pune",
-    rating: 7.2,
-    ratingLabel: "Good",
-    reviews: 9,
-    price: 2100,
-    originalPrice: 3500,
-    guests: "2 adults",
-    size: "150 m²",
-    bedrooms: 2,
-    bathrooms: 1,
-    badge: "Best Value",
-    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80",
-    gallery: [
-      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1599619351208-3e6c839d6828?auto=format&fit=crop&w=800&q=80",
-    ],
-    locationScore: 7.8,
-    description: "Teak Trail, a property with a garden, is situated in Pune, 29 km from Raja Dinkar Kelkar Museum, 30 km from Fergusson College.",
-    about: "Teak Trail is a serene property nestled in a teak forest, offering a peaceful retreat from city life. The property features a beautiful garden, cozy rooms, and a relaxing ambiance perfect for nature lovers. Located conveniently near major Pune landmarks.",
-    guestReview: "Very peaceful and serene property. Perfect for a quiet weekend getaway. The garden is beautiful.",
-    reviewerName: "Vikram, Pune",
-    amenities: ["Garden", "Free Parking", "Nature Views", "Free WiFi", "Entire Place"],
-    activities: ["Nature Walks", "Bird Watching"],
-    accommodation: [
-      { type: "Two-Bedroom Property", beds: ["Bedroom 1: 1 double bed", "Bedroom 2: 1 double bed"], maxGuests: 4 },
-    ],
-    distance: "29 km from Raja Dinkar Kelkar Museum · 30 km from Fergusson College",
-  },
-  {
-    id: "bhaktivilla",
-    name: "Bhaktivilla",
-    location: "Talegaon Dābhāde, Near Pune",
-    area: "Near Pune",
-    rating: 8.4,
-    ratingLabel: "Very good",
-    reviews: 11,
-    price: 5040,
-    originalPrice: 7200,
-    guests: "2 adults",
-    size: "240 m²",
-    bedrooms: 3,
-    bathrooms: 2,
-    badge: null,
-    image: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80",
-    gallery: [
-      "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
-    ],
-    locationScore: 8.8,
-    description: "Boasting air-conditioned accommodation with a private pool, garden view and a balcony, Bhaktivilla is situated in Talegaon Dābhāde.",
-    about: "Bhaktivilla is a luxurious retreat in Talegaon Dābhāde, offering air-conditioned rooms, a private pool, and stunning garden views. The property features a beautiful balcony overlooking the gardens, making it perfect for relaxation and rejuvenation. Ideal for families and groups looking for a serene escape near Pune.",
-    guestReview: "Beautiful villa with a lovely pool. Very clean and well-maintained. Great host. Will definitely come back!",
-    reviewerName: "Meera, Nashik",
-    amenities: ["Private Pool", "Air Conditioning", "Garden View", "Balcony", "Free WiFi", "Free Parking", "Family Rooms", "Entire Place"],
-    activities: ["Swimming", "Relaxation", "Nature Walks"],
-    accommodation: [
-      { type: "Three-Bedroom Villa", beds: ["Bedroom 1: 1 king bed", "Bedroom 2: 1 queen bed", "Bedroom 3: 2 single beds"], maxGuests: 8 },
-    ],
-    distance: "Near Pune · Talegaon Dābhāde location",
-  },
-];
+// No built-in sample villas: the page lists only real villas from the DB (/api/products?type=villa).
+// Kept as an empty export because the admin page (ManageVillas) imports it as its seed list.
+export const villasList = [];
 
 const SORT_OPTIONS = [
   { value: "top", label: "Our Top Picks" },
@@ -367,7 +176,7 @@ function VillaDetail({ villa, onClose }) {
                 📍 {villa.location}
               </p>
             </div>
-            {villa.rating > 0 && (
+            {realRating(villa, { max: 10 }) && (
             <div style={{ textAlign: "right" }}>
               <RatingBadge score={villa.rating} />
               <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#374151", marginTop: 4 }}>{villa.ratingLabel}</div>
@@ -395,7 +204,7 @@ function VillaDetail({ villa, onClose }) {
             <span style={{ background: "#059669", color: "#fff", fontWeight: 800, fontSize: "0.8rem", padding: "2px 8px", borderRadius: 6 }}>
               {villa.locationScore}/10
             </span>
-            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>score from {villa.reviews} reviews</span>
+            {villa.reviews > 0 && <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>score from {villa.reviews} reviews</span>}
           </div>
           )}
 
@@ -623,11 +432,17 @@ function VillaDetail({ villa, onClose }) {
 
 /* ── Main Villas Page ── */
 export default function Villas() {
+  useSeo({
+    title: "Villas on Rent | Gadvede Trekkers",
+    description: "Private villas on rent for families and groups, booked through Gadvede Trekkers. See photos, rates and amenities, and book on WhatsApp.",
+    canonical: `${SITE_ORIGIN}/villas`,
+  });
   const [sort, setSort] = useState("top");
   const [minScore, setMinScore] = useState(0);
   const [selectedVilla, setSelectedVilla] = useState(null);
 
   const [, setVillaSyncKey] = useState(0);
+  const [villasLoading, setVillasLoading] = useState(true);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -635,7 +450,8 @@ export default function Villas() {
 
     syncProductsFromApi("villa", "gt_villas")
       .then((items) => { if (items) setVillaSyncKey((k) => k + 1); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setVillasLoading(false));
 
     const onStorage = () => setVillaSyncKey((k) => k + 1);
     window.addEventListener("storage", onStorage);
@@ -689,13 +505,8 @@ export default function Villas() {
           };
         })
     : [];
-  // Villas added from the admin/DB are shown first; the built-in list stays below
-  // (an admin entry with the same id/name replaces its built-in twin).
-  const _dbKeys = new Set(activeVillas.flatMap((v) => [v.id, String(v.name).toLowerCase()]));
-  const allVillas = [
-    ...activeVillas,
-    ...villasList.filter((v) => !_dbKeys.has(v.id) && !_dbKeys.has(v.name.toLowerCase())),
-  ];
+  // Only real villas from the admin/DB are listed (no built-in sample villas).
+  const allVillas = activeVillas;
 
   const sorted = [...allVillas]
     .filter((v) => v.rating >= minScore)
@@ -834,7 +645,7 @@ export default function Villas() {
                     <h3 style={{ fontWeight: 800, fontSize: "1.05rem", color: "#111827", lineHeight: 1.3, margin: 0 }}>
                       {villa.name}
                     </h3>
-                    {villa.rating > 0 && (
+                    {realRating(villa, { max: 10 }) && (
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#374151" }}>{villa.ratingLabel}</div>
@@ -895,6 +706,28 @@ export default function Villas() {
               </div>
             </div>
           ))}
+          {allVillas.length === 0 && (
+            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", padding: "40px 24px", textAlign: "center" }}>
+              {villasLoading ? (
+                <p style={{ color: "#6b7280", margin: 0 }}>Loading villas…</p>
+              ) : (
+                <>
+                  <h3 style={{ fontWeight: 800, fontSize: "1.1rem", color: "#1e1b4b", marginBottom: 8 }}>Villas coming soon</h3>
+                  <p style={{ color: "#374151", fontSize: "0.92rem", marginBottom: 16 }}>
+                    WhatsApp us on {formatWhatsappDisplay(getWhatsappNumber())} for villa bookings and availability.
+                  </p>
+                  <a
+                    href={waUrl("Hi! I'm interested in booking a villa.")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: "inline-block", background: "#25d366", color: "#fff", padding: "10px 22px", borderRadius: 10, fontWeight: 700, fontSize: "0.88rem", textDecoration: "none" }}
+                  >
+                    WhatsApp us
+                  </a>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* SEO footer */}

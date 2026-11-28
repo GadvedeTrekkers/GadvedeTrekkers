@@ -1,20 +1,27 @@
-import { getWhatsappNumber, waUrl } from "./whatsappSetting";
+import { getWhatsappNumber, waUrl } from "./whatsappSetting.js";
+import { getSiteProfile } from "./siteContent.js";
 /**
- * contact.js
- * Single source of truth for public contact details shown in the
- * Header, Footer and Contact page.
+ * contact.js — public contact details, read from the admin (t129u):
+ *   - WhatsApp / phone: Admin → Profile Setup (single number; default +91 98561 12727 lives in whatsappSetting.js)
+ *   - email, social links, city: Admin → Profile Setup (public fields only)
+ * Nothing else is hard-coded here: an empty value is simply not shown.
  */
+const profile = () => getSiteProfile() || {};
+
 export const CONTACT = {
-  phones: ["9856112727"],
-  /** Live value from the admin setting (FR-FE-89); default = official number. */
+  /** The public phone is the single WhatsApp line. */
+  get phones() { return [getWhatsappNumber().slice(-10)]; },
   get whatsapp() { return getWhatsappNumber(); },
-  email: "info@gadvede.com",
-  supportEmail: "support@gadvede.com",
-  addressLines: ["Gadvede Trekkers", "Pune, Maharashtra", "India"],
-  social: {
-    instagram: "https://www.instagram.com/gadvede_trekkers/",
-    youtube: "https://www.youtube.com/@gadvedetrekkers",
-    facebook: "https://www.facebook.com/gadvedetrekkers",
+  get email() { return profile().supportEmail || ""; },
+  get supportEmail() { return profile().supportEmail || ""; },
+  get companyName() { return profile().companyName || ""; },
+  get addressLines() {
+    const a = profile().address || {};
+    return [profile().companyName, [a.city, a.state].filter(Boolean).join(", "), a.country].filter((x) => String(x || "").trim());
+  },
+  get social() {
+    const s = profile().socials || {};
+    return { instagram: s.instagram || "", youtube: s.youtube || "", facebook: s.facebook || "" };
   },
 };
 

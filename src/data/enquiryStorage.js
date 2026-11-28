@@ -3,6 +3,7 @@ import { upsertCustomerActivity } from "./customerStorage";
 import { createAlert, recordEmailAlertAttempt } from "./notificationStorage";
 import { getAllCredentials } from "./employeePortalStorage";
 import { apiRequest } from "../api/backendClient";
+import { isStaffArea } from "../utils/clientDataHygiene";
 
 function _syncEnquiry(entry) {
   apiRequest("/api/enquiries", { method: "POST", body: entry })
@@ -318,6 +319,7 @@ export function syncEnquiriesWithBookings() {
             savedAt: enquiry.convertedAt || new Date().toISOString(),
           }
         : undefined,
+      syncRemote: false, // derived reconciliation, not a new customer action
     });
   });
 
@@ -444,7 +446,10 @@ const SEED_ENQUIRIES = [
   },
 ];
 
-(function seedEnquiriesIfEmpty() {
+// Demo enquiries exist only in local dev builds. `import.meta.env.DEV` is a build-time
+// constant, so Vite drops SEED_ENQUIRIES (names, emails, phones) from production bundles.
+if (import.meta.env.DEV) (function seedEnquiriesIfEmpty() {
+  if (!isStaffArea()) return; // demo data only inside admin/employee pages
   try {
     const existing = getEnquiries(true);
     const existingIds = new Set(existing.map((item) => item.id));

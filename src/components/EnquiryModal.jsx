@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { handleWhatsAppLead } from "../utils/leadActions";
+import { getWhatsappNumber } from "../config/whatsappSetting";
 
-const WA_NUMBER = "919856112727";
 
 export default function EnquiryModal({ dest, category = "Industrial Visit", onClose }) {
   const [form, setForm] = useState({ name: "", contact: "", email: "", pax: "", date: "" });
@@ -34,7 +34,7 @@ export default function EnquiryModal({ dest, category = "Industrial Visit", onCl
     try {
       setSubmitting(true);
       const result = await handleWhatsAppLead({
-        phoneNumber: WA_NUMBER,
+        phoneNumber: getWhatsappNumber(),
         packageName: dest.title,
         location: dest.title.split("–")[0].trim(),
         category,

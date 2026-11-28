@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import ReportsInsights from "./reports/ReportsInsights";
 import { getAllBookings } from "../data/bookingStorage";
 import { getAllTransactions } from "../data/transactionStorage";
 import { getAllCustomers } from "../data/customerStorage";
@@ -397,7 +398,7 @@ function TrekEventCard({ event, onUpdate }) {
    Main Component
 ══════════════════════════════════════════════ */
 export default function ManageReports() {
-  const [tab,      setTab]      = useState("financial");
+  const [tab,      setTab]      = useState("insights");
   const [tick,     setTick]     = useState(0);
   const [fromDate, setFromDate] = useState("");
   const [toDate,   setToDate]   = useState("");
@@ -489,8 +490,9 @@ export default function ManageReports() {
       <h3 className="adm-page-title">📊 Reports & Analytics</h3>
 
       {/* ── Tabs ── */}
-      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #e2e8f0", marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #e2e8f0", marginBottom: 24, overflowX: "auto" }}>
         {[
+          { id: "insights",  icon: "📈", label: "Sales Insights" },
           { id: "financial", icon: "💰", label: "Financial Summary" },
           { id: "lifecycle", icon: "🏔", label: "Trek Lifecycle", badge: trekEvents.filter(e => getMissingActions(e).length > 0).length || null },
           { id: "charts",    icon: "📊", label: "Analytics Charts" },
@@ -505,12 +507,19 @@ export default function ManageReports() {
             color: tab === t.id ? "#16a34a" : "#64748b",
             cursor: "pointer",
             position: "relative",
+            whiteSpace: "nowrap",
+            flex: "0 0 auto",
           }}>
             {t.icon} {t.label}
             {t.badge ? <span style={{ background: "#ef4444", color: "#fff", borderRadius: 10, fontSize: 9, padding: "1px 5px", marginLeft: 4, fontWeight: 700 }}>{t.badge}</span> : null}
           </button>
         ))}
       </div>
+
+      {/* ══════════════════════════════════
+          TAB: SALES INSIGHTS (revenue per trip/month, conversion, lead sources, repeat customers; read only)
+      ══════════════════════════════════ */}
+      {tab === "insights" && <ReportsInsights />}
 
       {/* ══════════════════════════════════
           TAB: FINANCIAL SUMMARY

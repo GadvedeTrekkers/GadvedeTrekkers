@@ -42,11 +42,12 @@
     <meta name="geo.position"    content="18.5204;73.8567" />
     <meta name="ICBM"            content="18.5204, 73.8567" />
 
-    <!-- ── Favicon ── -->
-    <link rel="icon"             type="image/png"  sizes="32x32" href="/gadvedelogo.png" />
-    <link rel="icon"             type="image/png"  sizes="16x16" href="/gadvedelogo.png" />
-    <link rel="shortcut icon"    type="image/png"  href="/gadvedelogo.png" />
-    <link rel="apple-touch-icon" sizes="180x180"   href="/gadvedelogo.png" />
+    <!-- ── Favicon / app icons (small derivatives; the 958 KB original logo is not used as an icon) ── -->
+    <link rel="icon"             type="image/x-icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon"             type="image/png"  sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon"             type="image/png"  sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180"   href="/apple-touch-icon.png" />
+    <link rel="manifest"         href="/manifest.json" />
 
     <!-- ── JSON-LD: Organization + TravelAgency, and WebSite (no SearchAction: search is an on-page filter) ── -->
     <script id="gadvede-jsonld" type="application/ld+json">
@@ -62,14 +63,24 @@
           "image": "https://www.gadvede.com/trips/vasota.jpg",
           "description": "Book Maharashtra treks from Pune and Mumbai with Gadvede Trekkers. Vasota, Harishchandragad, Kalsubai, and New Year beach camping from ₹1,400. WhatsApp booking.",
           "telephone": "+91-9856112727",
+          "email": "info@gadvede.com",
           "address": {
             "@type": "PostalAddress",
             "addressLocality": "Pune",
             "addressRegion": "Maharashtra",
             "addressCountry": "IN"
           },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+91-9856112727",
+            "contactType": "customer service",
+            "areaServed": "IN",
+            "availableLanguage": ["English", "Hindi", "Marathi"]
+          },
           "sameAs": [
-            "https://www.instagram.com/gadvede_trekkers/"
+            "https://www.instagram.com/gadvede_trekkers/",
+            "https://www.youtube.com/@gadvedetrekkers",
+            "https://www.facebook.com/gadvedetrekkers"
           ],
           "areaServed": {
             "@type": "State",

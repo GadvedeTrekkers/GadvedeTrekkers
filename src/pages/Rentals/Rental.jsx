@@ -4,200 +4,31 @@ import { getAdminItems, normaliseItem } from "../../data/adminStorage";
 import { syncProductsFromApi } from "../../api/getAll";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import { buildBookingWhatsAppUrl } from "../../config/bookingConfig";
+import { rentalPath } from "../../utils/rentalLookup";
+import { realRating } from "../../utils/rating";
+import { useSiteContent } from "../../config/siteContent";
 
-/* ─── Rental catalogue ─── */
-const rentalItems = [
-  {
-    id: "coleman-sundome-4p",
-    name: "Coleman Sundome 4 Person Tent",
-    category: "Tents",
-    location: "Pune & Mumbai",
-    rating: 4.8,
-    reviews: 134,
-    deposit: 1500,
-    availability: "Available",
-    badge: "Most Rented",
-    pricePerDay: 350,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 350 },
-      { period: "7 Days",  rentPerDay: 200 },
-      { period: "15 Days", rentPerDay: 150 },
-      { period: "20 Days", rentPerDay: 120 },
-    ],
-    image: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=800&q=80",
-    description: "Spacious 4-person dome tent with WeatherTec system. Perfect for family camping and group treks.",
-  },
-  {
-    id: "2p-camping-tent",
-    name: "2 Person Camping Tent",
-    category: "Tents",
-    location: "Pune",
-    rating: 4.7,
-    reviews: 98,
-    deposit: 800,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 199,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 199 },
-      { period: "7 Days",  rentPerDay: 120 },
-      { period: "15 Days", rentPerDay: 90  },
-      { period: "20 Days", rentPerDay: 75  },
-    ],
-    image: "https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?auto=format&fit=crop&w=800&q=80",
-    description: "Lightweight 2-person tent with easy setup. Ideal for couples and solo trekkers.",
-  },
-  {
-    id: "event-shelter",
-    name: "Coleman Event Shelter UV & Water Protected",
-    category: "Tents",
-    location: "Pune & Mumbai",
-    rating: 4.6,
-    reviews: 67,
-    deposit: 2000,
-    availability: "Available",
-    badge: "Group Pick",
-    pricePerDay: 3000,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 3000 },
-      { period: "7 Days",  rentPerDay: 714  },
-      { period: "15 Days", rentPerDay: 366  },
-      { period: "20 Days", rentPerDay: 300  },
-    ],
-    image: "https://images.unsplash.com/photo-1537905569824-f89f14cceb68?auto=format&fit=crop&w=800&q=80",
-    description: "Large event shelter with UV and water protection. Perfect for group camping events and outdoor gatherings.",
-  },
-  {
-    id: "sleeping-bag",
-    name: "Sleeping Bag — Mummy Style",
-    category: "Gear",
-    location: "Pune",
-    rating: 4.6,
-    reviews: 88,
-    deposit: 500,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 149,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 149 },
-      { period: "7 Days",  rentPerDay: 90  },
-      { period: "15 Days", rentPerDay: 60  },
-      { period: "20 Days", rentPerDay: 45  },
-    ],
-    image: "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?auto=format&fit=crop&w=800&q=80",
-    description: "Warm mummy-style sleeping bag rated to 5°C. Lightweight and compact for backpacking.",
-  },
-  {
-    id: "rucksack-60l",
-    name: "Rucksack 60L",
-    category: "Gear",
-    location: "Pune",
-    rating: 4.8,
-    reviews: 115,
-    deposit: 700,
-    availability: "Available",
-    badge: "Top Rated",
-    pricePerDay: 249,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 249 },
-      { period: "7 Days",  rentPerDay: 150 },
-      { period: "15 Days", rentPerDay: 100 },
-      { period: "20 Days", rentPerDay: 80  },
-    ],
-    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80",
-    description: "Spacious 60L trekking rucksack with rain cover. Ergonomic back support for long hauls.",
-  },
-  {
-    id: "barbeque-grill",
-    name: "Prestige Barbeque Grill",
-    category: "Gear",
-    location: "Pune & Mumbai",
-    rating: 4.7,
-    reviews: 74,
-    deposit: 600,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 500,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 500 },
-      { period: "7 Days",  rentPerDay: 92  },
-      { period: "15 Days", rentPerDay: 46  },
-      { period: "20 Days", rentPerDay: 37  },
-    ],
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80",
-    description: "Portable charcoal barbeque grill — perfect for camping cookouts and bonfire nights.",
-  },
-  {
-    id: "shower-cubicle",
-    name: "2 Seconds Camping Shower Cubicle",
-    category: "Gear",
-    location: "Pune",
-    rating: 4.4,
-    reviews: 42,
-    deposit: 400,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 500,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 500 },
-      { period: "7 Days",  rentPerDay: 100 },
-      { period: "15 Days", rentPerDay: 60  },
-      { period: "20 Days", rentPerDay: 50  },
-    ],
-    image: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=800&q=80",
-    description: "Instant pop-up shower cubicle / changing tent. Sets up in 2 seconds, perfect for multi-day camps.",
-  },
-  {
-    id: "hammock-chair",
-    name: "SkyFloat Foldable Hammock Chair",
-    category: "Gear",
-    location: "Pune & Mumbai",
-    rating: 4.5,
-    reviews: 59,
-    deposit: 350,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 400,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 400 },
-      { period: "7 Days",  rentPerDay: 100 },
-      { period: "15 Days", rentPerDay: 60  },
-      { period: "20 Days", rentPerDay: 45  },
-    ],
-    image: "https://images.unsplash.com/photo-1520454974749-611f78e3c949?auto=format&fit=crop&w=800&q=80",
-    description: "Lightweight foldable hammock chair for relaxing at camp. Easy to hang between trees.",
-  },
-  {
-    id: "trekking-poles",
-    name: "Trekking Poles (Pair)",
-    category: "Gear",
-    location: "Pune",
-    rating: 4.7,
-    reviews: 103,
-    deposit: 300,
-    availability: "Available",
-    badge: null,
-    pricePerDay: 120,
-    pricingTiers: [
-      { period: "1 Day",   rentPerDay: 120 },
-      { period: "7 Days",  rentPerDay: 70  },
-      { period: "15 Days", rentPerDay: 50  },
-      { period: "20 Days", rentPerDay: 40  },
-    ],
-    image: "https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=800&q=80",
-    description: "Adjustable aluminium trekking poles with anti-shock mechanism. A must for rocky trails.",
-  },
-];
+/** "⭐ 4.7 (98 reviews)" only when the item has real ratings. */
+function RatingLine({ item }) {
+  const rating = realRating(item);
+  if (!rating) return null;
+  return <p style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: 10 }}>⭐ {rating.label}</p>;
+}
+
+/* The page lists only published rentals synced from the API (gt_rentals). The old hard-coded
+   catalogue (shown whenever the API returned none) was removed so nothing unpublished looks bookable. */
 
 const CATEGORIES = ["All", "Tents", "Gear", "Villas"];
 
 export default function Rental() {
+  const trustBadges = useSiteContent("site.trustBadges")?.items || []; // Admin → Site Content (t129u)
   const location = useLocation();
   const [activeCategory, setActiveCategory] = useState(
     location.state?.category || "All"
   );
 
   const [, setSyncKey] = useState(0);
+  const [synced, setSynced] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -205,12 +36,13 @@ export default function Rental() {
     // Sync from backend so admin changes reflect on all devices
     syncProductsFromApi("rental", "gt_rentals")
       .then((items) => { if (items) setSyncKey((k) => k + 1); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setSynced(true));
   }, []);
 
   const _rawRentals = getAdminItems("gt_rentals");
   const adminRentals = _rawRentals.filter((r) => r.active !== false).map(normaliseItem);
-  const baseRentals = _rawRentals.length > 0 ? adminRentals : rentalItems;
+  const baseRentals = adminRentals;
   const adminVillas = getAdminItems("gt_villas")
     .filter((v) => v.active !== false)
     .map((v) => ({ ...normaliseItem(v), category: "Villas" }));
@@ -237,17 +69,12 @@ export default function Rental() {
             Rent Camping &amp; Trekking Gear
           </h1>
           <p style={{ fontSize: "1rem", opacity: 0.88, maxWidth: 620, lineHeight: 1.75, marginBottom: 28 }}>
-            Why buy when you can rent? Get premium camping tents, sleeping bags, rucksacks, and more — available in Pune &amp; Mumbai. Block your gear in 2 minutes. No payment required now. Pay on delivery available.
+            Tents and trekking gear on rent. Pick an item to see the rental rates and ask us on WhatsApp.
           </p>
 
           {/* Trust badges */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-            {[
-              { icon: "⚡", text: "Block in 2 minutes" },
-              { icon: "💳", text: "No payment required now" },
-              { icon: "🚚", text: "Pay on delivery" },
-              { icon: "↩️", text: "Easy cancellation" },
-            ].map((b) => (
+            {trustBadges.map((b) => (
               <div key={b.text} style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "8px 16px", fontSize: "0.82rem", fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
                 <span>{b.icon}</span>{b.text}
               </div>
@@ -283,6 +110,12 @@ export default function Rental() {
 
       {/* ── GEAR GRID ── */}
       <div className="container py-5">
+        {filtered.length === 0 && synced && (
+          <div className="text-center text-muted py-5" data-testid="rentals-empty">
+            <p className="mb-2">No rental items are listed right now.</p>
+            <p>Message us on WhatsApp to ask about tents and gear for your dates.</p>
+          </div>
+        )}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 24 }}>
           {filtered.map((item) => (
             <div
@@ -308,9 +141,7 @@ export default function Rental() {
               <div style={{ padding: "16px 18px 20px" }}>
                 <h5 style={{ fontWeight: 700, fontSize: "0.95rem", color: "#111827", marginBottom: 4 }}>{item.name}</h5>
                 <p style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: 6 }}>📍 {item.location}</p>
-                <p style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: 10 }}>
-                  ⭐ {item.rating} <span style={{ color: "#9ca3af" }}>({item.reviews} reviews)</span>
-                </p>
+                <RatingLine item={item} />
                 <p style={{ fontSize: "0.83rem", color: "#374151", lineHeight: 1.55, marginBottom: 14 }}>{item.description}</p>
 
                 {/* Mini pricing table */}
@@ -345,7 +176,7 @@ export default function Rental() {
                       Book Now
                     </a>
                     <Link
-                      to={`/rentals/${item.id}`}
+                      to={rentalPath(item)}
                       state={{ item }}
                       style={{ background: "#fff", color: "#059669", padding: "8px 20px", borderRadius: 10, fontWeight: 700, fontSize: "0.83rem", textDecoration: "none", border: "1px solid #059669", flex: 1, textAlign: "center" }}
                     >
@@ -382,7 +213,7 @@ export default function Rental() {
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 20 }}>
             {[
-              { step: "1", icon: "📅", title: "Choose Dates", desc: "Pick your rental start and end dates. Block instantly — no payment required now." },
+              { step: "1", icon: "📅", title: "Choose Dates", desc: "Pick your rental start and end dates." },
               { step: "2", icon: "🪪", title: "KYC Verification", desc: "Provide a government-issued photo ID and address proof before or at delivery." },
               { step: "3", icon: "🚚", title: "Delivery to Your Door", desc: "We deliver to Pune and Mumbai. A product checklist is provided at delivery time." },
               { step: "4", icon: "🏕", title: "Enjoy Your Adventure", desc: "Use the gear responsibly. Return it in the same condition for a full deposit refund." },

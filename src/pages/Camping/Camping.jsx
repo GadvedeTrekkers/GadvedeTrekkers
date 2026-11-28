@@ -2,13 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { FALLBACK_IMAGE, handleImageError } from "../../utils/imageFallback";
 import { Link, useLocation } from "react-router-dom";
 import { getAdminItems, normaliseItem } from "../../data/adminStorage";
-import { getPrimaryCampingImage, parseJsonValue } from "../../data/campingDetailsData";
+import { getPrimaryCampingImage, parseJsonValue } from "../../utils/listingParsers";
 import { useSeo } from "../../seo/useSeo";
-import { CAMPING_TITLE, CAMPING_DESCRIPTION, SITE_ORIGIN, DEFAULT_OG, absoluteUrl, organizationNode } from "../../seo/publicSeo";
+import { pageSeo, SITE_ORIGIN, DEFAULT_OG, absoluteUrl, organizationNode } from "../../seo/publicSeo";
 import { selectPublicTrips } from "../../data/publicTrips";
 import { syncProductsFromApi } from "../../api/getAll";
 import BookingCTA from "../../components/BookingCTA";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
+import { upcomingLabels } from "../../utils/upcomingDate";
+import { useSiteData } from "../../config/siteContent";
 
 const TYPE_FILTERS = ["All", "Beach", "Lake", "Forest", "Mountain", "Hill", "Farm"];
 
@@ -32,9 +34,11 @@ export default function Camping() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [activeSort, setActiveSort] = useState("popular");
   const [campingItems, setCampingItems] = useState([]);
+  useSiteData(); // re-render when admin content (search titles, company name) arrives
+  const seoText = pageSeo("camping"); // Admin → Site Content → Search titles (t129u)
   useSeo({
-    title: CAMPING_TITLE,
-    description: CAMPING_DESCRIPTION,
+    title: seoText.title,
+    description: seoText.description,
     canonical: `${SITE_ORIGIN}/camping`,
     image: absoluteUrl(DEFAULT_OG.path),
     imageWidth: DEFAULT_OG.width,
@@ -44,7 +48,7 @@ export default function Camping() {
       "@context": "https://schema.org",
       "@graph": [
         organizationNode,
-        { "@type": "CollectionPage", name: CAMPING_TITLE, url: `${SITE_ORIGIN}/camping`, description: CAMPING_DESCRIPTION },
+        { "@type": "CollectionPage", name: seoText.title, url: `${SITE_ORIGIN}/camping`, description: seoText.description },
       ],
     },
   });
@@ -61,12 +65,10 @@ export default function Camping() {
         .map((item) => ({
           ...normaliseItem(item),
           image: getPrimaryCampingImage(item),
-          nextDates: parseDates(item.nextDates),
+          nextDates: upcomingLabels(parseDates(item.nextDates)),
         }));
 
-    // Real camping products (product_type=camping) are listed as-is; selectPublicTrips is the
-    // 4-slug Home/Treks allowlist and would drop every admin-created camp. It is used here only
-    // to pick up the NYE listing that is stored as a trek.
+    // Real camping products (product_type=camping) are listed as-is.
     const publicCamps = (camps, treks) => {
       const liveCamps = (camps || []).filter(
         (item) =>
@@ -75,8 +77,10 @@ export default function Camping() {
           item.active !== false &&
           String(item.productType || item.product_type || "camping").toLowerCase() === "camping"
       );
+      // Camping trips that are stored as treks in the catalogue (e.g. a New Year camp) are recognised by
+      // their admin category / name, not by a hard-coded slug.
       const nyeTrek = selectPublicTrips(treks || []).filter(
-        (item) => item.slug === "new-year-beach-side-camping"
+        (item) => /camp/i.test(`${item.category || ""} ${item.hubSlug || ""} ${item.name || ""}`)
       );
       const seen = new Set();
       return [...nyeTrek, ...liveCamps].filter((item) => {

@@ -25,14 +25,14 @@ PORT=10000
 # Supabase Credentials (CRITICAL - Use your real values)
 SUPABASE_URL=https://qgiqkxxwoyqffozgvbvi.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnaXFreHh3b3lxZmZvemd2YnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxOTEzODQsImV4cCI6MjA4NDc2NzM4NH0.LufpdVhrHr-yrrC-45AL-69s_YGBhm5qmzdcDGAPAio
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnaXFreHh3b3lxZmZvemd2YnZpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTE5MTM4NCwiZXhwIjoyMDg0NzY3Mzg0fQ.H0hsor0xBiOEFgmE8n3691A4DYcxNAePBDxpoB-ecss
+SUPABASE_SERVICE_ROLE_KEY=<set-in-render-dashboard-never-commit>
 
 # Admin Credentials (CHANGE PASSWORD FOR PRODUCTION!)
-ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 ADMIN_USERS=[{"username":"admin","password":"CHANGE_THIS_PASSWORD","name":"Admin","role":"Super Admin"}]
 
 # JWT Secret (CRITICAL - Generate a strong random secret)
-JWT_SECRET=GENERATE_A_STRONG_RANDOM_SECRET_AT_LEAST_32_CHARACTERS_LONG
+JWT_SECRET=<set-in-render-dashboard-never-commit>
 
 # CORS Origins (Add your production domains)
 CORS_ORIGIN=https://gadvede.com,https://www.gadvede.com,https://gadvedetrekkersfrontend.onrender.com
@@ -58,7 +58,7 @@ Copy the output and use it as your `JWT_SECRET` in production.
 
 #### C. Change Admin Password
 
-**IMPORTANT:** Change the default password `admin123` to something strong:
+**IMPORTANT:** Change the default password `<your-admin-password>` to something strong:
 
 ```json
 [{"username":"admin","password":"YourStrongPassword123!","name":"Admin","role":"Super Admin"}]
@@ -77,7 +77,7 @@ Go to Netlify dashboard → Site settings → Environment variables and set:
 VITE_API_BASE_URL=https://gadvedetrekkers.onrender.com
 
 # Admin API Key (Must match backend)
-VITE_ADMIN_API_KEY=80df155f08e2e82d16e1701f2e2e8978c06c07427324d6d177847ae43dc31907
+VITE_ADMIN_API_KEY=<set-in-render-dashboard-never-commit>
 
 # Supabase (Frontend uses public/anon key only)
 VITE_SUPABASE_URL=https://qgiqkxxwoyqffozgvbvi.supabase.co
@@ -107,7 +107,7 @@ This builds the admin panel into `backend/admin-dist/` which the backend serves.
 - ✅ Different secret for development and production
 
 ### 2. Admin Password
-- ✅ Change from default `admin123`
+- ✅ Change from default `<your-admin-password>`
 - ✅ Use a strong password with uppercase, lowercase, numbers, symbols
 - ✅ Consider using a password manager
 

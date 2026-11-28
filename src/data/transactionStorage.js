@@ -11,6 +11,7 @@
      • customerId  – links transaction to customer module
      • dateTime    – ISO timestamp alias (same value as createdAt)
 ───────────────────────────────────────────────────────────── */
+import { isStaffArea } from "../utils/clientDataHygiene";
 
 import { apiRequest } from "../api/backendClient";
 
@@ -292,7 +293,9 @@ const _SEED_AMOUNTS = [
   /* i=29 Mum   2tkts CARD RFD  */ { gross:2938, tax:140, net:2798 },
 ];
 
-(function seedTransactionsIfEmpty() {
+// Dev-only demo data: compiled out of production builds (build-time constant).
+if (import.meta.env.DEV) (function seedTransactionsIfEmpty() {
+  if (!isStaffArea()) return; // demo data only inside admin/employee pages
   try {
     if (getAllTransactions().length > 0) return;
 

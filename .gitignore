@@ -35,3 +35,6 @@ backend/.env.*.local
 *.njsproj
 *.sln
 *.sw?
+
+# Instagram token refresh output (backend/scripts/refresh-instagram-token.js)
+ig-token.new

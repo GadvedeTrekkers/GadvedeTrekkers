@@ -779,6 +779,8 @@ function seedEmployeeJourneyDemo() {
 }
 
 export function registerEmployeeJourneyDemoSeed() {
+  // Dev-only: never expose the demo seeder (fake customers/bookings) on the live site.
+  if (!import.meta.env.DEV) return;
   if (typeof window === "undefined" || window[DEMO_FLAG]) return;
   window[DEMO_FLAG] = true;
   window.__seedEmployeeJourneyDemo = seedEmployeeJourneyDemo;

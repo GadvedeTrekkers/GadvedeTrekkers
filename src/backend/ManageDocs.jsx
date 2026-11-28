@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
-import { getAllCredentials } from "../data/employeePortalStorage";
+import { useState } from "react";
 
 /* ══════════════════════════════════════════════
    ManageDocs.jsx — Gadvede Trekkers
-   User Manual · SRS · BRD · Flowcharts · Credentials
+   User Manual · SRS · BRD · Flowcharts · Quick Reference
    Readable by any new team member or outsider
 ══════════════════════════════════════════════ */
 
@@ -70,27 +69,6 @@ function FlowRow({ children }) {
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
       {children}
     </div>
-  );
-}
-
-/* ── Credential pill ── */
-function CredRow({ role, username, password, portal, notes }) {
-  const [showPw, setShowPw] = useState(false);
-  return (
-    <tr>
-      <td style={S.td}><strong>{role}</strong></td>
-      <td style={{ ...S.td, fontFamily: "monospace", color: "#0284c7" }}>{username}</td>
-      <td style={S.td}>
-        <span style={{ fontFamily: "monospace", color: showPw ? "#dc2626" : "#94a3b8" }}>
-          {showPw ? password : "••••••••"}
-        </span>
-        <button onClick={() => setShowPw(v => !v)} style={{ marginLeft: 8, background: "none", border: "1px solid #e2e8f0", borderRadius: 4, fontSize: 10, cursor: "pointer", padding: "1px 6px" }}>
-          {showPw ? "Hide" : "Show"}
-        </button>
-      </td>
-      <td style={S.td}><span style={S.badge("#0284c7")}>{portal}</span></td>
-      <td style={{ ...S.td, color: "#64748b", fontSize: 11 }}>{notes}</td>
-    </tr>
   );
 }
 
@@ -204,7 +182,7 @@ function UserManual() {
     {
       icon: "🔗", title: "Employee Portal", path: "/employee-login",
       desc: "Separate portal for trek leaders. Login with auto-generated credentials. View assigned treks, collect payments, share referral links, track earnings.",
-      steps: ["Open /employee-login in a separate tab", "Login with employee credentials (rahul.patil / rahul001 for demo)", "My Treks: see all assigned events — upcoming and past", "View participant list with emergency contacts", "Enter amount + click Collect to record partial payment", "Copy referral link from Share & Earn tab", "My Earnings: track ₹100/referral incentives"]
+      steps: ["Open /employee-login in a separate tab", "Login with the username and password the admin set up for you on the server", "My Treks: see all assigned events — upcoming and past", "View participant list with emergency contacts", "Enter amount + click Collect to record partial payment", "Copy referral link from Share & Earn tab", "My Earnings: track ₹100/referral incentives"]
     },
   ];
 
@@ -314,7 +292,7 @@ function SRSTab() {
             {[
               ["Performance", "All pages load < 2 seconds; all calculations done client-side in real-time"],
               ["Persistence", "All data stored in browser localStorage; no data loss on page refresh"],
-              ["Security", "Role-based access control; session stored in sessionStorage (clears on tab close); passwords not hashed (local-only system)"],
+              ["Security", "Role-based access control; session stored in sessionStorage (clears on tab close); sign-in is checked by the backend; the browser never stores passwords"],
               ["Usability", "Mobile-responsive; works on Chrome, Firefox, Safari; no login required for public pages"],
               ["Reliability", "No backend dependency; operates fully offline; graceful handling of missing/corrupt localStorage data"],
               ["Maintainability", "React functional components; modular storage files per domain; no external state management library"],
@@ -335,7 +313,7 @@ function SRSTab() {
               ["gt_treks", "Trek listings (public content)", "ManageTreks, Booking form, Employee Portal"],
               ["gt_employees", "Employee profiles (role, pay, skills)", "ManageEmployees, Trek Payments form"],
               ["gt_vendors", "Vendor profiles (service type, rate)", "ManageVendors, Trek Payments form"],
-              ["gt_employee_creds", "Portal login credentials + approval status", "Employee login, Onboarding"],
+              ["gt_employee_onboarding", "Portal onboarding approval status (no passwords; login is checked by the backend)", "Onboarding"],
               ["gt_incentives", "Referral incentive records (₹100 each)", "Booking form, ManageEarnings, Employee Portal"],
               ["gt_trek_events", "Trek lifecycle stage tracking + task checklists", "ManageReports → Lifecycle tab, Dashboard"],
               ["gt_earnings", "Manual earnings entries (Tent/Villa/Camping/College IV)", "ManageEarnings, Reports"],
@@ -527,7 +505,7 @@ function FlowchartsTab() {
             <h3 style={{ ...S.h3, marginTop: 0 }}>👤 Employee Onboarding Flow</h3>
             <div style={{ maxWidth: 400, margin: "0 auto" }}>
               <FlowNode text="Admin creates employee profile" type="start" color="#16a34a" />
-              <Arrow /><FlowNode text="System auto-generates credentials" type="process" color="#3b82f6" sub="username = first.last · password = first+id · referral code = REF-XX001" />
+              <Arrow /><FlowNode text="System auto-generates credentials" type="process" color="#3b82f6" sub="username and referral code are generated; the password is set on the server" />
               <Arrow /><FlowNode text="Credentials saved — status: PENDING" type="storage" />
               <Arrow /><FlowNode text="Akshay or Pratik logs in" type="process" color="#0891b2" />
               <Arrow /><FlowNode text="Sees 'N pending approvals' banner" type="process" color="#f59e0b" />
@@ -601,42 +579,15 @@ function FlowchartsTab() {
   );
 }
 
-/* ─── Employee cred row with local show/hide ─── */
-function EmpCredRow({ cred }) {
-  const [showPw, setShowPw] = useState(false);
-  const statusColor = cred.onboardingStatus === "APPROVED" ? "#16a34a"
-    : cred.onboardingStatus === "REJECTED" ? "#dc2626" : "#d97706";
-  return (
-    <tr>
-      <td style={S.td}><strong>{cred.fullName}</strong><div style={{ fontSize: 10, color: "#94a3b8" }}>{cred.employeeId}</div></td>
-      <td style={{ ...S.td, fontFamily: "monospace", color: "#0284c7" }}>{cred.username}</td>
-      <td style={S.td}>
-        <span style={{ fontFamily: "monospace", color: showPw ? "#dc2626" : "#94a3b8" }}>{showPw ? cred.password : "••••••••"}</span>
-        <button onClick={() => setShowPw(v => !v)} style={{ marginLeft: 6, background: "none", border: "1px solid #e2e8f0", borderRadius: 4, fontSize: 10, cursor: "pointer", padding: "1px 5px" }}>
-          {showPw ? "Hide" : "Show"}
-        </button>
-      </td>
-      <td style={{ ...S.td, fontFamily: "monospace", color: "#16a34a" }}>{cred.referralCode}</td>
-      <td style={S.td}><span style={S.badge(statusColor)}>{cred.onboardingStatus}</span></td>
-    </tr>
-  );
-}
-
 /* ═════════════════════════════════════════
-   TAB: CREDENTIALS
+   TAB: QUICK REFERENCE
 ═════════════════════════════════════════ */
-function CredentialsTab() {
-  const [empCreds, setEmpCreds] = useState([]);
-
-  useEffect(() => {
-    setEmpCreds(getAllCredentials());
-  }, []);
-
+function QuickReferenceTab() {
   return (
     <div>
-      <h2 style={S.h2}>🔑 Login Credentials & Quick Reference</h2>
+      <h2 style={S.h2}>🔗 Quick Reference</h2>
       <div style={{ background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 8, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#92400e" }}>
-        ⚠️ Keep these credentials confidential. For production use, store in a secure secrets manager — not in source code.
+        Logins are created and checked on the server. This page never lists usernames or passwords.
       </div>
 
       {/* ── URL Reference ── */}
@@ -671,7 +622,7 @@ function CredentialsTab() {
               ["/admin/reports", "Reports & Analytics", "Akshay / Pratik"],
               ["/admin/employees", "Employee management", "Admins"],
               ["/admin/onboarding", "Employee onboarding approvals", "Akshay / Pratik"],
-              ["/admin/docs", "This page — How to Use, Credentials, Docs", "Admins"],
+              ["/admin/docs", "This page — How to Use, Quick Reference, Docs", "Admins"],
               ["/employee-login", "Employee portal login", "Trek Leaders / Staff"],
               ["/employee/dashboard", "Trek leader dashboard", "Trek Leaders"],
               ["/employee/direct-booking", "Direct payment booking form", "Employees / admins"],
@@ -686,42 +637,6 @@ function CredentialsTab() {
         </table>
       </div>
 
-      {/* ── Admin credentials ── */}
-      <div style={S.card}>
-        <h3 style={S.h3}>Admin Panel <code style={{ fontSize: 11, color: "#64748b" }}>/admin</code></h3>
-        <table style={S.table}>
-          <thead><tr>{["Role", "Username", "Password", "Portal", "Notes"].map(h => <th key={h} style={S.th}>{h}</th>)}</tr></thead>
-          <tbody>
-            <CredRow role="Super Admin" username="admin" password="gadvede@123" portal="Admin Panel" notes="Full access to all modules" />
-            <CredRow role="Pratik Ubhe – Management" username="pratik.ubhe" password="Pratik@gadvede" portal="Admin Panel" notes="Approve pay rates, initiate vendor payments, approve onboarding" />
-            <CredRow role="Rohit Panhalkar – Management" username="rohit.panhalkar" password="Rohit@gadvede" portal="Admin Panel" notes="Mark vendor payments, financial records" />
-            <CredRow role="Akshay Kangude – Management" username="akshay.kangude" password="Akshay@gadvede" portal="Admin Panel" notes="Approve onboarding, approve pay rates" />
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── Employee credentials (dynamic) ── */}
-      <div style={S.card}>
-        <h3 style={S.h3}>Employee Portal <code style={{ fontSize: 11, color: "#64748b" }}>/employee-login</code></h3>
-        <p style={S.p}>
-          Employee credentials are auto-generated when a new employee profile is saved.
-          Format: <code>first.last</code> / <code>first+id_suffix</code>.
-          Must be <strong>APPROVED</strong> by Akshay or Pratik before login works.
-          This table updates automatically when new employees are added.
-        </p>
-        {empCreds.length === 0 ? (
-          <p style={{ ...S.p, color: "#94a3b8" }}>No employee credentials found.</p>
-        ) : (
-          <table style={S.table}>
-            <thead>
-              <tr>{["Employee", "Username", "Password", "Referral Code", "Status"].map(h => <th key={h} style={S.th}>{h}</th>)}</tr>
-            </thead>
-            <tbody>
-              {empCreds.map(cred => <EmpCredRow key={cred.credId} cred={cred} />)}
-            </tbody>
-          </table>
-        )}
-      </div>
     </div>
   );
 }
@@ -937,7 +852,7 @@ export default function ManageDocs() {
     { id: "brd",         icon: "📊", label: "BRD"          },
     { id: "apis",        icon: "🧩", label: "APIs"         },
     { id: "flowcharts",  icon: "🔄", label: "Flowcharts"   },
-    { id: "credentials", icon: "🔑", label: "Credentials"  },
+    { id: "reference", icon: "🔗", label: "Quick Reference"  },
   ];
 
   return (
@@ -956,7 +871,7 @@ export default function ManageDocs() {
       {tab === "brd"         && <BRDTab />}
       {tab === "apis"        && <ApiReferenceTab />}
       {tab === "flowcharts"  && <FlowchartsTab />}
-      {tab === "credentials" && <CredentialsTab />}
+      {tab === "reference"   && <QuickReferenceTab />}
     </div>
   );
 }

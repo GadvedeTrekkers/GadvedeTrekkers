@@ -274,3 +274,25 @@ test("known trips use the public cover and pad a thin gallery", () => {
     "https://www.gadvede.com/trips/nye-beach.jpg"
   );
 });
+
+test("the image saved in the admin wins over the bundled /trips cover", () => {
+  const db = "https://example.supabase.co/storage/v1/object/public/site-images/kalsubai-peak-trek/01.jpg";
+  const gallery = resolveTripGallery({
+    slug: "kalsubai-peak-trek",
+    image: db,
+    imageGallery: JSON.stringify([db, "https://www.gadvede.com/trips/kalsubai.jpg"]),
+  });
+  assert.equal(gallery[0], db);
+  assert.equal(gallery[1], "https://www.gadvede.com/trips/kalsubai.jpg");
+});
+
+test("admin gallery wins over stale media, and admin data: uploads are kept", () => {
+  const up = "data:image/jpeg;base64,AAAA";
+  const gallery = resolveTripGallery({
+    slug: "new-year-beach-side-camping",
+    image: "https://x.test/a.jpg",
+    imageGallery: JSON.stringify(["https://x.test/a.jpg", up]),
+    media: [{ url: "https://www.gadvede.com/trips/nye-beach.jpg" }, { url: "https://x.test/a.jpg" }],
+  });
+  assert.deepEqual(gallery, ["https://x.test/a.jpg", up]);
+});

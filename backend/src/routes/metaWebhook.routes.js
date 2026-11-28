@@ -2,11 +2,15 @@ import express from 'express';
 import crypto from 'node:crypto';
 import { metaConfig } from '../config/meta.js';
 import simpleRateLimit from '../utils/simpleRateLimit.js';
+import { defaultLookupIgProfile, isStopMessage, recordWhatsappOptOut, upsertSocialLead } from '../services/socialLeads.js';
 
 /**
- * Meta (Instagram + Facebook Page) webhook.
+ * Meta (Instagram + Facebook Page + WhatsApp Cloud API) webhook.
  *   GET  .../webhooks/meta  subscription verification (hub.mode / hub.verify_token / hub.challenge). No auth.
  *   POST .../webhooks/meta  X-Hub-Signature-256 over the RAW body (META_APP_SECRET); 200 immediately; async processing.
+ * Objects: instagram (DMs, comments — stored only), page (lead ads), whatsapp_business_account (messages, statuses).
+ * With META_LEADS_TO_CRM=true, Instagram DMs and WhatsApp messages also create/update a CRM enquiry
+ * (services/socialLeads.js). Nothing here ever sends a reply or touches comments (Logout Studio runs the IG automation).
  * Mounted at /api/v1/webhooks/meta and /api/webhooks/meta BEFORE cors/express.json in app.js
  * (server-to-server: no Origin/CORS check, own limiter, raw body).
  * `db` is an (async) factory returning a supabase client; default = service-role client, imported lazily.
@@ -87,6 +91,36 @@ export function parsePayload(body) {
           out.push({ kind: 'other', object: 'page', dedupeKey: `page_change:${sha(JSON.stringify(c))}`, ids: { field: c.field }, data: c });
         }
       }
+    } else if (body.object === 'whatsapp_business_account') {
+      for (const c of entry.changes ?? []) {
+        const v = c.value ?? {};
+        if (c.field !== 'messages') {
+          out.push({ kind: 'other', object: 'whatsapp', dedupeKey: `wa_change:${sha(JSON.stringify(c))}`, ids: { field: c.field }, data: c });
+          continue;
+        }
+        const names = new Map((v.contacts ?? []).map((ct) => [String(ct.wa_id ?? ''), ct.profile?.name ?? null]));
+        for (const m of v.messages ?? []) {
+          if (!m?.id) continue;
+          out.push({
+            kind: 'whatsapp_message', object: 'whatsapp', dedupeKey: `wa_msg:${m.id}`,
+            ids: { wamid: m.id, type: m.type },
+            data: {
+              wamid: String(m.id), wa_id: String(m.from ?? ''), profile_name: names.get(String(m.from ?? '')) ?? null,
+              phone_number_id: v.metadata?.phone_number_id ? String(v.metadata.phone_number_id) : null, type: m.type ?? null,
+              text: m.text?.body ?? m.button?.text ?? m.interactive?.button_reply?.title ?? m.interactive?.list_reply?.title ?? m.image?.caption ?? null,
+              sent_at: m.timestamp ? new Date(Number(m.timestamp) * 1000).toISOString() : null,
+            },
+          });
+        }
+        for (const st of v.statuses ?? []) {
+          if (!st?.id || !st.status) continue;
+          out.push({
+            kind: 'whatsapp_status', object: 'whatsapp', dedupeKey: `wa_status:${st.id}:${st.status}`,
+            ids: { wamid: st.id, status: st.status },
+            data: { wamid: String(st.id), status: String(st.status), error_code: st.errors?.[0]?.code ?? null },
+          });
+        }
+      }
     } else {
       out.push({ kind: 'other', object: String(body.object ?? 'unknown'), dedupeKey: `unknown:${sha(JSON.stringify(entry))}`, ids: {}, data: entry });
     }
@@ -124,7 +158,23 @@ export function defaultFetchLead({ fetchImpl = globalThis.fetch } = {}) {
 }
 
 // ---------- processing ----------
-export async function processEvents({ db, events, fetchLead, log, seen }) {
+const DELIVERY_RANK = { sent: 1, delivered: 2, read: 3, failed: 4 };
+
+/** IG DM / WhatsApp message → CRM enquiry (only with META_LEADS_TO_CRM=true). Echoes (our own/automation replies) are skipped. */
+async function toCrmLead(client, ev, { lookupIgProfile, log }) {
+  if (!metaConfig().leadsToCrm) return;
+  const d = ev.data;
+  if (ev.kind === 'instagram_message') {
+    if (d.is_echo || !d.sender_id || d.sender_id === d.ig_account_id) return;
+    await upsertSocialLead(client, { source: 'instagram_dm', ref: d.sender_id, text: d.text ?? (d.attachments ? '[attachment]' : ''), at: d.sent_at }, { lookupIgProfile, log });
+  } else if (ev.kind === 'whatsapp_message') {
+    if (!d.wa_id) return;
+    if (isStopMessage(d.text)) { await recordWhatsappOptOut(client, d.wa_id); log(`crm opt-out recorded source=whatsapp wamid=${d.wamid}`); return; }
+    await upsertSocialLead(client, { source: 'whatsapp', ref: d.wa_id, phone: d.wa_id, name: d.profile_name, text: d.text ?? `[${d.type || 'message'}]`, at: d.sent_at }, { log });
+  }
+}
+
+export async function processEvents({ db, events, fetchLead, lookupIgProfile, log, seen }) {
   let client;
   try { client = await db(); } catch (err) { log(`meta db unavailable: ${String(err.message).slice(0, 120)}`); return; }
   for (const ev of events) {
@@ -141,6 +191,17 @@ export async function processEvents({ db, events, fetchLead, log, seen }) {
 
       if (ev.kind === 'instagram_message') {
         const { error: e } = await client.from('instagram_messages').insert([ev.data]); if (e) throw e;
+        await toCrmLead(client, ev, { lookupIgProfile, log });
+      } else if (ev.kind === 'whatsapp_message') {
+        const { error: e } = await client.from('whatsapp_messages').insert([ev.data]); if (e) throw e;
+        await toCrmLead(client, ev, { lookupIgProfile, log });
+      } else if (ev.kind === 'whatsapp_status') {
+        // Delivery receipts for our Cloud API sends: only move forward (sent → delivered → read; failed is final).
+        const cur = await client.from('crm_message_log').select('id, delivery_status').eq('provider_message_id', ev.data.wamid).limit(1);
+        const row = cur.data?.[0];
+        if (row && (DELIVERY_RANK[ev.data.status] ?? 0) > (DELIVERY_RANK[row.delivery_status] ?? 0)) {
+          await client.from('crm_message_log').update({ delivery_status: ev.data.status }).eq('id', row.id);
+        }
       } else if (ev.kind === 'instagram_comment') {
         const { error: e } = await client.from('instagram_comments').insert([ev.data]); if (e) throw e;
       } else if (ev.kind === 'meta_lead') {
@@ -163,10 +224,11 @@ export async function processEvents({ db, events, fetchLead, log, seen }) {
 }
 
 // ---------- router ----------
-export default function metaWebhookRouter({ db, fetchLead, schedule = setImmediate, log = (m) => console.log(m) } = {}) {
+export default function metaWebhookRouter({ db, fetchLead, lookupIgProfile, schedule = setImmediate, log = (m) => console.log(m) } = {}) {
   const router = express.Router();
   const seen = new Set();
   const getLead = fetchLead ?? defaultFetchLead();
+  const igProfile = lookupIgProfile ?? defaultLookupIgProfile();
   const cfg = () => metaConfig();
   const getDb = db ?? (async () => (await import('../config/supabaseAdminClient.js')).default);
 
@@ -197,7 +259,7 @@ export default function metaWebhookRouter({ db, fetchLead, schedule = setImmedia
     res.status(200).send('EVENT_RECEIVED'); // ack fast; Meta retries on slow/non-200
     const events = parsePayload(body);
     log(`meta received object=${body.object} events=${events.length} kinds=${[...new Set(events.map(e => e.kind))].join(',')}`);
-    schedule(() => processEvents({ db: getDb, events, fetchLead: getLead, log, seen }));
+    schedule(() => processEvents({ db: getDb, events, fetchLead: getLead, lookupIgProfile: igProfile, log, seen }));
   });
 
   return router;

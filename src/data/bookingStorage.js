@@ -1,4 +1,3 @@
-import { upsertCustomerActivity } from "./customerStorage";
 import { apiRequest } from "../api/backendClient";
 
 /* ─────────────────────────────────────────────────────────────
@@ -9,8 +8,18 @@ import { apiRequest } from "../api/backendClient";
    - bookingStatus: 'CONFIRMED' | 'CANCELLED'  (additive field)
 ───────────────────────────────────────────────────────────── */
 
-const KEY          = "gt_bookings";
 const COUNTER_KEY  = "gt_booking_counter";
+/* Booking records are never written to localStorage. A visitor's own bookings
+   from this tab are kept in sessionStorage (for the ticket page); the admin
+   panel loads the real list from GET /api/bookings via hydrateBookings(). */
+const OWN_KEY      = "gt_my_bookings";
+
+function _readOwn() {
+  try { return JSON.parse(sessionStorage.getItem(OWN_KEY) || "[]"); } catch { return []; }
+}
+
+let _bookings = _readOwn();
+let _ownIds   = new Set(_bookings.map((b) => b.bookingId));
 
 /* ── ID generation ───────────────────────────────────────────
    Format: GT-2026-000001  (sequential, zero-padded to 6 digits)
@@ -30,11 +39,21 @@ export function generateBookingId() {
 
 /* ── raw helpers ── */
 export function getAllBookings() {
-  try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; }
+  return _bookings.slice();
 }
 
 function _save(bookings) {
-  localStorage.setItem(KEY, JSON.stringify(bookings));
+  _bookings = Array.isArray(bookings) ? bookings.slice() : [];
+  try {
+    sessionStorage.setItem(OWN_KEY, JSON.stringify(_bookings.filter((b) => _ownIds.has(b.bookingId))));
+  } catch { /* ignore */ }
+}
+
+/* Admin/staff: replace the in-memory list with records from the backend. */
+export function hydrateBookings(list) {
+  const remote = Array.isArray(list) ? list : [];
+  const remoteIds = new Set(remote.map((b) => b.bookingId));
+  _save([..._bookings.filter((b) => _ownIds.has(b.bookingId) && !remoteIds.has(b.bookingId)), ...remote]);
 }
 
 /* ── persist booking ─────────────────────────────────────────
@@ -48,6 +67,7 @@ export function saveBookingRecord(enrichedRecord) {
   const all = getAllBookings();
   // idempotent: don't duplicate same bookingId
   if (all.some((b) => b.bookingId === enrichedRecord.bookingId)) return;
+  _ownIds.add(enrichedRecord.bookingId);
   _save([{
     ...enrichedRecord,
     bookingStatus: enrichedRecord.bookingStatus || "CONFIRMED",
@@ -83,6 +103,11 @@ export function updateBookingStatus(bookingId, status) {
     }).catch((error) => console.warn("Booking status sync failed", error));
   }
   return booking;
+}
+
+/* Local-only field update (e.g. leader cash collection in the employee portal). */
+export function replaceBookings(bookings) {
+  _save(bookings);
 }
 
 /* ── look-ups ── */
@@ -144,111 +169,3 @@ export function queryBookings({
 
   return results;
 }
-
-/* ── Seed bookings ───────────────────────────────────────────
-   30 seed bookings linked to seed customers.
-   Auto-seeded on first load if gt_bookings is empty.
-─────────────────────────────────────────────────────────── */
-const _TREK_NAMES   = ["Harishchandragad Trek","Kalsubai Trek","Rajmachi Trek","Bhimashankar Trek","Torna Fort Trek","Lohagad Trek","Sinhagad Trek","Ratangad Trek"];
-const _DEPS         = ["Pune","Mumbai","Kasara","Base Village"];
-const _SURCHARGES   = { Pune:300, Mumbai:400, Kasara:150, "Base Village":0 };
-const _PICKUP_MAP   = { Pune:"Shivajinagar", Mumbai:"Dadar", Kasara:"Kasara Station", "Base Village":"Direct At Base Village" };
-const _PAY_OPTS     = ["UPI","Debit Card / Credit Card","Net Banking","Partial Payment","UPI","Debit Card / Credit Card","Net Banking","Partial Payment","UPI","Debit Card / Credit Card","Net Banking","Partial Payment","UPI","Debit Card / Credit Card","Net Banking","Partial Payment","UPI","Debit Card / Credit Card","Net Banking","Partial Payment","UPI","Debit Card / Credit Card","Net Banking","Partial Payment","UPI","Debit Card / Credit Card","Net Banking","Partial Payment","UPI","Debit Card / Credit Card"];
-const _TICKETS_ARR  = [1,2,3,2,1,4,2,1,3,2,1,2,3,1,2,3,1,2,1,3,2,1,2,3,1,2,1,3,2,1];
-const _CUST_DATA    = [
-  { id:"CUST-seed-01", name:"Arjun Sharma",      phone:"9823456701" },
-  { id:"CUST-seed-02", name:"Priya Patil",        phone:"9834567802" },
-  { id:"CUST-seed-03", name:"Rohit Desai",        phone:"9845678903" },
-  { id:"CUST-seed-04", name:"Sneha Joshi",        phone:"9856789004" },
-  { id:"CUST-seed-05", name:"Vikram Kulkarni",    phone:"9867890105" },
-  { id:"CUST-seed-06", name:"Neha Mehta",         phone:"9878901206" },
-  { id:"CUST-seed-07", name:"Amit Bhosale",       phone:"9889012307" },
-  { id:"CUST-seed-08", name:"Kavita Rane",        phone:"9890123408" },
-  { id:"CUST-seed-09", name:"Suresh Naik",        phone:"9901234509" },
-  { id:"CUST-seed-10", name:"Pooja Wagh",         phone:"9912345610" },
-  { id:"CUST-seed-11", name:"Rahul Shinde",       phone:"9923456711" },
-  { id:"CUST-seed-12", name:"Anita Pawar",        phone:"9934567812" },
-  { id:"CUST-seed-13", name:"Deepak Gaikwad",     phone:"9945678913" },
-  { id:"CUST-seed-14", name:"Swati More",         phone:"9956789014" },
-  { id:"CUST-seed-15", name:"Sachin Kadam",       phone:"9967890115" },
-  { id:"CUST-seed-16", name:"Rujuta Mane",        phone:"9978901216" },
-  { id:"CUST-seed-17", name:"Omkar Jadhav",       phone:"9989012317" },
-  { id:"CUST-seed-18", name:"Dipali Sawant",      phone:"9990123418" },
-  { id:"CUST-seed-19", name:"Nikhil Thakur",      phone:"8801234519" },
-  { id:"CUST-seed-20", name:"Gayatri Deshpande",  phone:"8812345620" },
-  { id:"CUST-seed-21", name:"Prathamesh Salvi",   phone:"8823456721" },
-  { id:"CUST-seed-22", name:"Ashwini Chavan",     phone:"8834567822" },
-  { id:"CUST-seed-23", name:"Yash Kore",          phone:"8845678923" },
-  { id:"CUST-seed-24", name:"Rutuja Ghuge",       phone:"8856789024" },
-  { id:"CUST-seed-25", name:"Siddharth Phadtare", phone:"8867890125" },
-  { id:"CUST-seed-26", name:"Manasi Dalvi",       phone:"8878901226" },
-  { id:"CUST-seed-27", name:"Tejas Bhalekar",     phone:"8889012327" },
-  { id:"CUST-seed-28", name:"Shraddha Kamble",    phone:"8890123428" },
-  { id:"CUST-seed-29", name:"Akash Lonkar",       phone:"8801234529" },
-  { id:"CUST-seed-30", name:"Pallavi Nimbalkar",  phone:"8812345630" },
-];
-
-/* i=0..24 → CONFIRMED, i=25..29 → CANCELLED */
-const SEED_BOOKINGS = _CUST_DATA.map((c, i) => {
-  const trek        = _TREK_NAMES[i % 8];
-  const dep         = _DEPS[i % 4];
-  const tickets     = _TICKETS_ARR[i];
-  const pricePerTkt = 999 + (_SURCHARGES[dep] || 0);
-  const baseAmount  = tickets * pricePerTkt;
-  const taxAmount   = Math.round(baseAmount * 0.05);
-  const totalAmount = baseAmount + taxAmount;
-  const payOpt      = _PAY_OPTS[i];
-  const payableNow  = payOpt === "Partial Payment" ? 200 * tickets : totalAmount;
-  const remaining   = payOpt === "Partial Payment" ? totalAmount - payableNow : 0;
-  /* Stagger dates: Sept 2025 → Mar 2026 */
-  const baseMs      = new Date(2025, 8, 1).getTime();
-  const savedAt     = new Date(baseMs + i * 6 * 24 * 3600 * 1000).toISOString();
-  const nameParts   = c.name.split(" ");
-  return {
-    bookingId:         `GTK-seed-${String(i + 1).padStart(4, "0")}`,
-    enhancedBookingId: `GT-2025-${String(i + 1).padStart(6, "0")}`,
-    customerId:        c.id,
-    firstName:         nameParts[0],
-    lastName:          nameParts.slice(1).join(" "),
-    email:             `${c.name.toLowerCase().replace(/ /g, ".")}@gmail.com`,
-    contactNumber:     c.phone,
-    whatsappNumber:    c.phone,
-    trekName:          trek,
-    tickets,
-    departureOrigin:   dep,
-    pickupLocation:    _PICKUP_MAP[dep],
-    paymentOption:     payOpt,
-    baseAmount,
-    taxAmount,
-    totalAmount,
-    payableNow,
-    remainingAmount:   remaining,
-    bookingDate:       new Date(savedAt).toLocaleDateString("en-IN"),
-    savedAt,
-    bookingStatus:     i < 25 ? "CONFIRMED" : "CANCELLED",
-    nextDate:          "2025-12-15",
-  };
-});
-
-(function seedBookingsIfEmpty() {
-  try {
-    if (getAllBookings().length === 0) {
-      _save(SEED_BOOKINGS);
-    }
-  } catch { /* ignore */ }
-})();
-
-(function hydrateSeedBookingsIntoCustomers() {
-  try {
-    getAllBookings().forEach((booking) => {
-      upsertCustomerActivity({
-        name: `${booking.firstName || ""} ${booking.lastName || ""}`.trim(),
-        phone: booking.contactNumber || "",
-        email: booking.email || "",
-        booking,
-      });
-    });
-  } catch {
-    /* ignore hydration failures */
-  }
-})();

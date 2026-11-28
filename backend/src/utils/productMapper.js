@@ -107,6 +107,21 @@ function safeDate(value) {
 }
 
 function buildMedia(item) {
+  // The admin form edits imageGallery, not media. When a gallery is sent, rebuild media from it (keeping
+  // any alt text already saved for the same URL) so images removed or added in admin are reflected.
+  const sentGallery = parseJson(item.imageGallery, []);
+  if (Array.isArray(sentGallery) && sentGallery.filter(Boolean).length) {
+    const altByUrl = new Map(
+      (Array.isArray(item.media) ? item.media : [])
+        .filter((entry) => entry && typeof entry === "object" && entry.url)
+        .map((entry) => [entry.url, entry.alt])
+    );
+    return [...new Set(sentGallery.filter(Boolean))].map((url) => ({
+      url,
+      alt: altByUrl.get(url) || item.name || item.title || "",
+      kind: "image",
+    }));
+  }
   if (Array.isArray(item.media) && item.media.length) {
     return item.media
       .filter((entry) => entry && (entry.url || typeof entry === "string"))

@@ -1,5 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { Fragment, useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useSiteContent } from "../config/siteContent";
+import HomeHero, { SmartLink } from "../components/HomeHero";
 import { isHeritageEnabled } from "../data/featureFlags";
 import EnquiryModal from "../components/EnquiryModal";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
@@ -11,17 +13,18 @@ import { stripPromptFields } from "../utils/contentSanitizer";
 import { syncProductsFromApi } from "../api/getAll";
 import { collectSellingPrices, genuineCompareAt, resolveTripGallery } from "../utils/tripDisplay";
 import { tripDetailPath } from "../data/publicTrips";
-import { FEATURED_TRIPS, mergeFeaturedTrips } from "../data/featuredTrips";
+import { mergeFeaturedTrips } from "../data/featuredTrips";
 import { useSeo } from "../seo/useSeo";
+import TripRating from "../components/TripRating";
+import InstagramFeed from "../components/social/InstagramFeed";
 import { waBase } from "../config/whatsappSetting";
-import {
+import { pageSeo,
   DEFAULT_OG,
-  HOME_DESCRIPTION,
-  HOME_TITLE,
   SITE_ORIGIN,
   absoluteUrl,
   homeJsonLd,
 } from "../seo/publicSeo";
+import { upcomingLabel } from "../utils/upcomingDate";
 
 // ─── Active treks (respects Live/Off status from admin panel) ─────────────────
 function parseGalleryHome(value, fallback) {
@@ -32,7 +35,7 @@ function parseGalleryHome(value, fallback) {
     return fallback;
   }
 }
-function buildActiveTreks(rawItems = FEATURED_TRIPS) {
+function buildActiveTreks(rawItems = []) {
   return mergeFeaturedTrips(rawItems).map((t) => {
     const resolved = resolveTripGallery(t);
     const gallery = resolved.length
@@ -50,6 +53,8 @@ function buildActiveTreks(rawItems = FEATURED_TRIPS) {
 }
 
 // ─── HomeTrekCard ─────────────────────────────────────────────────────────────
+const initialsOf = (name = "") => String(name).split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+
 function HomeTrekCard({ trek }) {
   const [imgIdx, setImgIdx] = useState(0);
   const intervalRef = useRef(null);
@@ -57,7 +62,6 @@ function HomeTrekCard({ trek }) {
   const compareAt = genuineCompareAt(trek.originalPrice, trek.price, collectSellingPrices(trek));
   const discountPct = compareAt ? Math.round(((compareAt - trek.price) / compareAt) * 100) : 0;
   const detailPath = tripDetailPath(trek);
-  const rating = Number(trek.rating);
 
   const handleMouseEnter = () => {
     if (images.length < 2) return;
@@ -141,13 +145,7 @@ function HomeTrekCard({ trek }) {
             <h2 className="trek-card-title">{trek.name}</h2>
             <p className="trek-location">📍 {trek.location}</p>
           </div>
-          {rating > 0 && (
-            <div className="trek-rating">
-              <span className="trek-rating-star" aria-hidden="true">★</span>
-              <span>{rating.toFixed(1)}</span>
-              <span className="trek-rating-count">({trek.reviews || 0})</span>
-            </div>
-          )}
+          <TripRating item={trek} />
         </div>
 
         <div className="trek-chip-row">
@@ -173,7 +171,7 @@ function HomeTrekCard({ trek }) {
           <span className="trek-starting-text">per person</span>
         </div>
 
-        {trek.nextDate && String(trek.nextDate).trim() && (
+        {upcomingLabel(trek.nextDate) && (
           <div className="trek-next-date">
             <span className="trek-next-label">📅 Next</span>
             <span>{trek.nextDate}</span>
@@ -199,53 +197,40 @@ function HomeTrekCard({ trek }) {
 }
 
 // ─── Tour Categories (home section) ──────────────────────────────────────────
-const TOUR_CATEGORIES = [
-  {
-    region: "himachal", label: "Himachal Tours", icon: "🏔️",
-    subtitle: "Manali · Kasol · Spiti · Jibhi",
-    image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=800&q=80",
-  },
-  {
-    region: "kashmir", label: "Kashmir & Leh Tours", icon: "🌷",
-    subtitle: "Srinagar · Gulmarg · Pahalgam · Leh",
-    image: "https://images.unsplash.com/photo-1595815771614-ade9d652a65d?w=800&q=80",
-  },
-  {
-    region: "northeast", label: "NorthEast Tours", icon: "🌿",
-    subtitle: "Meghalaya · Sikkim · Kaziranga",
-    image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800&q=80",
-  },
-  {
-    region: "rajasthan", label: "Rajasthan Tours", icon: "🏰",
-    subtitle: "Jaipur · Jodhpur · Jaisalmer · Udaipur",
-    image: "https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800&q=80",
-  },
-  {
-    region: "kerala", label: "Kerala Tours", icon: "🌴",
-    subtitle: "Munnar · Thekkady · Alleppey · Kochi",
-    image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&q=80",
-  },
-  {
-    region: "uttarakhand", label: "Uttarakhand Tours", icon: "⛪",
-    subtitle: "Kedarnath · Badrinath · Char Dham",
-    image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80",
-  },
-  {
-    region: "goa", label: "Goa Tours", icon: "🏖️",
-    subtitle: "Beaches · Backpacking · Party Capital",
-    image: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80",
-  },
-  {
-    region: "maharashtra", label: "Maharashtra Tours", icon: "🌊",
-    subtitle: "Malvan · Tarkarli · Scuba Diving",
-    image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80",
-  },
-  {
-    region: "karnataka", label: "Karnataka Tours", icon: "🏛️",
-    subtitle: "Hampi · Gokarna · Murdeshwar",
-    image: "https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788?w=800&q=80",
-  },
-];
+/* Region names/icons are UI labels for the admin "Region" options; the cards themselves (which regions,
+   their trips and photo) come from the published tours (t129u). */
+const REGION_LABELS = {
+  himachal: { label: "Himachal Tours", icon: "🏔️" },
+  kashmir: { label: "Kashmir & Leh Tours", icon: "🌷" },
+  northeast: { label: "NorthEast Tours", icon: "🌿" },
+  rajasthan: { label: "Rajasthan Tours", icon: "🏰" },
+  kerala: { label: "Kerala Tours", icon: "🌴" },
+  uttarakhand: { label: "Uttarakhand Tours", icon: "⛪" },
+  goa: { label: "Goa Tours", icon: "🏖️" },
+  maharashtra: { label: "Maharashtra Tours", icon: "🌊" },
+  karnataka: { label: "Karnataka Tours", icon: "🛕" },
+};
+
+function tourCategoriesFrom(tours) {
+  const byRegion = new Map();
+  for (const t of tours) {
+    const region = String(t.region || "").toLowerCase();
+    if (!region) continue;
+    if (!byRegion.has(region)) byRegion.set(region, []);
+    byRegion.get(region).push(t);
+  }
+  return [...byRegion.entries()].map(([region, list]) => {
+    const meta = REGION_LABELS[region] || { label: `${region.charAt(0).toUpperCase()}${region.slice(1)} Tours`, icon: "🧭" };
+    let image = "";
+    for (const t of list) {
+      let gallery = [];
+      try { gallery = Array.isArray(t.imageGallery) ? t.imageGallery : JSON.parse(t.imageGallery || "[]"); } catch { gallery = []; }
+      image = t.image || (typeof gallery[0] === "string" ? gallery[0] : gallery[0]?.src) || "";
+      if (image) break;
+    }
+    return { region, ...meta, subtitle: list.slice(0, 4).map((t) => t.shortName || t.name).filter(Boolean).join(" · "), image };
+  });
+}
 
 function TourCategoryCard({ cat }) {
   const [hovered, setHovered] = useState(false);
@@ -440,12 +425,20 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
 
   const safeItems = Array.isArray(items) ? items : [];
 
-  // Reset index when effectiveVisible changes
-  useEffect(() => {
+  // Reset index when effectiveVisible changes (adjusted during render, not in an effect: no cascading renders)
+  const [prevVisible, setPrevVisible] = useState(effectiveVisible);
+  if (prevVisible !== effectiveVisible) {
+    setPrevVisible(effectiveVisible);
     setIndex(effectiveVisible);
     setTransition(false);
-    requestAnimationFrame(() => requestAnimationFrame(() => setTransition(true)));
-  }, [effectiveVisible]);
+  }
+  // Turn the slide animation back on two frames after a jump without animation.
+  useEffect(() => {
+    if (transition) return undefined;
+    let inner = 0;
+    const outer = requestAnimationFrame(() => { inner = requestAnimationFrame(() => setTransition(true)); });
+    return () => { cancelAnimationFrame(outer); cancelAnimationFrame(inner); };
+  }, [transition]);
 
   useEffect(() => {
     // No auto-rotation on mobile/touch
@@ -527,6 +520,13 @@ function SlidingCards({ items, visibleCount = 3, interval = 4200, renderCard }) 
 
 // ─── Home ─────────────────────────────────────────────────────────────────────
 function Home() {
+  // All copy below comes from Admin → Settings → Site Content (t129u). Unset / unpublished = section hidden.
+  const heroSlides = useSiteContent("home.hero")?.slides || [];
+  const visibleStats = useSiteContent("home.stats")?.items || [];
+  const testimonials = useSiteContent("home.testimonials");
+  const services = useSiteContent("home.services");
+  const cta = useSiteContent("home.cta");
+  const localSeo = useSiteContent("home.localSeo");
   const CPP = 4;
   const [loadedCount, setLoadedCount] = useState(CPP);
   const [page, setPage]               = useState(0);
@@ -534,13 +534,14 @@ function Home() {
   const [enquiryDest, setEnquiryDest] = useState(null);
   const gridRef = useRef(null);
   const [syncKey, setSyncKey] = useState(0);
-  const [activeTreks, setActiveTreks] = useState(() => buildActiveTreks(FEATURED_TRIPS));
+  const [activeTreks, setActiveTreks] = useState([]); // filled from the live catalogue (Admin → Treks / Camping)
   const [activeTours, setActiveTours] = useState([]);
-  const [treksLoading, setTreksLoading] = useState(false);
+  const [treksLoading, setTreksLoading] = useState(true);
 
+  const seoText = pageSeo("home"); // Admin → Site Content → Search titles (t129u)
   useSeo({
-    title: HOME_TITLE,
-    description: HOME_DESCRIPTION,
+    title: seoText.title,
+    description: seoText.description,
     canonical: `${SITE_ORIGIN}/`,
     image: absoluteUrl(DEFAULT_OG.path),
     imageWidth: DEFAULT_OG.width,
@@ -575,6 +576,9 @@ function Home() {
       .catch(() => {
         if (!cancelled) setActiveTours([]);
       });
+    syncProductsFromApi("heritage", "gt_heritage")
+      .then((items) => { if (items) setSyncKey((k) => k + 1); })
+      .catch(() => {});
     syncProductsFromApi("industrial", "gt_iv")
       .then((items) => { if (items) setSyncKey((k) => k + 1); })
       .catch(() => {});
@@ -638,55 +642,11 @@ function Home() {
     transition: "box-shadow 0.2s ease",
   });
 
-  const services = [
-    {
-      icon: "🥾",
-      title: "Trekking",
-      desc: "Join weekend treks, monsoon treks, and winter treks from Pune and Mumbai with expert guidance, safety, and affordable pricing.",
-      link: "/treks",
-    },
-    {
-      icon: "⛺",
-      title: "Camping & Adventure",
-      desc: "Experience camping near Pune and Mumbai with scenic locations, tents, and exciting outdoor activities for individuals and groups.",
-      link: "/camping",
-    },
-    {
-      icon: "🏢",
-      title: "Corporate & Team Outings",
-      desc: "We organize corporate treks, team outings, day outings, and team building activities designed for fun, bonding, and adventure.",
-      link: "/corporate",
-    },
-    {
-      icon: "🎒",
-      title: "School / College / Industrial Visits",
-      desc: "We conduct school trips, college tours, and industrial visits with safe, engaging, and well-planned experiences.",
-      link: "/industrial-visits",
-    },
-    ...(isHeritageEnabled() ? [{
-      icon: "🏛️",
-      title: "Heritage Walks",
-      desc: "Explore history through curated heritage walks that showcase forts, culture, and local experiences.",
-      link: "/heritage",
-    }] : []),
-    {
-      icon: "🏡",
-      title: "Villa Rental",
-      desc: "Book villas on rent in Lonavala, Alibag, Dapoli, and Karjat for group stays and weekend getaways.",
-      link: "/rentals",
-    },
-    {
-      icon: "🏕️",
-      title: "Tent Rental",
-      desc: "Get tents on rent in Pune for trekking, camping, and outdoor adventures.",
-      link: "/rentals",
-    },
-  ];
 
   const campsiteCards = useMemo(
     () =>
       activeTreks
-        .filter((camp) => camp.productType === "camping" || camp.slug === "new-year-beach-side-camping")
+        .filter((camp) => camp.productType === "camping" || /camp/i.test(`${camp.category || ""} ${camp.name || ""}`))
         .map((camp) => ({
           id: camp.slug,
           name: camp.shortName || camp.name,
@@ -700,6 +660,21 @@ function Home() {
   );
 
   // Rentals — only active catalog products. Hide the section when this list is empty.
+  const heritageCards = useMemo(() => {
+    return getAdminItems("gt_heritage")
+      .filter((item) => item && item.active !== false && item.name)
+      .sort((x, y) => Number(x.sortOrder ?? 999) - Number(y.sortOrder ?? 999))
+      .slice(0, 3)
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price ? `Starting ₹${Number(item.price).toLocaleString("en-IN")}` : "",
+        img: item.image,
+        path: `/heritage/${String(item.name).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- syncKey re-reads local storage after an API sync
+  }, [syncKey]);
+
   const tentRentalCards = useMemo(() => {
     const _adminRentalsRaw = getAdminItems("gt_rentals");
     const _activeRentals = _adminRentalsRaw
@@ -879,159 +854,27 @@ function Home() {
         .ht-hero-bg { animation: htZoom 22s ease-in-out infinite; }
       `}</style>
 
-      {/* ================= HERO ================= */}
-      <div
-        id="heroCarousel"
-        className="carousel slide carousel-fade"
-        data-bs-ride="carousel"
-        data-bs-interval="6000"
-      >
-        <div className="carousel-indicators">
-          <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" className="active"></button>
-          <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
-          <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
-        </div>
-
-        <div className="carousel-inner">
-
-          {/* Slide 1 — Primary SEO Hero */}
-          <div className="carousel-item active">
-            <div
-              className="d-flex align-items-center justify-content-center text-center position-relative"
-              style={{ height: "90vh", overflow: "hidden" }}
-            >
-              <div
-                className="ht-hero-bg"
-                style={{
-                  position: "absolute", inset: 0,
-                  backgroundImage: "url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80')",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              />
-              <div className="ht-hero-overlay" />
-              <div className="ht-hero-content px-3">
-                <span className="ht-hero-kicker">Sahyadri Trekking Experts</span>
-                <h1 className="ht-hero-headline">
-                  Escape the City.{" "}
-                  <span className="ht-accent">Trek the Sahyadris.</span>
-                </h1>
-                <p className="ht-hero-sub">
-                  Join budget-friendly treks, camping, and adventure experiences with departures from{" "}
-                  <strong style={{ color: "#fff" }}>Pune, Mumbai, Thane, Navi Mumbai,</strong> and{" "}
-                  <strong style={{ color: "#fff" }}>Kasara</strong>.
-                </p>
-                <div className="d-flex justify-content-center gap-3 flex-wrap">
-                  <Link to="/treks" className="ht-hero-cta">
-                    Explore Treks →
-                  </Link>
-                  <Link to="/contact" className="ht-hero-cta-outline">
-                    Contact Us
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Slide 2 */}
-          <div className="carousel-item">
-            <div
-              className="d-flex align-items-center justify-content-center text-center position-relative"
-              style={{ height: "90vh", overflow: "hidden" }}
-            >
-              <div
-                className="ht-hero-bg"
-                style={{
-                  position: "absolute", inset: 0,
-                  backgroundImage: "url('https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1920&q=80')",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              />
-              <div className="ht-hero-overlay" />
-              <div className="ht-hero-content px-3">
-                <span className="ht-hero-kicker">Himalayan Escapes</span>
-                <h1 className="ht-hero-headline">
-                  Himalayan <span className="ht-accent">Adventures</span>
-                </h1>
-                <p className="ht-hero-sub">
-                  Explore breathtaking landscapes across Himachal, Uttarakhand, and Kashmir with curated group tours.
-                </p>
-                <Link to="/tours" className="ht-hero-cta">
-                  Explore Tours →
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Slide 3 */}
-          <div className="carousel-item">
-            <div
-              className="d-flex align-items-center justify-content-center text-center position-relative"
-              style={{ height: "90vh", overflow: "hidden" }}
-            >
-              <div
-                className="ht-hero-bg"
-                style={{
-                  position: "absolute", inset: 0,
-                  backgroundImage: "url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1920&q=80')",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              />
-              <div className="ht-hero-overlay" />
-              <div className="ht-hero-content px-3">
-                <span className="ht-hero-kicker">Corporate & School Groups</span>
-                <h1 className="ht-hero-headline">
-                  Team Outings &{" "}
-                  <span className="ht-accent">School Trips</span>
-                </h1>
-                <p className="ht-hero-sub">
-                  Safe, customized, and affordable corporate treks, team building activities, and school/college tours.
-                </p>
-                <Link to="/corporate" className="ht-hero-cta">
-                  Plan Your Trip →
-                </Link>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <button className="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-          <span className="carousel-control-prev-icon"></span>
-        </button>
-        <button className="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-          <span className="carousel-control-next-icon"></span>
-        </button>
-      </div>
+      {/* ================= HERO (slides from Admin → Site Content → Hero slides) ================= */}
+      <HomeHero slides={heroSlides} />
 
       {/* ================= STATS TRUST BAR ================= */}
+      {visibleStats.length > 0 && (
       <div className="ht-stats-bar">
         <div className="container">
           <div className="ht-stats-inner">
-            <div className="ht-stat-item">
-              <span className="ht-stat-number">500+</span>
-              <span className="ht-stat-label">Treks Completed</span>
-            </div>
-            <div className="ht-stat-divider" />
-            <div className="ht-stat-item">
-              <span className="ht-stat-number">10,000+</span>
-              <span className="ht-stat-label">Happy Trekkers</span>
-            </div>
-            <div className="ht-stat-divider" />
-            <div className="ht-stat-item">
-              <span className="ht-stat-number">4.8★</span>
-              <span className="ht-stat-label">Average Rating</span>
-            </div>
-            <div className="ht-stat-divider" />
-            <div className="ht-stat-item">
-              <span className="ht-stat-number">50+</span>
-              <span className="ht-stat-label">Destinations</span>
-            </div>
+            {visibleStats.map((stat, i) => (
+              <Fragment key={stat.label}>
+                {i > 0 && <div className="ht-stat-divider" />}
+                <div className="ht-stat-item">
+                  <span className="ht-stat-number">{stat.value}</span>
+                  <span className="ht-stat-label">{stat.label}</span>
+                </div>
+              </Fragment>
+            ))}
           </div>
         </div>
       </div>
+      )}
 
       {/* ================= TREKS & CAMPING (Premium Section) ================= */}
       <section
@@ -1056,13 +899,15 @@ function Home() {
             <h2 className="fw-bold mt-1 mb-3">— TREKS &amp; CAMPING —</h2>
 
             {/* SEO-rich description */}
-            <p
-              className="mx-auto"
-              style={{ maxWidth: "680px", color: "#555", lineHeight: 1.7, fontSize: "0.97rem" }}
-            >
-              Open batches from Pune and Mumbai: Vasota Fort, Harishchandragad, Kalsubai Peak,
-              and New Year beach camping with Gadvede Trekkers.
-            </p>
+            {activeTreks.length > 0 && (
+              <p
+                className="mx-auto"
+                style={{ maxWidth: "680px", color: "#555", lineHeight: 1.7, fontSize: "0.97rem" }}
+              >
+                {/* Built from the published trips (t129u), not typed in code. */}
+                Open batches: {activeTreks.slice(0, 4).map((t) => t.shortName || t.name).join(", ")}.
+              </p>
+            )}
           </div>
 
           {/* Paginated grid with prev/next arrows */}
@@ -1142,7 +987,7 @@ function Home() {
             </p>
           </div>
           <div className="row g-3">
-            {TOUR_CATEGORIES.map((cat) => (
+            {tourCategoriesFrom(activeTours).map((cat) => (
               <TourCategoryCard key={cat.region} cat={cat} />
             ))}
           </div>
@@ -1206,17 +1051,14 @@ function Home() {
       </section>}
 
       {/* ================= HERITAGE WALKS ================= */}
-      {isHeritageEnabled() && <section className="py-5">
+      {isHeritageEnabled() && heritageCards.length > 0 && <section className="py-5">
         <div className="container">
           <h2 className="text-center fw-bold">Explore Pune Heritage Walks</h2>
           <p className="text-center text-muted mb-5">Discover history, culture, and hidden gems of Pune.</p>
 
           {(() => {
-            const heritage = [
-              { name: "Old Pune City Walk",     price: "Starting ₹399", img: "/HeritageImages/pune.png",           state: { category: "city" } },
-              { name: "Forts & Landmarks Walk",  price: "Starting ₹699", img: "/HeritageImages/shanivaarwada.png",  state: { category: "forts" } },
-              { name: "Temple & Cultural Walk",  price: "Starting ₹299", img: "/HeritageImages/cultural.png",       state: { category: "temples" } },
-            ];
+            // t129u: walks come from Admin → Listings → Heritage Walks (published records only).
+            const heritage = heritageCards;
             return (
               <div className="row g-4">
                 {heritage.map((item, i) => (
@@ -1231,7 +1073,7 @@ function Home() {
                             <WhatsAppIcon />
                             Book on WhatsApp
                           </BookingCTA>
-                          <Link to="/heritage" state={item.state} className="trek-secondary-btn">
+                          <Link to={item.path} className="trek-secondary-btn">
                             Details
                             <ArrowRightIcon />
                           </Link>
@@ -1337,44 +1179,25 @@ function Home() {
         <EnquiryModal dest={enquiryDest} category="Industrial Visit" onClose={() => setEnquiryDest(null)} />
       )}
 
-      {/* ================= TESTIMONIALS ================= */}
+      {/* ================= TESTIMONIALS (Admin → Site Content; hidden when none) ================= */}
+      {testimonials && (
       <section className="ht-testimonials-section py-5">
         <div className="container">
           <div className="text-center mb-5">
-            <span className="ht-section-eyebrow">What Trekkers Say</span>
-            <h2 className="ht-section-title">Real Stories, Real Adventures</h2>
-            <p className="ht-section-sub">Join thousands of trekkers who've explored Maharashtra with us.</p>
+            {testimonials.eyebrow && <span className="ht-section-eyebrow">{testimonials.eyebrow}</span>}
+            {testimonials.title && <h2 className="ht-section-title">{testimonials.title}</h2>}
+            {testimonials.subtitle && <p className="ht-section-sub">{testimonials.subtitle}</p>}
           </div>
           <div className="row g-4">
-            {[
-              {
-                text: "Harihar Fort was a life-changing experience! The guides were amazing and the views from the top were absolutely breathtaking. Gadvede made everything seamless — from pickup to the summit.",
-                name: "Priya M.",
-                trek: "Harihar Trek",
-                initials: "PM",
-              },
-              {
-                text: "First time trekking and I chose Gadvede Trekkers. Best decision ever! The team made sure everyone was safe and having fun all the way. Already planning my next one.",
-                name: "Rohan K.",
-                trek: "Rajmachi Trek",
-                initials: "RK",
-              },
-              {
-                text: "Everything was perfectly organized. The campfire, the food, the sunrise hike at Bhandardara — all perfect. The guides are knowledgeable and truly passionate about the outdoors.",
-                name: "Sneha P.",
-                trek: "Bhandardara Camping",
-                initials: "SP",
-              },
-            ].map((t, i) => (
+            {testimonials.items.map((t, i) => (
               <div className="col-12 col-md-4" key={i}>
                 <div className="ht-testimonial-card">
-                  <div className="ht-testimonial-stars">★★★★★</div>
                   <p className="ht-testimonial-text">"{t.text}"</p>
                   <div className="ht-testimonial-author">
-                    <div className="ht-testimonial-avatar">{t.initials}</div>
+                    <div className="ht-testimonial-avatar">{initialsOf(t.name)}</div>
                     <div>
                       <div className="ht-testimonial-name">{t.name}</div>
-                      <div className="ht-testimonial-trek">{t.trek}</div>
+                      {t.trip && <div className="ht-testimonial-trek">{t.trip}</div>}
                     </div>
                   </div>
                 </div>
@@ -1383,133 +1206,95 @@ function Home() {
           </div>
         </div>
       </section>
+      )}
 
-      {/* ================= SERVICES ================= */}
+      {/* ================= INSTAGRAM (hidden until the feed is configured) ================= */}
+      <InstagramFeed placement="home" limit={8} />
+
+      {/* ================= SERVICES (Admin → Site Content; hidden when none) ================= */}
+      {services && (
       <section className="py-5" style={{ background: "#f8fffe" }}>
         <div className="container">
           <div className="text-center mb-5">
-            <span
-              style={{
-                color: "#16a34a",
-                fontWeight: 700,
-                fontSize: "0.8rem",
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-              }}
-            >
-              What We Offer
-            </span>
-            <h2 className="fw-bold mt-1 mb-2">Our Adventure Services</h2>
-            <p className="text-muted">
-              Everything you need — from weekend treks to corporate outings and villa stays.
-            </p>
+            {services.eyebrow && (
+              <span style={{ color: "#16a34a", fontWeight: 700, fontSize: "0.8rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+                {services.eyebrow}
+              </span>
+            )}
+            {services.title && <h2 className="fw-bold mt-1 mb-2">{services.title}</h2>}
+            {services.subtitle && <p className="text-muted">{services.subtitle}</p>}
           </div>
 
           <div className="row g-4">
-            {services.map((svc, i) => (
+            {services.items.map((svc, i) => (
               <div className="col-12 col-sm-6 col-md-4 col-lg-3" key={i}>
                 <div className="ht-svc-card">
-                  <div className="ht-svc-icon">{svc.icon}</div>
+                  {svc.icon && <div className="ht-svc-icon">{svc.icon}</div>}
                   <h5 className="fw-bold mb-2" style={{ fontSize: "1rem" }}>{svc.title}</h5>
-                  <p className="text-muted mb-3" style={{ fontSize: "0.875rem", lineHeight: 1.65, flex: 1 }}>
-                    {svc.desc}
-                  </p>
-                  <Link
-                    to={svc.link}
-                    className="btn btn-outline-success btn-sm"
-                    style={{ borderRadius: "999px", alignSelf: "flex-start" }}
-                  >
-                    Learn More →
-                  </Link>
+                  {svc.text && (
+                    <p className="text-muted mb-3" style={{ fontSize: "0.875rem", lineHeight: 1.65, flex: 1 }}>
+                      {svc.text}
+                    </p>
+                  )}
+                  {svc.link && (
+                    <SmartLink
+                      to={svc.link}
+                      className="btn btn-outline-success btn-sm"
+                      style={{ borderRadius: "999px", alignSelf: "flex-start" }}
+                    >
+                      Learn More →
+                    </SmartLink>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
       </section>
+      )}
 
-      {/* ================= CTA BANNER ================= */}
+      {/* ================= CTA BANNER (Admin → Site Content; hidden when not set) ================= */}
+      {cta && (
       <section className="ht-cta-banner">
         <div className="container">
-          <h2 className="ht-cta-banner-title">Ready for Your Next Adventure?</h2>
-          <p className="ht-cta-banner-sub">
-            Join 10,000+ trekkers who&apos;ve explored Maharashtra with us. Affordable, safe, and unforgettable.
-          </p>
+          <h2 className="ht-cta-banner-title">{cta.title}</h2>
+          {cta.subtitle && <p className="ht-cta-banner-sub">{cta.subtitle}</p>}
           <div className="d-flex justify-content-center gap-3 flex-wrap">
-            <Link to="/treks" className="ht-cta-banner-btn-primary">
-              Explore All Treks →
-            </Link>
-            <a
-              href={waBase()}
-              className="ht-cta-banner-btn-secondary"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326z"/>
-              </svg>
-              Chat on WhatsApp
-            </a>
+            {cta.buttonLabel && cta.buttonLink && (
+              <SmartLink to={cta.buttonLink} className="ht-cta-banner-btn-primary">
+                {cta.buttonLabel}
+              </SmartLink>
+            )}
+            {cta.whatsappLabel && (
+              <a href={waBase()} className="ht-cta-banner-btn-secondary" target="_blank" rel="noopener noreferrer">
+                {cta.whatsappLabel}
+              </a>
+            )}
           </div>
         </div>
       </section>
+      )}
 
-      {/* ================= LOCAL SEO SECTION ================= */}
+      {/* ================= PICKUP CITIES / SEARCH TAGS (Admin → Site Content; hidden when not set) ================= */}
+      {localSeo && (
       <section
         className="py-4"
         style={{ background: "#f0fdf4", borderTop: "1px solid #d1fae5", borderBottom: "1px solid #d1fae5" }}
       >
         <div className="container">
           <div className="text-center mb-3">
-            <p className="text-muted mb-2" style={{ fontSize: "0.9rem" }}>
-              Treks available from{" "}
-              <strong>Pune, Mumbai, Thane, Navi Mumbai, Kasara, Pimpri-Chinchwad, Hinjewadi,</strong> and{" "}
-              <strong>Kharadi</strong>.
-            </p>
-            <p className="text-muted mb-3" style={{ fontSize: "0.82rem" }}>Popular searches:</p>
-            <div className="d-flex flex-wrap justify-content-center gap-2">
-              {[
-                "Treks near Pune",
-                "Treks near Mumbai",
-                "Budget Treks Maharashtra",
-                "Monsoon Treks",
-                "Weekend Treks near Pune",
-              ].map((tag) => (
-                <span key={tag} className="ht-seo-chip">{tag}</span>
-              ))}
-            </div>
+            {localSeo.text && <p className="text-muted mb-2" style={{ fontSize: "0.9rem" }}>{localSeo.text}</p>}
+            {localSeo.chips.length > 0 && (
+              <div className="d-flex flex-wrap justify-content-center gap-2">
+                {localSeo.chips.map((c) => (
+                  <span key={c.label} className="ht-seo-chip">{c.label}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
-
-      {/* ── Floating WhatsApp button ── */}
-      <a
-        href={waBase()}
-        target="_blank"
-        rel="noopener noreferrer"
-        title="Chat on WhatsApp"
-        style={{
-          position: "fixed",
-          bottom: "24px",
-          right: "24px",
-          zIndex: 9999,
-          backgroundColor: "#25D366",
-          borderRadius: "50%",
-          width: "58px",
-          height: "58px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
-          transition: "transform 0.2s",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="white" viewBox="0 0 16 16">
-          <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
-        </svg>
-      </a>
+      )}
     </>
   );
 }

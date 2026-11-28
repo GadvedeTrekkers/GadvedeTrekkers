@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { findTrekBySlug } from "../../data/treks";
 import BookingCTA from "../../components/BookingCTA";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
 
 const HERO_IMG = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1600&q=80";
 
@@ -290,7 +291,10 @@ const faqs = [
   },
 ];
 
+const WHATSAPP_TRIP = { id: "harihar-fort-trek", name: "Harihar Fort Trek", type: "trek" };
+
 export default function HariharFortTrek() {
+  useWhatsappTrip(WHATSAPP_TRIP);
   const trek = findTrekBySlug("harihar-trek");
   const [activeTab,    setActiveTab]    = useState("overview");
   const [activeRoute,  setActiveRoute]  = useState("train");

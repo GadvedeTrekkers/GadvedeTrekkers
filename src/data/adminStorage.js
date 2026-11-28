@@ -63,7 +63,7 @@ export function normaliseItem(item) {
     ...item,
     price: Number(item.price) || 0,
     originalPrice: Number(item.originalPrice) || 0,
-    rating: item.rating ? Number(item.rating) : 4.5,
+    rating: item.rating ? Number(item.rating) : 0, // no invented default rating
     reviews: item.reviews ? Number(item.reviews) : 0,
   };
 }

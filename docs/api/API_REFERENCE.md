@@ -162,10 +162,10 @@ Gadvede Trekkers uses a hybrid data model:
 
 | Name | Username | Password |
 |------|----------|----------|
-| Pratik Ubhe | `pratik.ubhe` | `Pratik@gadvede` |
-| Rohit Panhalkar | `rohit.panhalkar` | `Rohit@gadvede` |
-| Akshay Kangude | `akshay.kangude` | `Akshay@gadvede` |
-| Rahul Patil | `rahul.patil` | `rahul001` |
+| Pratik Ubhe | `pratik.ubhe` | _set on server (ADMIN_USERS)_ |
+| Rohit Panhalkar | `rohit.panhalkar` | _set on server (ADMIN_USERS)_ |
+| Akshay Kangude | `akshay.kangude` | _set on server (ADMIN_USERS)_ |
+| Rahul Patil | `rahul.patil` | _set on server (ADMIN_USERS)_ |
 
 ---
 

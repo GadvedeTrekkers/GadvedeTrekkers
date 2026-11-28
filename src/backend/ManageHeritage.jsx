@@ -1,6 +1,5 @@
 import { useState } from "react";
 import ManagePage from "./ManagePage";
-import { heritageList } from "../data/heritageData";
 import { isHeritageEnabled, setHeritageEnabled } from "../data/featureFlags";
 
 const FIELDS = [
@@ -96,7 +95,7 @@ export default function ManageHeritage() {
         storageKey="gt_heritage"
         fields={FIELDS}
         defaultForm={DEFAULT}
-        seedData={heritageList}
+        seedData={[] /* t129u: no built-in catalogue; items come only from the database */}
       />
     </div>
   );

@@ -325,7 +325,12 @@ export async function getAdminProducts(req, res) {
   const productType = productTypeFromStorageKey(storageKey);
 
   if (!productType) {
-    return res.status(400).json({ success: false, error: "Invalid storage key" });
+    return res.status(400).json({
+      success: false,
+      error: storageKey
+        ? "Invalid storage key"
+        : "storageKey query parameter is required (for example ?storageKey=gt_treks)",
+    });
   }
 
   const { data, error } = await supabaseAdmin

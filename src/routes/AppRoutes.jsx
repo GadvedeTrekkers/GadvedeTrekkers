@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { getEmployeeSession } from "../data/employeePortalStorage";
 
@@ -10,61 +11,60 @@ function EmployeeRoute({ children }) {
   return children;
 }
 import Home from "../pages/Home";
-import About from "../pages/About";
+import ContentPage from "../pages/ContentPage";
 import Contact from "../pages/Contact";
 
 /* ================= ADMIN / BACKEND ================= */
-import AdminLogin        from "../backend/AdminLogin";
-import AdminLayout       from "../backend/AdminLayout";
-import Dashboard         from "../backend/Dashboard";
-import ManageTreks       from "../backend/ManageTreks";
-import ManageTours       from "../backend/ManageTours";
-import ManageHeritage    from "../backend/ManageHeritage";
-import ManageCamping     from "../backend/ManageCamping";
-import ManageRentals     from "../backend/ManageRentals";
-import ManageVendors     from "../backend/ManageVendors";
-import ManageBookings    from "../backend/ManageBookings";
-import ManageTransactions from "../backend/ManageTransactions";
-import ManageCustomers   from "../backend/ManageCustomers";
-import ManageReports     from "../backend/ManageReports";
-import ManageMarketing   from "../backend/ManageMarketing";
-import ManageFeedback    from "../backend/ManageFeedback";
-import ManageEarnings   from "../backend/ManageEarnings";
-import ManageEmployees  from "../backend/ManageEmployees";
-import ManageTraining   from "../backend/ManageTraining";
-import EmployeeOnboarding from "../backend/EmployeeOnboarding";
-import EmployeeLogin  from "../pages/Employee/EmployeeLogin";
-import EmployeePortal from "../pages/Employee/EmployeePortal";
-import DirectBookingForm from "../pages/Employee/DirectBookingForm";
-import AddNew           from "../backend/AddNew";
-import ManageBlogs      from "../backend/ManageBlogs";
-import ManageEnquiries  from "../backend/ManageEnquiries";
-import ActivityLogs     from "../backend/ActivityLogs";
-import ManageDocs       from "../backend/ManageDocs";
-import ManageBookingForm from "../backend/ManageBookingForm";
-import EmailTemplates    from "../backend/EmailTemplates";
-import ManageEvents            from "../backend/ManageEvents";
-import AddEventPage            from "../backend/AddEventPage";
-import ManagePropertyListings  from "../backend/ManagePropertyListings";
-import ManageCampsiteListings  from "../backend/ManageCampsiteListings";
-import ManageVillas            from "../backend/ManageVillas";
-import ManageIV               from "../backend/ManageIV";
+const AdminLogin = lazy(() => import("../backend/AdminLogin"));
+const AdminLayout = lazy(() => import("../backend/AdminLayout"));
+const Dashboard = lazy(() => import("../backend/Dashboard"));
+const ManageTreks = lazy(() => import("../backend/ManageTreks"));
+const ManageTours = lazy(() => import("../backend/ManageTours"));
+const ManageHeritage = lazy(() => import("../backend/ManageHeritage"));
+const ManageCamping = lazy(() => import("../backend/ManageCamping"));
+const ManageRentals = lazy(() => import("../backend/ManageRentals"));
+const ManageVendors = lazy(() => import("../backend/ManageVendors"));
+const ManageBookings = lazy(() => import("../backend/ManageBookings"));
+const ManageTransactions = lazy(() => import("../backend/ManageTransactions"));
+const ManageCustomers = lazy(() => import("../backend/ManageCustomers"));
+const ManageReports = lazy(() => import("../backend/ManageReports"));
+const ManageMarketing = lazy(() => import("../backend/ManageMarketing"));
+const ManageFeedback = lazy(() => import("../backend/ManageFeedback"));
+const ManageEarnings = lazy(() => import("../backend/ManageEarnings"));
+const ManageEmployees = lazy(() => import("../backend/ManageEmployees"));
+const ManageTraining = lazy(() => import("../backend/ManageTraining"));
+const EmployeeOnboarding = lazy(() => import("../backend/EmployeeOnboarding"));
+const EmployeeLogin = lazy(() => import("../pages/Employee/EmployeeLogin"));
+const EmployeePortal = lazy(() => import("../pages/Employee/EmployeePortal"));
+const DirectBookingForm = lazy(() => import("../pages/Employee/DirectBookingForm"));
+const AddNew = lazy(() => import("../backend/AddNew"));
+const ManageBlogPosts = lazy(() => import("../backend/blog/ManageBlogPosts"));   // AI blog/SEO writer (replaces the old browser-only ManageBlogs)
+const ManageEnquiries = lazy(() => import("../backend/ManageEnquiries"));
+const ActivityLogs = lazy(() => import("../backend/ActivityLogs"));
+const ManageDocs = lazy(() => import("../backend/ManageDocs"));
+const ManageBookingForm = lazy(() => import("../backend/ManageBookingForm"));
+const EmailTemplates = lazy(() => import("../backend/EmailTemplates"));
+const ManageEvents = lazy(() => import("../backend/ManageEvents"));
+const AddEventPage = lazy(() => import("../backend/AddEventPage"));
+const ManagePropertyListings = lazy(() => import("../backend/ManagePropertyListings"));
+const ManageCampsiteListings = lazy(() => import("../backend/ManageCampsiteListings"));
+const ManageVillas = lazy(() => import("../backend/ManageVillas"));
+const ManagePaymentRegistrations = lazy(() => import("../backend/ManagePaymentRegistrations"));
+const ProfileSetup = lazy(() => import("../backend/ProfileSetup"));
+const SiteContentAdmin = lazy(() => import("../backend/SiteContent"));
+const AutomationSettings = lazy(() => import("../backend/settings/sections/AutomationSettings"));
+const IntegrationSettings = lazy(() => import("../backend/settings/sections/IntegrationSettings"));
+const ManageIV = lazy(() => import("../backend/ManageIV"));
 
 /* ================= TREK PAGES ================= */
 import Trek           from "../pages/Treks/Trek";
 import TrekDetails    from "../pages/Treks/TrekDetails";
-import AndharbanTrek  from "../pages/Treks/AndharbanTrek";
-import RajmachiTrek   from "../pages/Treks/RajmachiTrek";
-import SandhanValley  from "../pages/Treks/SandhanValley";
-import DevkundTrek    from "../pages/Treks/DevkundTrek";
-import HariharFortTrek from "../pages/Treks/HariharFortTrek";
-import Booking       from "../pages/Booking/Booking";
+import BookOnWhatsApp from "../pages/Booking/BookOnWhatsApp"; // /book: WhatsApp landing (the old on-site desk, pages/Booking/Booking.jsx, is no longer routed)
 import BookingSuccess from "../pages/Booking/BookingSuccess";
 
 /* ================= TOUR PAGES ================= */
 import Tours               from "../pages/Tours/Tours";
 import TourDetails         from "../pages/Tours/TourDetails";
-import VelasTurtleFestival from "../pages/Tours/VelasTurtleFestival";
 
 /* ================= HERITAGE PAGES ================= */
 import Heritage        from "../pages/HeritageWalk/Heritage";
@@ -79,55 +79,76 @@ import Rental        from "../pages/Rentals/Rental";
 import RentalDetails from "../pages/Rentals/RentalDetails";
 
 /* ================= LEADER TRAINING ================= */
-import LeaderTraining      from "../pages/LeaderTraining/LeaderTraining";
-import TrainingModules     from "../pages/LeaderTraining/TrainingModules";
-import TrainingTest        from "../pages/LeaderTraining/TrainingTest";
-import LeaderCertification from "../pages/LeaderTraining/LeaderCertification";
+const LeaderTraining = lazy(() => import("../pages/LeaderTraining/LeaderTraining"));
+const TrainingModules = lazy(() => import("../pages/LeaderTraining/TrainingModules"));
+const TrainingTest = lazy(() => import("../pages/LeaderTraining/TrainingTest"));
+const LeaderCertification = lazy(() => import("../pages/LeaderTraining/LeaderCertification"));
 
 /* ================= CORPORATE ================= */
-import Corporate from "../pages/Corporate/Corporate";
-import IndustrialVisits from "../pages/IndustrialVisits/IndustrialVisits";
+const Corporate = lazy(() => import("../pages/Corporate/Corporate"));
+const IndustrialVisits = lazy(() => import("../pages/IndustrialVisits/IndustrialVisits"));
 
 /* ================= VILLAS ================= */
 import Villas from "../pages/Villas/Villas";
 
 /* ================= OPPORTUNITIES / FEEDBACK / TICKET ================= */
-import VendorRegister from "../pages/Opportunities/VendorRegister";
-import PartnerApply   from "../pages/Opportunities/PartnerApply";
-import ListProperty   from "../pages/Opportunities/ListProperty";
-import ListCampsite   from "../pages/Opportunities/ListCampsite";
-import ListEvent      from "../pages/Opportunities/ListEvent";
-import FeedbackForm   from "../pages/Feedback/FeedbackForm";
-import TicketPage     from "../pages/Ticket/TicketPage";
+const VendorRegister = lazy(() => import("../pages/Opportunities/VendorRegister"));
+const PartnerApply = lazy(() => import("../pages/Opportunities/PartnerApply"));
+const ListProperty = lazy(() => import("../pages/Opportunities/ListProperty"));
+const ListCampsite = lazy(() => import("../pages/Opportunities/ListCampsite"));
+const ListEvent = lazy(() => import("../pages/Opportunities/ListEvent"));
+const FeedbackForm = lazy(() => import("../pages/Feedback/FeedbackForm"));
+const TicketPage = lazy(() => import("../pages/Ticket/TicketPage"));
 import WeekendTrips from "../components/WeekendTrips";
 import Trips from "../pages/Trips/Trips";
-import CancellationPolicy from "../pages/CancellationPolicy";
-import PrivacyPolicy from "../pages/Privacy/PrivacyPolicy";
+const PaymentRegistration = lazy(() => import("../pages/PaymentRegistration/PaymentRegistration"));
+import BlogList from "../pages/Blog/BlogList";
+import BlogPost from "../pages/Blog/BlogPost";
+import DestinationHub from "../pages/Hubs/DestinationHub";
+import { DESTINATION_HUBS } from "../../shared/destinationHubs.js";
+import { SEO_REDIRECTS } from "../../shared/seoRedirects.js";
+import SeoRedirect from "../components/SeoRedirect";
+import NotFound from "../pages/NotFound";
+
+function RouteFallback() {
+  return <div className="container py-5 text-center text-muted" data-testid="route-loading">Loading…</div>;
+}
 
 function AppRoutes() {
   return (
+    <Suspense fallback={<RouteFallback />}>
     <Routes>
       {/* ================= MAIN PAGES ================= */}
       <Route path="/"        element={<Home />} />
-      <Route path="/about"   element={<About />} />
+      {/* Content pages: words from Admin → Settings → Site Content; unpublished = 404 page (t129u) */}
+      <Route path="/about"   element={<ContentPage contentKey="pages.about" />} />
+      <Route path="/faq"     element={<ContentPage contentKey="pages.faq" />} />
+      <Route path="/terms"   element={<ContentPage contentKey="pages.terms" />} />
       <Route path="/contact" element={<Contact />} />
 
       {/* ================= TREKS ================= */}
       <Route path="/trips"                    element={<Trips />} />
       <Route path="/trips/:hubSlug"           element={<Trips />} />
+      {/* Destination hubs (SEO landing pages, data-driven) */}
+      {DESTINATION_HUBS.map((hub) => (
+        <Route key={hub.slug} path={hub.path} element={<DestinationHub slug={hub.slug} />} />
+      ))}
+      {/* Duplicate URLs → their main page (client-side, canonical + noindex) */}
+      {Object.entries(SEO_REDIRECTS).map(([from, to]) => (
+        <Route key={from} path={from} element={<SeoRedirect to={to} />} />
+      ))}
       <Route path="/treks"                    element={<Trek />} />
-      <Route path="/treks/andharban-trek-2025"        element={<AndharbanTrek />} />
-      <Route path="/treks/rajmachi-fort-trek"         element={<RajmachiTrek />} />
-      <Route path="/treks/sandhan-valley-trek"        element={<SandhanValley />} />
-      <Route path="/treks/devkund-waterfall-trek"     element={<DevkundTrek />} />
-      <Route path="/treks/harihar-fort-trek"          element={<HariharFortTrek />} />
       <Route path="/treks/:id"                   element={<TrekDetails />} />
-      <Route path="/book"             element={<Booking />} />
+      <Route path="/book"             element={<BookOnWhatsApp />} />
       <Route path="/booking/success"  element={<BookingSuccess />} />
+      {/* t81u: customers who paid by bank transfer / UPI register the payment */}
+      <Route path="/register"              element={<PaymentRegistration />} />
+      <Route path="/blog"                  element={<BlogList />} />
+      <Route path="/blog/:slug"            element={<BlogPost />} />
+      <Route path="/payment-registration"  element={<PaymentRegistration />} />
 
       {/* ================= TOURS ================= */}
       <Route path="/tours"                              element={<Tours />} />
-      <Route path="/tours/velas-turtle-festival-2026"  element={<VelasTurtleFestival />} />
       <Route path="/tours/:id"                         element={<TourDetails />} />
 
       {/* ================= HERITAGE ================= */}
@@ -164,9 +185,9 @@ function AppRoutes() {
       <Route path="/qa/weekend-trips" element={<WeekendTrips />} />
 
       {/* ================= POLICIES ================= */}
-      <Route path="/cancellation-policy" element={<CancellationPolicy />} />
-      <Route path="/privacy" element={<PrivacyPolicy />} />
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/cancellation-policy" element={<ContentPage contentKey="pages.cancellation" />} />
+      <Route path="/privacy" element={<ContentPage contentKey="pages.privacy" path="/privacy-policy" />} />
+      <Route path="/privacy-policy" element={<ContentPage contentKey="pages.privacy" />} />
 
       {/* ================= VILLAS ================= */}
       <Route path="/villas" element={<Villas />} />
@@ -191,7 +212,7 @@ function AppRoutes() {
       <Route path="/admin/*" element={<AdminLayout />}>
         <Route path="dashboard"    element={<Dashboard />} />
         <Route path="add-new"      element={<AddNew />} />
-        <Route path="blogs"        element={<ManageBlogs />} />
+        <Route path="blogs"        element={<ManageBlogPosts />} />
         <Route path="treks"        element={<ManageTreks />} />
         <Route path="tours"        element={<ManageTours />} />
         <Route path="heritage"     element={<ManageHeritage />} />
@@ -218,9 +239,19 @@ function AppRoutes() {
         <Route path="property-listings" element={<ManagePropertyListings />} />
         <Route path="campsite-listings" element={<ManageCampsiteListings />} />
         <Route path="villas"            element={<ManageVillas />} />
+        <Route path="payment-registrations" element={<ManagePaymentRegistrations />} />
+        <Route path="profile-setup" element={<ProfileSetup />} />
+        <Route path="site-content" element={<SiteContentAdmin />} />
+        <Route path="automations" element={<AutomationSettings />} />
+        <Route path="integrations" element={<IntegrationSettings />} />
         <Route path="industrial-visits" element={<ManageIV />} />
       </Route>
+
+      {/* ================= 404 ================= */}
+      {/* Unknown URLs (e.g. /blogs) show a real not-found page. */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 }
 

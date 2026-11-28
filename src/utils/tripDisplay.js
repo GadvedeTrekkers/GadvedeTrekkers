@@ -614,7 +614,10 @@ function isLogoImage(url) {
 
 export function absolutizeTripImage(url) {
   const value = String(url || "").trim();
-  if (!value || value.startsWith("data:")) return "";
+  if (!value) return "";
+  // Admin uploads are saved as data: URLs; show them rather than silently dropping them.
+  if (value.startsWith("data:image/")) return value;
+  if (value.startsWith("data:")) return "";
   if (/^https?:\/\//i.test(value)) return value;
   if (value.startsWith("/trips/")) return `${SITE_ORIGIN}${value}`;
   return value;
@@ -634,10 +637,15 @@ export function coverUrlForTrip(item = {}) {
 
 /** Hero and gallery. A single real cover is repeated so the grid is not a lone logo. */
 export function resolveTripGallery(item = {}) {
-  const cover = coverUrlForTrip(item);
+  // The image saved in the admin/DB is the cover. The bundled /trips/*.jpg file is only a fallback
+  // when the row has no usable image (empty, a data: URL, or the logo).
+  const dbCover = absolutizeTripImage(item.image);
+  const cover = dbCover && !isLogoImage(dbCover) ? dbCover : coverUrlForTrip(item);
   const gallery = parseJsonish(item.imageGallery, []);
   const media = Array.isArray(item.media) ? item.media.map((entry) => (typeof entry === "string" ? entry : entry?.url)) : [];
-  const urls = [item.image, ...(Array.isArray(gallery) ? gallery : []), ...media]
+  // The admin gallery is the source of truth; media is only a fallback (it can still hold images removed in admin).
+  const hasGallery = Array.isArray(gallery) && gallery.filter(Boolean).length > 0;
+  const urls = [item.image, ...(hasGallery ? gallery : media)]
     .map(absolutizeTripImage)
     .filter((url) => url && !isLogoImage(url));
   const ordered = cover ? [cover, ...urls.filter((url) => url !== cover)] : urls;

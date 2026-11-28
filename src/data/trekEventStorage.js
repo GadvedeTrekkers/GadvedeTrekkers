@@ -5,6 +5,7 @@
 
 import { isFeatureEnabled } from "./featureFlags";
 import { getAllTrekPayments, updateTrekPaymentLifecycle } from "./trekPaymentStorage";
+import { getAllBookings } from "./bookingStorage";
 
 const KEY = "gt_trek_events";
 
@@ -311,7 +312,7 @@ export function getMissingActions(event) {
 
 /* ── Financial helpers (pulled from bookings + payments + incentives) ── */
 export function computeEventFinancials(event) {
-  const bookings  = JSON.parse(localStorage.getItem("gt_bookings") || "[]")
+  const bookings  = getAllBookings()
     .filter(b => b.status !== "CANCELLED" && b.trekName === event.trekName);
   const payments  = JSON.parse(localStorage.getItem("gt_trek_payments") || "[]")
     .filter(p => p.trekName === event.trekName && (!event.trekDate || p.eventDate === event.trekDate));

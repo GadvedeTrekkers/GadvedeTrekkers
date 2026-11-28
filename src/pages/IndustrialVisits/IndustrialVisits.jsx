@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ivDestinations as seedDestinations, parseIvItinerary } from "../../data/industrialVisitsData";
+import { parseIvItinerary } from "../../utils/listingParsers";
 import { getAdminItems } from "../../data/adminStorage";
 import EnquiryModal from "../../components/EnquiryModal";
 import { syncProductsFromApi } from "../../api/getAll";
@@ -11,15 +11,9 @@ const _parseLines = (v) => {
   return String(v || "").split("\n").map((s) => s.trim()).filter(Boolean);
 };
 
-function findSeed(item) {
-  const slug = String(item.slug || "").toLowerCase();
-  const id = String(item.id || "").toLowerCase();
-  const title = String(item.title || item.name || "").toLowerCase();
-  return seedDestinations.find((seed) => {
-    const seedId = String(seed.id || "").toLowerCase();
-    const seedTitle = String(seed.title || "").toLowerCase();
-    return seedId === slug || seedId === id || (title && seedTitle === title);
-  });
+/* t129u: no built-in destination copy; every field comes from Admin → Industrial Visits. */
+function findSeed() {
+  return null;
 }
 
 function parsePricingSlabs(value, seedSlabs) {
@@ -456,7 +450,7 @@ export default function IndustrialVisits() {
             ✅ Why Choose Gadvede Trekkers?
           </h2>
           <p style={{ textAlign: "center", color: "#6b7280", maxWidth: 580, margin: "0 auto 40px", lineHeight: 1.7 }}>
-            We are industrial visit planners trusted by colleges and schools across Pune, Mumbai, and India.
+            We plan industrial visits for colleges and schools.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 20 }}>
             {whyChoose.map((w) => (

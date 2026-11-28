@@ -10,12 +10,20 @@ import {
   parseLineItems,
   parseOfferItems,
   parsePipeItems,
-} from "../../data/campingDetailsData";
+} from "../../utils/listingParsers";
 import BookingCTA from "../../components/BookingCTA";
+import PaidRegisterLink from "../../components/PaidRegisterLink";
 import { createWhatsAppInquiryUrl } from "../../utils/leadActions";
 import { productService } from "../../services/product.service";
 import { useSeo } from "../../seo/useSeo";
+import { trackViewItem } from "../../analytics/tracking";
+import { useWhatsappTrip } from "../../hooks/useWhatsappTrip";
+import InstagramFeed from "../../components/social/InstagramFeed";
+import { pickupLabels } from "../../config/whatsappTrip";
+import { pickupGroups } from "../../utils/tripDisplay";
 import { buildProductPageSeo, productSeo } from "../../seo/publicSeo";
+import NotFound from "../NotFound";
+import { upcomingLabels } from "../../utils/upcomingDate";
 
 const CAMPING_PREVIEW_KEY = "gt_camping_preview";
 
@@ -68,7 +76,7 @@ function normalizeCampingEntry(item) {
     ...normalized,
     image: getPrimaryCampingImage(item),
     imageGallery: imageGallery.length ? imageGallery : [getPrimaryCampingImage(item)],
-    nextDates: parseDates(item.nextDates),
+    nextDates: upcomingLabels(parseDates(item.nextDates)),
     overviewParagraphs: String(item.overview || "")
       .split("\n")
       .map((line) => line.trim())
@@ -101,7 +109,7 @@ function campingFromCatalog(item) {
     image: item.image || publicTripPhoto(item.slug),
     overview: item.overview || item.description || item.about || "",
     description: item.description || item.subtitle || "",
-    nextDates: item.nextDates || nextDates,
+    nextDates: item.nextDates || nextDates, // past labels are dropped by normalizeCampingEntry
   });
 }
 
@@ -110,10 +118,14 @@ export default function CampingDetails() {
   const [activeImage, setActiveImage] = useState(0);
   const [openFaq, setOpenFaq] = useState(null);
   const [remoteCamp, setRemoteCamp] = useState(null);
+  // true once the live catalogue lookup has finished (so an unknown slug shows 404, not a flash while loading)
+  const [lookupDone, setLookupDone] = useState(false);
 
   useEffect(() => {
+    setLookupDone(false);
     if (!id || id === "preview") {
       setRemoteCamp(null);
+      setLookupDone(true);
       return;
     }
     let cancelled = false;
@@ -124,7 +136,10 @@ export default function CampingDetails() {
           setRemoteCamp(campingFromCatalog(item));
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLookupDone(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -152,14 +167,28 @@ export default function CampingDetails() {
     [id, camp]
   );
   useSeo(pageSeo);
+
+  const viewItemKey = camp ? `${id}|${camp.name || ""}` : "";
+  useEffect(() => {
+    if (!viewItemKey) return;
+    const offers = (pageSeo?.jsonLd?.["@graph"] || []).find((n) => n?.offers)?.offers;
+    trackViewItem({ slug: id, name: camp?.name, productType: "camping", price: offers?.lowPrice });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewItemKey]);
+  useWhatsappTrip(camp ? {
+    id, name: camp.name, type: "camping",
+    dates: (camp.nextDates || []).map(String), // same labels as the "Next dates" list on the page
+    pickups: pickupLabels(pickupGroups(camp.departurePlans)),
+  } : null);
   const seoCopy = productSeo(camp);
 
   if (!camp) {
+    if (!lookupDone) return <div className="container py-5 text-center text-muted" data-testid="product-loading">Loading…</div>;
     return (
-      <div className="container py-5 text-center">
-        <h2>Campsite not found</h2>
-        <Link to="/camping" className="btn btn-success mt-3">Back to Camping</Link>
-      </div>
+      <NotFound
+        title="We couldn’t find that campsite"
+        message="This camping page is not available. Browse our current camping trips or message us on WhatsApp."
+      />
     );
   }
 
@@ -493,11 +522,14 @@ export default function CampingDetails() {
                 >
                   WhatsApp Enquiry
                 </a>
+                <PaidRegisterLink slug={camp.slug} />
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <InstagramFeed placement="trip_page" limit={4} title="On our Instagram" subtitle="Photos and reels from recent batches." />
 
       <style>{`
         @media (max-width: 900px) {

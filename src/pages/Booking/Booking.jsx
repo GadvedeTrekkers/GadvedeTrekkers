@@ -8,6 +8,7 @@ import { createIncentive } from "../../data/incentiveStorage";
 import { getAllCredentials } from "../../data/employeePortalStorage";
 import { getTrekDates, getWhatsAppLinkForDate } from "../../data/trekDatesStorage";
 import { getBookingFormConfig } from "../../data/bookingFormStorage";
+import { trackEvent, tripItem } from "../../analytics/tracking";
 import { syncEnquiriesWithBookings } from "../../data/enquiryStorage";
 import { createAlert, recordEmailAlertAttempt } from "../../data/notificationStorage";
 import InfoTooltip from "../../components/InfoTooltip";
@@ -201,6 +202,14 @@ function Booking() {
 
   /* ── Load available dates from admin for this trek (future only) ── */
   const trekSlug = selectedTrek ? slugifyTrekName(selectedTrek.name) : "";
+
+  /* ── GA4: begin_checkout once per trek (no personal data) ── */
+  useEffect(() => {
+    if (!trekSlug) return;
+    const item = tripItem({ slug: trekSlug, name: selectedTrek?.name, productType: "trek", price: selectedTrek?.price });
+    trackEvent("begin_checkout", { currency: "INR", ...(item.price ? { value: item.price } : {}), items: [item] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trekSlug]);
   const availableDates = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     return getTrekDates(trekSlug).filter((d) => d.date >= today);
