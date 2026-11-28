@@ -1,5 +1,6 @@
-# Render Static Site headers (Netlify-compatible format).
-# Render copies everything under /public into the publish dir at build time.
+# Netlify headers file (used by Netlify deploys and previews).
+# NOTE: Render does NOT read this file. For the live Render site the same security headers are
+# declared in render.yaml (`headers:`) or in the Render Dashboard (Settings > Headers).
 
 # index.html: never cache the SPA shell. Cloudflare must revalidate on every
 # request so users see the latest deploy immediately. Without this header,
@@ -31,5 +32,5 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(self)
-  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Strict-Transport-Security: max-age=31536000
   X-XSS-Protection: 1; mode=block

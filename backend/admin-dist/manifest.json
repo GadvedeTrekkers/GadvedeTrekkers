@@ -1,0 +1,16 @@
+{
+  "name": "Gadvede Trekkers",
+  "short_name": "Gadvede",
+  "description": "Maharashtra treks, tours and camping from Pune and Mumbai. Book on WhatsApp.",
+  "start_url": "https://www.gadvede.com/",
+  "scope": "https://www.gadvede.com/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f4c2a",
+  "lang": "en-IN",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
