@@ -148,7 +148,8 @@ export function getEarningsSummary() {
 }
 
 /* ── Seed 10 sample earnings ── */
-(function seed() {
+// Dev-only demo data: compiled out of production builds (build-time constant).
+if (import.meta.env.DEV) (function seed() {
   if (!isStaffArea()) return; // demo data only inside admin/employee pages
   if (_load().length > 0) return;
   const samples = [

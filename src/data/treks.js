@@ -366,9 +366,8 @@ export const uniqueTreks = Array.from(
   seasonalTag: bestsellerTags[index % bestsellerTags.length],
 }));
 
-export function slugifyTrekName(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-}
+import { slugifyTrekName } from "../utils/slugify";
+export { slugifyTrekName };
 
 export function findTrekBySlug(slug) {
   return uniqueTreks.find((trek) => slugifyTrekName(trek.name) === slug) ?? null;

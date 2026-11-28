@@ -25,14 +25,22 @@ export function hydrateCustomers(list) {
   _save(list);
 }
 
-function syncCustomer(customer) {
-  // Sends the admin JWT when an admin is signed in (the backend can then make
-  // this endpoint staff-only); public enquiries/bookings create customers server-side.
-  apiRequest("/api/customers/upsert", {
+/* Customer writes to the backend happen only for a signed-in staff member acting
+   in the admin panel or employee portal (the endpoint is staff-only). The public
+   website never calls POST /api/customers/upsert: public enquiries create the
+   customer on the server (POST /api/enquiries), and nothing here runs on page load. */
+export function syncCustomer(customer) {
+  if (!isAdminAuthenticated()) return Promise.resolve(false);
+  return apiRequest("/api/customers/upsert", {
     method: "POST",
     body: customer,
-    admin: isAdminAuthenticated(),
-  }).catch((error) => console.warn("Customer sync failed", error));
+    admin: true,
+  })
+    .then(() => true)
+    .catch((error) => {
+      console.warn("Customer sync failed", error?.message || error);
+      return false;
+    });
 }
 
 function normalisePhone(value = "") {

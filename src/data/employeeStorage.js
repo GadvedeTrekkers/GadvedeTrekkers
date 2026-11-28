@@ -430,7 +430,9 @@ const SEED_ASSIGNMENTS = [
   },
 ];
 
-(function _seedOnce() {
+// Dev-only demo staff/expenses/assignments: compiled out of production builds
+// (build-time constant), so no staff names, emails or phone numbers ship publicly.
+if (import.meta.env.DEV) (function _seedOnce() {
   if (!isStaffArea()) return; // demo data only inside admin/employee pages
   /* Merge employees — preserve existing records, add any missing seed employees */
   try {

@@ -21,7 +21,7 @@ export const MANALI_TOUR_SEED = {
   imageGallery: JSON.stringify(MANALI_GALLERY),
   instantConfirmation: true,
   bestPriceGuaranteed: true,
-  happyCustomers: "1000+ Happy Customers",
+  happyCustomers: "",
   pickupPointLabel: "Himachal Pradesh, India",
   pickupPointMapLabel: "View on Map",
   filters: "Weekend Trips | 5 to 8 Days | Group Tours, Private Tours, Honeymoon Tours, Corporate Tours, College Tours, Kids Tours | Himachal Pradesh | Manali, Kasol, Sissu, Kullu, Manikaran, Rohtang Pass, Solang Valley",
@@ -108,22 +108,4 @@ export const TOUR_DETAIL_SEED_BY_SLUG = {
   "manali-kullu-kasol": MANALI_TOUR_SEED,
 };
 
-export const parseJsonValue = (value, fallback) => {
-  try {
-    return JSON.parse(value || JSON.stringify(fallback));
-  } catch {
-    return fallback;
-  }
-};
-
-export const parseLineItems = (value = "") =>
-  String(value)
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-export const parsePipeRows = (value = "") =>
-  parseLineItems(value).map((line) => {
-    const parts = line.split("|").map((part) => part.trim());
-    return parts;
-  });
+export { parseJsonValue, parseLineItems, parsePipeRows } from "../utils/listingParsers";

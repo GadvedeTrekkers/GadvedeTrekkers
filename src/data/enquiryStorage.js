@@ -446,7 +446,9 @@ const SEED_ENQUIRIES = [
   },
 ];
 
-(function seedEnquiriesIfEmpty() {
+// Demo enquiries exist only in local dev builds. `import.meta.env.DEV` is a build-time
+// constant, so Vite drops SEED_ENQUIRIES (names, emails, phones) from production bundles.
+if (import.meta.env.DEV) (function seedEnquiriesIfEmpty() {
   if (!isStaffArea()) return; // demo data only inside admin/employee pages
   try {
     const existing = getEnquiries(true);
