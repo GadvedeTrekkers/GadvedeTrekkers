@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getCurrentAdminUser } from "../data/permissionStorage";
 import { getAlerts } from "../data/notificationStorage";
@@ -6,50 +6,80 @@ import { clearAdminSession, isAdminAuthenticated } from "../data/authStorage";
 import { apiRequest } from "../api/backendClient";
 import { hydrateCustomers } from "../data/customerStorage";
 import { hydrateBookings } from "../data/bookingStorage";
+import {
+  buildNavSections,
+  groupIdsContainingPath,
+  mergeOpenGroups,
+  readOpenGroupIds,
+  toggleGroupId,
+  writeOpenGroupIds,
+} from "./adminNav";
 
-const NAV = [
-  { path: "/admin/dashboard",    icon: "📊", label: "Dashboard" },
-  { path: "/admin/add-new",      icon: "➕", label: "Add New" },
-  { path: "/admin/blogs",        icon: "📝", label: "Blog & AI Writer" },
-  { path: "/admin/treks",        icon: "🥾", label: "Treks" },
-  { path: "/admin/tours",        icon: "🗺",  label: "Tours" },
-  { path: "/admin/heritage",     icon: "🏛",  label: "Heritage Walks" },
-  { path: "/admin/camping",      icon: "⛺",  label: "Camping" },
-  { path: "/admin/rentals",      icon: "🏠",  label: "Rentals" },
-  { path: "/admin/villas",       icon: "🏡",  label: "Villas on Rent" },
-  { path: "/admin/industrial-visits", icon: "🎓", label: "Industrial Visits" },
-  { path: "/admin/events",              icon: "📅",  label: "Events" },
-  { path: "/admin/property-listings",   icon: "🏡",  label: "Property Listings" },
-  { path: "/admin/campsite-listings",   icon: "⛺",  label: "Campsite Listings" },
-  { path: "/admin/vendors",             icon: "🏪",  label: "Vendors" },
-  { path: "/admin/bookings",     icon: "📋",  label: "Bookings" },
-  { path: "/admin/enquiries",    icon: "📬",  label: "Enquiries" },
-  { path: "/admin/payment-registrations", icon: "🧾", label: "Payment Registrations" },
-  { path: "/admin/booking-form", icon: "🧾",  label: "Booking Desk" },
-  { path: "/admin/transactions", icon: "💳",  label: "Transactions" },
-  { path: "/admin/customers",    icon: "👤",  label: "Customers" },
-  { path: "/admin/reports",      icon: "📈",  label: "Reports" },
-  { path: "/admin/marketing",    icon: "📢",  label: "Marketing" },
-  { path: "/admin/feedback",     icon: "⭐",  label: "Feedback" },
-  { path: "/admin/earnings",     icon: "💰",  label: "Payments & Earnings" },
-  { path: "/admin/employees",    icon: "👨‍💼", label: "Employees"  },
-  { path: "/admin/training",     icon: "🎓",  label: "Training" },
-  { path: "/admin/onboarding",   icon: "📋",  label: "Onboarding" },
-  { path: "/admin/logs",         icon: "📋",  label: "Activity Logs" },
-  { path: "/admin/docs",         icon: "📖",  label: "How It Works" },
-  { path: "/admin/email-templates", icon: "✉️", label: "Email Templates" },
-  { path: "/admin/profile-setup", icon: "🏢", label: "Profile Setup", adminOnly: true },
-  { path: "/admin/automations",  icon: "🤖", label: "Automations", adminOnly: true }, /* Settings › Automations (CRM follow-ups / reminders / reviews) */
-  { path: "/admin/integrations", icon: "🔌", label: "Integrations", adminOnly: true }, /* Settings › Integrations (Instagram + WhatsApp status, read only) */
-];
-/* Profile Setup (t84u) is only listed for Super Admin / Admin; the backend enforces the same roles. */
-const canSeeAdminOnly = (u) => u?.username === "admin" || ["superadmin", "admin"].includes(String(u?.role || "").toLowerCase().replace(/[\s_-]/g, ""));
+function NavItemLink({ item, onNavigate }) {
+  return (
+    <NavLink
+      to={item.path}
+      onClick={onNavigate}
+      className={({ isActive }) => `adm-link ${isActive ? "adm-link--active" : ""}`}
+    >
+      <span className="adm-link-icon">{item.icon}</span>
+      <span className="adm-link-label">{item.label}</span>
+    </NavLink>
+  );
+}
+
+function NavGroup({ group, open, onToggle, onNavigate }) {
+  const panelId = `adm-nav-group-${group.id}`;
+  return (
+    <div
+      className={`adm-nav-group ${open ? "adm-nav-group--open" : ""}`}
+      data-testid={`adm-nav-group-${group.id}`}
+    >
+      <button
+        type="button"
+        className="adm-nav-group-toggle"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => onToggle(group.id)}
+      >
+        <span className="adm-link-icon">{group.icon}</span>
+        <span className="adm-nav-group-label">{group.label}</span>
+        <span className="adm-nav-group-chevron" aria-hidden="true" />
+      </button>
+      <div
+        id={panelId}
+        className="adm-nav-group-items"
+        hidden={!open}
+        role="group"
+        aria-label={group.label}
+      >
+        {group.items.map((item) => (
+          <NavItemLink key={item.path} item={item} onNavigate={onNavigate} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function AdminLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = getCurrentAdminUser();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const unreadAlerts = getAlerts().slice(0, 20).length;
+  const sections = buildNavSections(user);
+
+  const [savedOpenGroups, setSavedOpenGroups] = useState(() => {
+    try {
+      return readOpenGroupIds(window.localStorage);
+    } catch {
+      return [];
+    }
+  });
+  const openGroups = mergeOpenGroups(
+    savedOpenGroups,
+    groupIdsContainingPath(location.pathname, sections),
+  );
 
   const [dataVersion, setDataVersion] = useState(0);
 
@@ -74,9 +104,26 @@ function AdminLayout() {
     return () => { active = false; };
   }, []);
 
+  /* The group that owns the current page is always open (derived above).
+     Manual open/closed state for the other groups is stored in localStorage. */
+
   const logout = () => {
     clearAdminSession();
     navigate("/admin");
+  };
+
+  const closeMobileNav = () => setMobileNavOpen(false);
+
+  const onToggleGroup = (id) => {
+    setSavedOpenGroups((prev) => {
+      const next = toggleGroupId(prev, id);
+      try {
+        writeOpenGroupIds(next, window.localStorage);
+      } catch {
+        /* private mode / blocked storage should not break the menu */
+      }
+      return next;
+    });
   };
 
   /* Mobile slide-in menu: close on Escape and stop the page behind it scrolling. */
@@ -109,7 +156,7 @@ function AdminLayout() {
             type="button"
             className="adm-sidebar-close"
             aria-label="Close menu"
-            onClick={() => setMobileNavOpen(false)}
+            onClick={closeMobileNav}
           >
             ✕
           </button>
@@ -126,16 +173,22 @@ function AdminLayout() {
         </div>
 
         <nav className="adm-nav">
-          {NAV.filter((n) => !n.adminOnly || canSeeAdminOnly(user)).map(({ path, icon, label }) => (
-            <NavLink
-              key={path}
-              to={path}
-              onClick={() => setMobileNavOpen(false)}
-              className={({ isActive }) => `adm-link ${isActive ? "adm-link--active" : ""}`}
-            >
-              <span className="adm-link-icon">{icon}</span>
-              {label}
-            </NavLink>
+          {sections.map((section) => (
+            section.type === "group" ? (
+              <NavGroup
+                key={section.id}
+                group={section}
+                open={openGroups.includes(section.id)}
+                onToggle={onToggleGroup}
+                onNavigate={closeMobileNav}
+              />
+            ) : (
+              <NavItemLink
+                key={section.item.path}
+                item={section.item}
+                onNavigate={closeMobileNav}
+              />
+            )
           ))}
         </nav>
 
@@ -166,7 +219,7 @@ function AdminLayout() {
         </div>
         <Outlet key={dataVersion} />
       </main>
-      {mobileNavOpen && <div className="adm-mobile-backdrop" onClick={() => setMobileNavOpen(false)} />}
+      {mobileNavOpen && <div className="adm-mobile-backdrop" onClick={closeMobileNav} />}
     </div>
   );
 }
