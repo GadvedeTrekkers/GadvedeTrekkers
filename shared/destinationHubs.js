@@ -106,7 +106,7 @@ function priceSentence(trips, noun) {
 const BOOKING_FAQ = {
   question: "How do I book, and what if I already paid by bank transfer or UPI?",
   answer:
-    "Open the trip page and use the WhatsApp booking button, or message or call Gadvede Trekkers on +91 9856112727. If you have already paid directly by bank transfer or UPI, fill in the payment registration form at gadvede.com/register so the team can match your payment to your seat.",
+    "Open the trip page and use the WhatsApp booking button, or message or call us on the WhatsApp number shown on the page. If you have already paid directly by bank transfer or UPI, fill in the payment registration form at gadvede.com/register so the team can match your payment to your seat.",
 };
 
 export const DESTINATION_HUBS = [

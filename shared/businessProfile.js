@@ -276,6 +276,8 @@ export function publicProfile(profile) {
     whatsappDisplay: formatWhatsapp(p.whatsappNumber),
     waLink: `https://wa.me/${p.whatsappNumber}`,
     supportEmail: p.contact.supportEmail,
+    // City / state / country only (shown in the footer and contact page). Street address and phones stay private.
+    address: { city: p.address.city, state: p.address.state, country: p.address.country },
     website: p.online.website,
     socials: { instagram: p.online.instagram, facebook: p.online.facebook, youtube: p.online.youtube, googleMaps: p.online.googleMaps },
   };
