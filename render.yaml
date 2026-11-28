@@ -60,7 +60,182 @@ services:
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
+    # Response headers (Render ignores public/_headers; static sites take them from here or the Dashboard).
+    # HSTS: 1 year, no includeSubDomains/preload on purpose (other gadvede.com subdomains are unverified).
+    headers:
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=(self)
+    # Rewrites: ONLY the URLs the app answers go to index.html. Anything else is a real 404 (public/404.html).
+    # Do not add a blanket /* rewrite. Rules are applied only when no static file exists at the path.
+    # BEGIN generated routes (scripts/generate-host-config.mjs, from shared/spaRoutes.js)
     routes:
+      - type: redirect
+        source: /treks/pawna-lake-camping
+        destination: /camping/pawna-lake-camping-2026
       - type: rewrite
-        source: /*
+        source: /about
         destination: /index.html
+      - type: rewrite
+        source: /faq
+        destination: /index.html
+      - type: rewrite
+        source: /terms
+        destination: /index.html
+      - type: rewrite
+        source: /contact
+        destination: /index.html
+      - type: rewrite
+        source: /book
+        destination: /index.html
+      - type: rewrite
+        source: /booking/success
+        destination: /index.html
+      - type: rewrite
+        source: /register
+        destination: /index.html
+      - type: rewrite
+        source: /payment-registration
+        destination: /index.html
+      - type: rewrite
+        source: /employee-login
+        destination: /index.html
+      - type: rewrite
+        source: /vendor-register
+        destination: /index.html
+      - type: rewrite
+        source: /partner
+        destination: /index.html
+      - type: rewrite
+        source: /list-property
+        destination: /index.html
+      - type: rewrite
+        source: /list-campsite
+        destination: /index.html
+      - type: rewrite
+        source: /list-event
+        destination: /index.html
+      - type: rewrite
+        source: /feedback
+        destination: /index.html
+      - type: rewrite
+        source: /ticket
+        destination: /index.html
+      - type: rewrite
+        source: /qa/weekend-trips
+        destination: /index.html
+      - type: rewrite
+        source: /cancellation-policy
+        destination: /index.html
+      - type: rewrite
+        source: /privacy
+        destination: /index.html
+      - type: rewrite
+        source: /privacy-policy
+        destination: /index.html
+      - type: rewrite
+        source: /villas
+        destination: /index.html
+      - type: rewrite
+        source: /industrial-visits
+        destination: /index.html
+      - type: rewrite
+        source: /trips
+        destination: /index.html
+      - type: rewrite
+        source: /trips/*
+        destination: /index.html
+      - type: rewrite
+        source: /treks
+        destination: /index.html
+      - type: rewrite
+        source: /treks/*
+        destination: /index.html
+      - type: rewrite
+        source: /tours
+        destination: /index.html
+      - type: rewrite
+        source: /tours/*
+        destination: /index.html
+      - type: rewrite
+        source: /heritage
+        destination: /index.html
+      - type: rewrite
+        source: /heritage/*
+        destination: /index.html
+      - type: rewrite
+        source: /camping
+        destination: /index.html
+      - type: rewrite
+        source: /camping/*
+        destination: /index.html
+      - type: rewrite
+        source: /rentals
+        destination: /index.html
+      - type: rewrite
+        source: /rentals/*
+        destination: /index.html
+      - type: rewrite
+        source: /blog
+        destination: /index.html
+      - type: rewrite
+        source: /blog/*
+        destination: /index.html
+      - type: rewrite
+        source: /corporate
+        destination: /index.html
+      - type: rewrite
+        source: /corporate/*
+        destination: /index.html
+      - type: rewrite
+        source: /admin
+        destination: /index.html
+      - type: rewrite
+        source: /admin/*
+        destination: /index.html
+      - type: rewrite
+        source: /employee
+        destination: /index.html
+      - type: rewrite
+        source: /employee/*
+        destination: /index.html
+      - type: rewrite
+        source: /leader-training
+        destination: /index.html
+      - type: rewrite
+        source: /leader-training/*
+        destination: /index.html
+      - type: rewrite
+        source: /treks-near-pune
+        destination: /index.html
+      - type: rewrite
+        source: /treks-near-mumbai
+        destination: /index.html
+      - type: rewrite
+        source: /weekend-treks
+        destination: /index.html
+      - type: rewrite
+        source: /monsoon-treks
+        destination: /index.html
+      - type: rewrite
+        source: /camping-near-pune
+        destination: /index.html
+      - type: rewrite
+        source: /konkan-beach-trips
+        destination: /index.html
+      - type: rewrite
+        source: /rajasthan-tours
+        destination: /index.html
+      - type: rewrite
+        source: /himachal-tours
+        destination: /index.html
+    # END generated routes
