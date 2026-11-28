@@ -10,11 +10,14 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import './styles/ui-fixes.css'
 import { registerEmployeeJourneyDemoSeed } from './data/devSeedEmployeeJourney.js'
 import { getWhatsappNumber, loadWhatsappSetting, subscribeWhatsappNumber } from './config/whatsappSetting.js'
+import { loadSiteContent } from './config/siteContent.js'
 
 registerEmployeeJourneyDemoSeed()
 
 // FR-FE-89: fetch the admin-managed WhatsApp number; re-render CTAs if it differs from the default.
 loadWhatsappSetting()
+// t129u: site copy, contact email/socials and page content come from the admin (published only).
+loadSiteContent()
 function WhatsappKeyed({ children }) {
   const n = useSyncExternalStore(subscribeWhatsappNumber, getWhatsappNumber)
   return <Fragment key={n}>{children}</Fragment>

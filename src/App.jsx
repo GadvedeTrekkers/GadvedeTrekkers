@@ -12,6 +12,7 @@ import AnalyticsTracker from "./analytics/AnalyticsTracker";
 import FloatingWhatsApp from "./components/social/FloatingWhatsApp";
 import { syncAllProductCatalogs } from "./services/productCatalogSync.service";
 import { startRealtimeSync, stopRealtimeSync } from "./services/realtimeSync.service";
+import AnnouncementBar from "./components/AnnouncementBar";
 
 function AppInner() {
   const location = useLocation();
@@ -90,6 +91,7 @@ function AppInner() {
       <ScrollToTop />
       <AnalyticsTracker />
       <WebsiteNotificationBridge />
+      {!hideChrome && <AnnouncementBar />}
       {!hideChrome && <Header />}
       <ErrorBoundary>
         {hideChrome ? (
