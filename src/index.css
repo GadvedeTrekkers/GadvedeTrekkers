@@ -6390,3 +6390,140 @@ html {
   .adm3d-canvas { transition: none; }
   .adm3d-ring, .adm3d-batch .adm3d-batch-card, .adm3d-seg button, .adm3d-dots button::before { transition: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ADMIN — collapsible sidebar groups (dropdowns)
+   Matches the dark-green 3D sidebar. Group toggles are buttons
+   with aria-expanded. The mobile drawer (DEV-16, .adm-sidebar--open)
+   keeps full group labels and 44px tap targets.
+═══════════════════════════════════════════════════════════ */
+.adm-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adm-nav-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.88rem;
+  font-weight: 650;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.adm-nav-group-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.adm-nav-group-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.adm-nav-group-chevron {
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.adm-nav-group--open > .adm-nav-group-toggle .adm-nav-group-chevron {
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+
+.adm-nav-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 0 4px 6px;
+  margin: 0 0 2px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  margin-left: 18px;
+}
+
+.adm-nav-group-items[hidden] {
+  display: none;
+}
+
+.adm-nav-group-items .adm-link {
+  padding: 8px 12px;
+  font-size: 0.84rem;
+}
+
+.adm-shell .adm-nav-group-toggle {
+  position: relative;
+  transition: background 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.adm-shell .adm-nav-group-toggle:hover {
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 10px rgba(0, 0, 0, 0.18);
+  transform: translateX(3px);
+}
+
+.adm-shell .adm-nav-group--open > .adm-nav-group-toggle {
+  color: #fff;
+  background: rgba(25, 135, 84, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.adm-shell .adm-nav-group-toggle:focus-visible {
+  outline: 2px solid #86efac;
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .adm-shell .adm-nav-group-toggle {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+  .adm-shell .adm-nav-group-label,
+  .adm-shell .adm-link-label {
+    display: inline-block;
+  }
+  .adm-shell .adm-nav-group-items {
+    margin-left: 14px;
+  }
+  .adm-shell .adm-nav-group-items .adm-link {
+    min-height: 44px;
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-shell .adm-nav-group-toggle,
+  .adm-shell .adm-nav-group-toggle:hover,
+  .adm-shell .adm-nav-group--open > .adm-nav-group-toggle,
+  .adm-nav-group-chevron,
+  .adm-nav-group--open > .adm-nav-group-toggle .adm-nav-group-chevron {
+    transform: none !important;
+    transition: none !important;
+  }
+  .adm-nav-group--open > .adm-nav-group-toggle .adm-nav-group-chevron {
+    transform: rotate(45deg) !important;
+  }
+  .adm-nav-group-chevron {
+    transform: rotate(-45deg) !important;
+  }
+}
