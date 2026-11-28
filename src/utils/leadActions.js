@@ -1,10 +1,11 @@
 import { saveEnquiry } from "../data/enquiryStorage";
-import { waSendUrl } from "../config/whatsappSetting";
+import { OFFICIAL_WHATSAPP_NUMBER, getWhatsappNumber, waSendUrl } from "../config/whatsappSetting";
 import { trackEvent } from "../analytics/tracking";
 
 export const DEFAULT_SALES_SMS =
   "Hi, I’m interested in outing packages near Pune/Mumbai.\nPlease share details.";
-export const DEFAULT_WHATSAPP_NUMBER = "919856112727";
+/** The admin WhatsApp setting (its default lives in config/whatsappSetting.js, not here). */
+export const DEFAULT_WHATSAPP_NUMBER = OFFICIAL_WHATSAPP_NUMBER;
 
 function getDeviceType() {
   const width = window.innerWidth;
@@ -96,7 +97,7 @@ export function openWhatsAppUrl(url) {
 }
 
 export function createWhatsAppInquiryUrl({
-  phoneNumber = DEFAULT_WHATSAPP_NUMBER,
+  phoneNumber = getWhatsappNumber(),
   packageName,
   location,
   category,
@@ -180,7 +181,7 @@ export async function handleWhatsAppLead({
       pax,
       preferredDate,
     });
-    const phone = phoneNumber || DEFAULT_WHATSAPP_NUMBER;
+    const phone = phoneNumber || getWhatsappNumber();
     const waUrl = waSendUrl(message, phone);
     openWhatsAppUrl(waUrl);
   }
