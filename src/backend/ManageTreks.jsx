@@ -1,41 +1,8 @@
 import ManagePage from "./ManagePage";
-import { uniqueTreks, slugifyTrekName } from "../data/treks";
+import { slugifyTrekName } from "../utils/slugify";
 import { replaceTrekDates } from "../data/trekDatesStorage";
-import {
-  harishchandragadOverview,
-  harishchandragadHistory,
-  harishchandragadHighlights,
-  harishchandragadEventDetails,
-  harishchandragadPricing,
-  harishchandragadItineraries,
-  harishchandragadPlacesToVisit,
-  harishchandragadInclusions,
-  harishchandragadExclusions,
-  harishchandragadThingsToCarry,
-  harishchandragadDiscountCodes,
-} from "../data/harishchandragadDetails";
 import { CATALOG_HUBS, hubBySlug } from "../data/catalogHubs";
-import {
-  kalsubaiOverview,
-  kalsubaiHistory,
-  kalsubaiHighlights,
-  kalsubaiEventDetails,
-  kalsubaiPricing,
-  kalsubaiItineraries,
-} from "../data/kalsubaiDetails";
 
-const joinLines = (items = []) => items.filter(Boolean).join("\n");
-const formatHighlights = (items = []) => joinLines(items.map((item) => `${item.icon ? `${item.icon} ` : ""}${item.text}`.trim()));
-const formatPlaces = (items = []) => joinLines(items.map((item) => [item.name, item.desc].filter(Boolean).join("|")));
-const formatDiscountCodes = (items = []) => joinLines(items.map((item) => [item.code, item.desc].filter(Boolean).join("|")));
-const formatItineraries = (routes = {}) =>
-  Object.values(routes)
-    .flatMap((route) =>
-      (route.days || []).flatMap((day) =>
-        (day.events || []).map((event) => [day.title, event.time, event.desc].filter(Boolean).join("|"))
-      )
-    )
-    .join("\n");
 const parseDisplayDate = (value) => {
   if (!value) return "";
   const parsed = new Date(value);
@@ -48,41 +15,6 @@ const formatNextDate = (value) => {
     ? parsed.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
     : value;
 };
-const routeKeyToCity = {
-  mumbai: "Mumbai",
-  pune: "Pune",
-  kasara: "Kasara",
-  withoutTransport: "Base Village",
-  baseVillage: "Base Village",
-};
-const extractPickupPoints = (route = {}) =>
-  ((route.days || [])[0]?.events || [])
-    .filter((event) => /pickup|meet|meeting|assemble/i.test(event.desc || ""))
-    .map((event) => ({
-      time: event.time || "",
-      location: String(event.desc || "")
-        .replace(/^Pickup\s*[—-]\s*/i, "")
-        .replace(/^Meet at\s*/i, "")
-        .replace(/^Meeting at\s*/i, "")
-        .replace(/^Assemble at\s*/i, "")
-        .trim(),
-    }));
-const buildDeparturePlans = (pricing = {}, itineraries = {}) =>
-  JSON.stringify(
-    Object.entries(itineraries).reduce((acc, [key, route]) => {
-      const city = routeKeyToCity[key] || key;
-      acc[city] = {
-        price: pricing[key]?.price ?? "",
-        pickupPoints: extractPickupPoints(route),
-        itinerary: (route.days || [])
-          .flatMap((day) =>
-            (day.events || []).map((event) => [day.title, event.time, event.desc].filter(Boolean).join("|"))
-          )
-          .join("\n"),
-      };
-      return acc;
-    }, {})
-  );
 const COMMON_INCLUDED = [
   "Guide charges",
   "Breakfast",
@@ -128,94 +60,7 @@ const DISCOUNT_OPTIONS = [
   "EARLY75|Early Booking Discount",
 ];
 
-const RICH_SEED_BY_NAME = {
-  "Harishchandragad Trek": {
-    subtitle: harishchandragadOverview.subtitle,
-    fortType: "Medieval Hill Fort",
-    duration: harishchandragadEventDetails.duration,
-    altitude: harishchandragadEventDetails.altitude,
-    baseVillage: harishchandragadEventDetails.baseVillage,
-    regionArea: harishchandragadEventDetails.region,
-    climbTime: harishchandragadEventDetails.climbTime,
-    distance: harishchandragadEventDetails.distance,
-    drivePune: harishchandragadEventDetails.driveFromPune,
-    wildlifeSanctuary: harishchandragadEventDetails.sanctuary,
-    about: harishchandragadOverview.intro,
-    history: harishchandragadOverview.history,
-    mainAttractions: harishchandragadOverview.mainAttractions,
-    detailedHistory: harishchandragadHistory,
-    highlights: formatHighlights(harishchandragadHighlights),
-    placesToVisit: formatPlaces(harishchandragadPlacesToVisit),
-    itinerary: formatItineraries(harishchandragadItineraries),
-    included: joinLines(harishchandragadInclusions),
-    notIncluded: joinLines(harishchandragadExclusions),
-    thingsToCarry: joinLines(harishchandragadThingsToCarry),
-    discountCodes: formatDiscountCodes(harishchandragadDiscountCodes),
-    departurePlans: buildDeparturePlans(harishchandragadPricing, harishchandragadItineraries),
-  },
-  "Kalsubai Trek": {
-    subtitle: kalsubaiOverview.subtitle,
-    fortType: "Highest Peak Trek",
-    duration: kalsubaiEventDetails.duration,
-    altitude: kalsubaiEventDetails.altitude,
-    baseVillage: kalsubaiEventDetails.baseVillage,
-    regionArea: kalsubaiEventDetails.region,
-    climbTime: kalsubaiEventDetails.climbTime,
-    distance: kalsubaiEventDetails.distance,
-    wildlifeSanctuary: kalsubaiEventDetails.sanctuary,
-    about: [kalsubaiOverview.intro, kalsubaiOverview.nightTrek, kalsubaiOverview.monsoon].filter(Boolean).join("\n\n"),
-    history: kalsubaiHistory,
-    detailedHistory: kalsubaiHistory,
-    highlights: formatHighlights(kalsubaiHighlights),
-    itinerary: formatItineraries(kalsubaiItineraries),
-    departurePlans: buildDeparturePlans(kalsubaiPricing, kalsubaiItineraries),
-  },
-};
 
-const SEED = uniqueTreks.map((t) => ({
-  slug: t.slug || "",
-  name: t.name,
-  subtitle: "",
-  fortType: "",
-  region: t.location?.toLowerCase().includes("pune") ? "pune" : "mumbai",
-  location: t.location,
-  difficulty: t.difficulty,
-  enduranceLevel: t.difficulty,
-  duration: t.duration,
-  altitude: t.altitude,
-  price: t.price,
-  originalPrice: t.originalPrice,
-  nextDate: t.nextDate,
-  rating: t.rating,
-  reviews: t.reviews || "",
-  image: t.image,
-  imageGallery: JSON.stringify((t.gallery || [t.image, t.image, t.image]).filter(Boolean)),
-  baseVillage: "",
-  regionArea: "",
-  climbTime: "",
-  distance: "",
-  drivePune: "",
-  wildlifeSanctuary: "",
-  pricingLabel: "",
-  about: "",
-  history: "",
-  mainAttractions: "",
-  detailedHistory: "",
-  highlights: "",
-  placesToVisit: "",
-  itinerary: "",
-  included: "",
-  notIncluded: "",
-  thingsToCarry: "",
-  discountCodes: "",
-  discountEnabled: false,
-  trekDateBatches: "[]",
-  departurePlans: "{}",
-  pickupPoints: "{}",
-  sortOrder: 999,
-  active: true,
-  ...(RICH_SEED_BY_NAME[t.name] || {}),
-}));
 
 const FIELDS = [
   /* ── Ordering ── */
@@ -350,6 +195,12 @@ Reference (Kalsubai Trek highlights):
 Include highlights about: altitude/distance, unique terrain features, viewpoints, temples/heritage, wildlife, difficulty level, food/certificates. Keep each line under 10 words.
 
 Output only the 8 lines, one per line, no numbering.`,
+  },
+  {
+    key: "whyJoin", label: "Why Join (Icon|Title|Description, one per line — shown on the trek page)", type: "textarea", col: 12,
+  },
+  {
+    key: "bookingSteps", label: "How to Book steps (one per line — shown on the trek page)", type: "textarea", col: 12,
   },
   {
     key: "placesToVisit", label: "Places to Visit (Name|Description, one per line)", type: "textarea", col: 12,
@@ -504,7 +355,7 @@ export default function ManageTreks() {
       storageKey="gt_treks"
       fields={FIELDS}
       defaultForm={DEFAULT}
-      seedData={SEED}
+      seedData={[] /* t129u: no built-in catalogue; items come only from the database */}
       transformForm={prepareTrekForm}
       afterSubmit={handleTrekPersist}
       onPreview={handlePreview}

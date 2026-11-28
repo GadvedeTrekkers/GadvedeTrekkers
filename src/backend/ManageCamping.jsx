@@ -4,7 +4,6 @@ import {
   CAMPING_CARRY_OPTIONS,
   CAMPING_EXCLUDED_OPTIONS,
   CAMPING_INCLUDED_OPTIONS,
-  CAMPING_SEED_DATA,
   getPrimaryCampingImage,
   parseJsonValue,
 } from "../data/campingDetailsData";
@@ -171,7 +170,7 @@ export default function ManageCamping() {
       storageKey="gt_camping"
       fields={FIELDS}
       defaultForm={DEFAULT}
-      seedData={CAMPING_SEED_DATA}
+      seedData={[] /* t129u: no built-in catalogue; items come only from the database */}
       transformForm={prepareCampingForm}
       onPreview={(currentForm) => {
         const previewCamp = {

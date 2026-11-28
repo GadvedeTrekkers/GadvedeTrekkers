@@ -34,6 +34,7 @@ export const NAV_ITEMS = [
   { path: "/admin/docs",         icon: "📖",  label: "How It Works" },
   { path: "/admin/email-templates", icon: "✉️", label: "Email Templates" },
   { path: "/admin/profile-setup", icon: "🏢", label: "Profile Setup", adminOnly: true },
+  { path: "/admin/site-content", icon: "📝", label: "Site Content", adminOnly: true },
   { path: "/admin/automations",  icon: "🤖", label: "Automations", adminOnly: true },
   { path: "/admin/integrations", icon: "🔌", label: "Integrations", adminOnly: true },
 ];
@@ -126,6 +127,7 @@ export const NAV_GROUP_DEFS = [
     paths: [
       "/admin/email-templates",
       "/admin/profile-setup",
+      "/admin/site-content",
       "/admin/automations",
       "/admin/integrations",
       "/admin/logs",

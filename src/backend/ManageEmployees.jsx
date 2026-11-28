@@ -12,7 +12,7 @@ import { logActivity } from "../data/activityLogStorage";
 import { getUserPermissions, togglePermission, ALL_PERMISSIONS, currentUserHasPermission } from "../data/permissionStorage";
 import { submitRateApproval, getPendingApprovals, approveRateRequest, rejectRateRequest, hasPendingRequest } from "../data/rateApprovalStorage";
 import { getWhatsAppLinkForDate } from "../data/trekDatesStorage";
-import { slugifyTrekName } from "../data/treks";
+import { slugifyTrekName } from "../utils/slugify";
 import { getErrorMessage } from "../utils/errorMessage";
 
 /* ─── constants ─── */

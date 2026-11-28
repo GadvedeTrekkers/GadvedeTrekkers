@@ -60,7 +60,7 @@ test("remaining groups use the agreed labels and member paths", () => {
     finance: ["Transactions", "Payments & Earnings", "Reports"],
     marketing: ["Marketing", "Feedback"],
     team: ["Employees", "Training", "Onboarding"],
-    settings: ["Email Templates", "Profile Setup", "Automations", "Integrations", "Activity Logs", "How It Works"],
+    settings: ["Email Templates", "Profile Setup", "Site Content", "Automations", "Integrations", "Activity Logs", "How It Works"],
   };
   for (const [id, labels] of Object.entries(expected)) {
     const group = groupById(sections, id);
@@ -101,6 +101,7 @@ test("staff do not see admin-only Settings items, but the Settings group stays i
   );
   const paths = allPaths(sections);
   assert.equal(paths.includes("/admin/profile-setup"), false);
+  assert.equal(paths.includes("/admin/site-content"), false);
   assert.equal(paths.includes("/admin/automations"), false);
   assert.equal(paths.includes("/admin/integrations"), false);
   assert.equal(paths.includes("/admin/treks"), true);

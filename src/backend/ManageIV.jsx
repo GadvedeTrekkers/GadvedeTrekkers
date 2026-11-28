@@ -1,5 +1,4 @@
 import ManagePage from "./ManagePage";
-import { itineraryToPipe, ivDestinations } from "../data/industrialVisitsData";
 
 const INDUSTRY_OPTIONS = [
   "Heritage & Cultural Tourism", "Adventure & Eco-Tourism", "Hospitality",
@@ -87,26 +86,6 @@ const DEFAULT = {
   pricingSlabs: "", includes: "", excludes: "", itinerary: "", active: true,
 };
 
-const SEED = ivDestinations.map((d, index) => ({
-  ...DEFAULT,
-  sortOrder: index + 1,
-  id: d.id,
-  icon: d.icon || "",
-  title: d.title || "",
-  subtitle: d.subtitle || "",
-  duration: d.duration || "",
-  bestFor: d.bestFor || "",
-  imageGallery: JSON.stringify((d.images || []).map((img) => img.src).filter(Boolean)),
-  highlights: (d.highlights || []).join("\n"),
-  industries: (d.industries || []).join("\n"),
-  pricingSlabs: (d.pricingSlabs || [])
-    .map((s) => `${s.students}|${s.pricePerHead != null ? s.pricePerHead : ""}|${s.note || ""}`)
-    .join("\n"),
-  includes: (d.includes || []).join("\n"),
-  excludes: (d.excludes || []).join("\n"),
-  itinerary: itineraryToPipe(d.itinerary || []),
-  active: true,
-}));
 
 export default function ManageIV() {
   return (
@@ -116,7 +95,7 @@ export default function ManageIV() {
       storageKey="gt_iv"
       fields={FIELDS}
       defaultForm={DEFAULT}
-      seedData={SEED}
+      seedData={[] /* t129u: no built-in catalogue; items come only from the database */}
     />
   );
 }

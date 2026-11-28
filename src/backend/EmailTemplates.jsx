@@ -4,10 +4,10 @@ import { waBase, waSendUrl, waUrl } from "../config/whatsappSetting";
 /* ── Sample data for preview ── */
 const SAMPLE_BOOKING = {
   enhancedBookingId: "GT-2026-000042",
-  firstName: "Arjun",
-  lastName: "Sharma",
-  email: "arjun.sharma@gmail.com",
-  contactNumber: "9823456701",
+  firstName: "Sample",
+  lastName: "Customer",
+  email: "customer@example.com",
+  contactNumber: "0000000000",
   trekName: "Harishchandragad Trek",
   eventCategory: "Trek",
   tickets: 2,
@@ -27,9 +27,9 @@ const SAMPLE_BOOKING = {
 
 const SAMPLE_ENQUIRY = {
   id: "ENQ-2026-00028",
-  name: "Priya Patil",
-  phone: "9834567802",
-  email: "priya.patil@gmail.com",
+  name: "Sample Customer",
+  phone: "0000000000",
+  email: "customer@example.com",
   eventName: "Kalsubai Trek",
   category: "Trek",
   pax: "4",

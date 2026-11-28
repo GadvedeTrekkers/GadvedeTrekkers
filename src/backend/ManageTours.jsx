@@ -1,9 +1,6 @@
 import ManagePage from "./ManagePage";
-import { toursList } from "../data/toursData";
-import { ADDITIONAL_TOUR_SEEDS } from "../data/additionalTourDetails";
 import {
   TOUR_CARRY_OPTIONS,
-  TOUR_DETAIL_SEED_BY_SLUG,
   TOUR_DISCOUNT_OPTIONS,
   TOUR_EXCLUDED_OPTIONS,
   TOUR_INCLUDED_OPTIONS,
@@ -36,7 +33,7 @@ const FIELDS = [
   { key: "taxPercent", label: "GST %", type: "number", col: 4, placeholder: "5" },
   { key: "rating", label: "Rating", col: 3, placeholder: "4.8" },
   { key: "reviews", label: "Review Count", col: 3, placeholder: "187" },
-  { key: "happyCustomers", label: "Happy Customers Label", col: 6, placeholder: "1000+ Happy Customers" },
+  { key: "happyCustomers", label: "Happy Customers Label", col: 6, placeholder: "Only use a figure you can prove" },
   { key: "pickupPointLabel", label: "Pickup Point Label", col: 6, placeholder: "Himachal Pradesh, India" },
   { key: "pickupPointMapLabel", label: "Pickup Map CTA", col: 6, placeholder: "View on Map" },
   { key: "filters", label: "Bottom Filters / Tags", type: "textarea", col: 12, placeholder: "Weekend Trips | 5 to 8 Days | Group Tours" },
@@ -196,21 +193,7 @@ const nextDateFromDepartureText = (value) => {
   return month && firstDate ? `${firstDate} ${month} 2026` : "";
 };
 
-const seedBySlug = Object.fromEntries(
-  Object.entries({ ...TOUR_DETAIL_SEED_BY_SLUG, ...ADDITIONAL_TOUR_SEEDS }).map(([slug, item]) => [slug, item])
-);
 
-const SEED = toursList.map((tour) => {
-  const slug = slugifyTourName(tour.name);
-  const richSeed = seedBySlug[slug] || {};
-  return {
-    ...DEFAULT,
-    ...tour,
-    slug,
-    imageGallery: JSON.stringify([tour.image, tour.image, tour.image].filter(Boolean)),
-    ...richSeed,
-  };
-});
 
 function prepareTourForm(form) {
   const imageGallery = parseJsonValue(form.imageGallery, []).filter(Boolean);
@@ -249,21 +232,6 @@ function handlePreview(form) {
   window.open(`/tours/${prepared.slug}?preview=1`, "_blank");
 }
 
-function backfillSeed(item) {
-  const slug = item.slug || slugifyTourName(item.name);
-  const richSeed = seedBySlug[slug];
-  if (!richSeed) return item;
-  const next = { ...item };
-  Object.entries(richSeed).forEach(([key, value]) => {
-    if (next[key] === "" || next[key] == null || next[key] === "[]") {
-      next[key] = value;
-    }
-  });
-  if (!next.imageGallery || next.imageGallery === "[]") {
-    next.imageGallery = JSON.stringify([next.image].filter(Boolean));
-  }
-  return next;
-}
 
 export default function ManageTours() {
   return (
@@ -273,7 +241,7 @@ export default function ManageTours() {
       storageKey="gt_tours"
       fields={FIELDS}
       defaultForm={DEFAULT}
-      seedData={SEED.map(backfillSeed)}
+      seedData={[] /* t129u: no built-in catalogue; items come only from the database */}
       transformForm={prepareTourForm}
       afterSubmit={handleTourPersist}
       onPreview={handlePreview}
