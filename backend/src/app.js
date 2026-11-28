@@ -18,6 +18,7 @@ import trekPaymentsRoutes   from "./routes/trekPayments.routes.js";
 import adminToolsRoutes     from "./routes/admin-tools.routes.js";
 import createMetaWebhookRouter from "./routes/metaWebhook.routes.js";
 import createSettingsRouter    from "./routes/settings.routes.js";
+import createSiteContentRouter from "./routes/siteContent.routes.js";
 import createPaymentRegistrationsRouter from "./routes/paymentRegistrations.routes.js";
 import createCrmAutomationsRouter from "./routes/crmAutomations.routes.js";
 import createSocialRouter from "./routes/social.routes.js";
@@ -154,6 +155,7 @@ app.use("/api/mcp", createMcpRouter());   // read-only MCP server for AI bots (O
 app.use("/api/ai", createAiRouter());     // Gemini drafts for staff (AI_ENABLED off by default; drafts only, never sent)
 app.use("/api/blog", createBlogRouter()); // blog: public = published only; admin = drafts/publish/archive, no delete
 app.use("/api/reports", createReportsRouter()); // admin Reports: read only, Management/Admin roles, masked customer data
+app.use("/api/site-content", createSiteContentRouter()); // t129u: admin-managed site copy; public = published only; no delete/export
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, status: "ok" });

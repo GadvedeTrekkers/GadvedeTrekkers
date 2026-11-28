@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import crypto from "node:crypto";
 import { fakeDb, listen } from "./support/fakeSupabase.js";
 
-const db = fakeDb({ site_settings: [], activity_logs: [], meta_webhook_events: [], instagram_messages: [], instagram_comments: [], meta_leads: [] });
+const db = fakeDb({ site_settings: [], site_content: [], activity_logs: [], meta_webhook_events: [], instagram_messages: [], instagram_comments: [], meta_leads: [] });
 vi.mock("../config/supabaseAdminClient.js", () => ({ default: db }));
 vi.mock("../config/supabasePublicClient.js", () => ({ default: db }));
 
@@ -49,5 +49,13 @@ describe("app.js wiring", () => {
     const h = { Origin: "https://www.gadvede.com" };
     for (const p of ["/overview", "/trips", "/revenue"]) expect((await fetch(`${srv.url}/api/reports${p}`, { headers: h })).status, p).toBe(401);
     expect((await fetch(`${srv.url}/api/reports/overview`, { method: "POST", headers: h })).status).toBe(401);
+  });
+  it("mounts /api/site-content (public = published only; admin routes need a token)", async () => {
+    const h = { Origin: "https://www.gadvede.com" };
+    const r = await fetch(`${srv.url}/api/site-content`, { headers: h });
+    expect(r.status).toBe(200);
+    expect((await r.json()).data).toEqual({});
+    expect((await fetch(`${srv.url}/api/site-content/admin`, { headers: h })).status).toBe(401);
+    expect((await fetch(`${srv.url}/api/site-content/admin/home.stats`, { method: "PUT", headers: { ...h, "Content-Type": "application/json" }, body: "{}" })).status).toBe(401);
   });
 });

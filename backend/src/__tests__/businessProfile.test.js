@@ -247,7 +247,7 @@ describe("profile routes", () => {
     const txt = await r.text();
     for (const s of ["123456789012", "gadvede@okaxis", "r@x.co", "t@x.co", "f@x.co", "b@x.co", "Pratik", "primaryPhone"]) expect(txt).not.toContain(s);
     const data = JSON.parse(txt).data;
-    expect(Object.keys(data).sort()).toEqual(["companyName", "faviconUrl", "logoUrl", "socials", "supportEmail", "tagline", "theme", "waLink", "website", "whatsappDisplay", "whatsappNumber"]);
+    expect(Object.keys(data).sort()).toEqual(["address", "companyName", "faviconUrl", "logoUrl", "socials", "supportEmail", "tagline", "theme", "waLink", "website", "whatsappDisplay", "whatsappNumber"]);
     db.from = () => { throw new Error("db down"); };
     const fb = await (await fetch(`${url}/api/settings/profile/public`)).json();
     expect(fb.data).toMatchObject({ companyName: "Gadvede Trekkers", whatsappNumber: "919856112727" });
